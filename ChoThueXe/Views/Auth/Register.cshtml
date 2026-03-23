@@ -1,0 +1,100 @@
+@model ChoThueXe.Models.Auth.RegisterInputModel
+@{
+    ViewData["Title"] = "Dang ky";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Dang ky tai khoan khach hang</div>
+            <div class="card-body">
+                @if (ViewData["Error"] is string error)
+                {
+                    <div class="alert alert-danger">@error</div>
+                }
+
+                <form asp-action="Register" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-12">
+                        <label asp-for="FullName" class="form-label">Ho ten</label>
+                        <input asp-for="FullName" class="form-control" />
+                        <span asp-validation-for="FullName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" autocomplete="username email" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Phone" class="form-label">So dien thoai</label>
+                        <input asp-for="Phone" class="form-control" />
+                        <span asp-validation-for="Phone" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Password" class="form-label">Mat khau</label>
+                        <input asp-for="Password" id="registerPassword" type="password" class="form-control" autocomplete="new-password" />
+                        <div class="form-text">Mat khau toi thieu 8 ky tu, co chu hoa, chu thuong va so.</div>
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ConfirmPassword" class="form-label">Nhap lai mat khau</label>
+                        <input asp-for="ConfirmPassword" id="registerConfirmPassword" type="password" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary">Dang ky</button>
+                        <button type="button" class="btn btn-outline-info" id="btnSuggestPassword">Goi y mat khau manh</button>
+                        <a asp-action="Login" class="btn btn-outline-secondary">Da co tai khoan</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const suggestButton = document.getElementById('btnSuggestPassword');
+            if (!suggestButton) {
+                return;
+            }
+
+            suggestButton.addEventListener('click', () => {
+                const charsetUpper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+                const charsetLower = 'abcdefghjkmnpqrstuvwxyz';
+                const charsetDigits = '23456789';
+                const charsetAll = charsetUpper + charsetLower + charsetDigits + '!#$%*?';
+
+                const randomChar = (chars) => chars[Math.floor(Math.random() * chars.length)];
+                const chars = [
+                    randomChar(charsetUpper),
+                    randomChar(charsetLower),
+                    randomChar(charsetDigits)
+                ];
+
+                while (chars.length < 12) {
+                    chars.push(randomChar(charsetAll));
+                }
+
+                for (let i = chars.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [chars[i], chars[j]] = [chars[j], chars[i]];
+                }
+
+                const suggested = chars.join('');
+                const passwordInput = document.getElementById('registerPassword');
+                const confirmInput = document.getElementById('registerConfirmPassword');
+                if (passwordInput && confirmInput) {
+                    passwordInput.value = suggested;
+                    confirmInput.value = suggested;
+                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+
+                alert('Da tao mat khau manh va dien san vao form. Trinh duyet se hien popup goi y luu mat khau khi dang ky thanh cong.');
+            });
+        })();
+    </script>
+}

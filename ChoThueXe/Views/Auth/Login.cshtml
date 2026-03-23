@@ -1,0 +1,50 @@
+@model ChoThueXe.Models.Auth.LoginInputModel
+@{
+    ViewData["Title"] = "Dang nhap";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">Dang nhap he thong cho thue xe</div>
+            <div class="card-body">
+                @if (ViewData["Error"] is string error)
+                {
+                    <div class="alert alert-danger">@error</div>
+                }
+                @if (TempData["Success"] is string success)
+                {
+                    <div class="alert alert-success">@success</div>
+                }
+
+                <form asp-action="Login" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-12">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" autocomplete="username email" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary w-100">Dang nhap</button>
+                    </div>
+                </form>
+
+                <div class="mt-3 small text-muted">
+                    Tai khoan mau: user1@mail.com / 123456 (ADMIN), user3@mail.com / 123456 (EMPLOYEE), user11@mail.com / 123456 (CUSTOMER)
+                </div>
+                <div class="mt-2">
+                    <a asp-action="Register">Chua co tai khoan? Dang ky ngay</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

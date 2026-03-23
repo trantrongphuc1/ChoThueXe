@@ -1,0 +1,82 @@
+@model ChoThueXe.Models.Portal.EmployeeDashboardViewModel
+@{
+    ViewData["Title"] = "Nhan vien - Tao hop dong";
+}
+
+<h2 class="mb-3">Nhan vien: Tao hop dong draft</h2>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold">Muc luc nhanh</div>
+    <div class="card-body d-flex gap-2 flex-wrap">
+        <a href="#tao-hop-dong" class="btn btn-outline-primary btn-sm">Tao hop dong</a>
+        <a href="#danh-sach-khach" class="btn btn-outline-secondary btn-sm">Danh sach khach hang</a>
+        <a asp-controller="Customer" asp-action="Index" class="btn btn-outline-dark btn-sm">Trang khach hang</a>
+    </div>
+</div>
+
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success">@success</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div id="tao-hop-dong" class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold">Tao hop dong (sp_create_contract)</div>
+    <div class="card-body">
+        <form asp-action="CreateDraft" method="post" class="row g-3">
+            @Html.AntiForgeryToken()
+            <div class="col-md-8">
+                <label class="form-label">Chon khach hang</label>
+                <select class="form-select" name="CustomerId" required>
+                    <option value="">-- Chon khach hang --</option>
+                    @foreach (var c in Model.Customers)
+                    {
+                        <option value="@c.UserId">@c.UserId - @c.FullName (@(c.IsVerified ? "Verified" : "Chua verified"))</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Tao hop dong</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="danh-sach-khach" class="card shadow-sm">
+    <div class="card-header fw-semibold">Danh sach khach hang</div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Ho ten</th>
+                <th>Email</th>
+                <th>Trang thai xac minh</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.Customers)
+            {
+                <tr>
+                    <td>@c.UserId</td>
+                    <td>@c.FullName</td>
+                    <td>@c.Email</td>
+                    <td>
+                        @if (c.IsVerified)
+                        {
+                            <span class="badge text-bg-success">APPROVED</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-warning">PENDING</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
