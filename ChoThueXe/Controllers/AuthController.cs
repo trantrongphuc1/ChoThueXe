@@ -10,10 +10,12 @@ namespace ChoThueXe.Controllers;
 public class AuthController : Controller
 {
     private readonly IAuthRepository _authRepository;
+    private readonly Services.EmailService _emailService;
 
-    public AuthController(IAuthRepository authRepository)
+    public AuthController(IAuthRepository authRepository, Services.EmailService emailService)
     {
         _authRepository = authRepository;
+        _emailService = emailService;
     }
 
     [HttpGet]
@@ -102,6 +104,71 @@ public class AuthController : Controller
         {
             ViewData["Error"] = ex.Message;
             return View(input);
+        }
+    }
+
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            ViewData["Error"] = "Email khong duoc de trong.";
+            return View();
+        }
+
+        try
+        {
+            var otpCode = await _authRepository.GenerateOtpAsync(email);
+            await _emailService.SendOtpEmailAsync(email, otpCode);
+            TempData["Success"] = $"OTP da duoc gui den email {email}.";
+            return RedirectToAction(nameof(ResetPassword));
+        }
+        catch (Exception ex)
+        {
+            ViewData["Error"] = ex.Message;
+            return View();
+        }
+    }
+
+    [HttpGet]
+    public IActionResult ResetPassword()
+    {
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(string email, string otpCode, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otpCode) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            ViewData["Error"] = "Vui long nhap email, otp va mat khau moi.";
+            return View();
+        }
+
+        if (!await _authRepository.ValidateOtpAsync(email, otpCode))
+        {
+            ViewData["Error"] = "OTP khong hop le hoac da het han.";
+            return View();
+        }
+
+        try
+        {
+            await _authRepository.ResetPasswordAsync(email, newPassword);
+            TempData["Success"] = "Mat khau da duoc thay doi. Vui long dang nhap lai.";
+            return RedirectToAction(nameof(Login));
+        }
+        catch (Exception ex)
+        {
+            ViewData["Error"] = ex.Message;
+            return View();
         }
     }
 

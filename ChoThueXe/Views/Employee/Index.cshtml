@@ -1,16 +1,16 @@
 @model ChoThueXe.Models.Portal.EmployeeDashboardViewModel
 @{
-    ViewData["Title"] = "Nhan vien - Tao hop dong";
+    ViewData["Title"] = "Nhân viên - Tạo hợp đồng";
 }
 
-<h2 class="mb-3">Nhan vien: Tao hop dong draft</h2>
+<h2 class="mb-3">Nhân viên: Tạo hợp đồng draft</h2>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Muc luc nhanh</div>
+    <div class="card-header fw-semibold">Mục lục nhanh</div>
     <div class="card-body d-flex gap-2 flex-wrap">
-        <a href="#tao-hop-dong" class="btn btn-outline-primary btn-sm">Tao hop dong</a>
-        <a href="#danh-sach-khach" class="btn btn-outline-secondary btn-sm">Danh sach khach hang</a>
-        <a asp-controller="Customer" asp-action="Index" class="btn btn-outline-dark btn-sm">Trang khach hang</a>
+        <a href="#tao-hop-dong" class="btn btn-outline-primary btn-sm">Tạo hợp đồng</a>
+        <a href="#danh-sach-khach" class="btn btn-outline-secondary btn-sm">Danh sách khách hàng</a>
+        <a asp-controller="Customer" asp-action="Index" class="btn btn-outline-dark btn-sm">Trang khách hàng</a>
     </div>
 </div>
 
@@ -24,37 +24,37 @@
 }
 
 <div id="tao-hop-dong" class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Tao hop dong (sp_create_contract)</div>
+    <div class="card-header fw-semibold">Tạo hợp đồng (sp_create_contract)</div>
     <div class="card-body">
         <form asp-action="CreateDraft" method="post" class="row g-3">
             @Html.AntiForgeryToken()
             <div class="col-md-8">
-                <label class="form-label">Chon khach hang</label>
+                <label class="form-label">Chọn khách hàng</label>
                 <select class="form-select" name="CustomerId" required>
-                    <option value="">-- Chon khach hang --</option>
+                    <option value="">-- Chọn khách hàng --</option>
                     @foreach (var c in Model.Customers)
                     {
-                        <option value="@c.UserId">@c.UserId - @c.FullName (@(c.IsVerified ? "Verified" : "Chua verified"))</option>
+                        <option value="@c.UserId">@c.UserId - @c.FullName (@(c.IsVerified ? "Verified" : "Chưa verified"))</option>
                     }
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Tao hop dong</button>
+                <button type="submit" class="btn btn-primary w-100">Tạo hợp đồng</button>
             </div>
         </form>
     </div>
 </div>
 
 <div id="danh-sach-khach" class="card shadow-sm">
-    <div class="card-header fw-semibold">Danh sach khach hang</div>
+    <div class="card-header fw-semibold">Danh sách khách hàng</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Ho ten</th>
+                <th>Họ tên</th>
                 <th>Email</th>
-                <th>Trang thai xac minh</th>
+                <th>Trạng thái xác minh</th>
             </tr>
             </thead>
             <tbody>

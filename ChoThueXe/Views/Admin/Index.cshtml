@@ -3,7 +3,7 @@
     ViewData["Title"] = "Admin";
 }
 
-<h2 class="mb-3">Admin: Duyet giay to va them xe</h2>
+<h2 class="mb-3">Admin: Duyệt giấy tở và thêm xe</h2>
 
 @if (TempData["Success"] is string success)
 {
@@ -17,16 +17,16 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-7">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Duyet giay to (CCCD/Bang lai)</div>
+            <div class="card-header fw-semibold">Duyệt giấy tở (CCCD/Bằng lái)</div>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                     <tr>
                         <th>Document</th>
                         <th>User</th>
-                        <th>Loai</th>
+                        <th>Loại</th>
                         <th>Link</th>
-                        <th>Trang thai</th>
+                        <th>Trạng thái</th>
                         <th></th>
                     </tr>
                     </thead>
@@ -43,7 +43,7 @@
                                 <form asp-action="ApproveDocument" method="post">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="documentId" value="@d.DocumentId" />
-                                    <button type="submit" class="btn btn-sm btn-success">Duyet</button>
+                                    <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
                                 </form>
                             </td>
                         </tr>
@@ -56,19 +56,19 @@
 
     <div class="col-lg-5">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Them xe moi</div>
+            <div class="card-header fw-semibold">Thêm xe mới</div>
             <div class="card-body">
                 <form asp-action="AddVehicle" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="OwnerId" value="0" />
                     <div class="col-12">
-                        <label class="form-label">Ten xe</label>
+                        <label class="form-label">Tên xe</label>
                         <input class="form-control" name="VehicleName" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Hang xe</label>
+                        <label class="form-label">Hãng xe</label>
                         <select class="form-select" name="BrandId" required>
-                            <option value="">-- Chon --</option>
+                            <option value="">-- Chọn --</option>
                             @foreach (var b in Model.Brands)
                             {
                                 <option value="@b.BrandId">@b.BrandName</option>
@@ -76,9 +76,9 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Loai xe</label>
+                        <label class="form-label">Loại xe</label>
                         <select class="form-select" name="TypeId" required>
-                            <option value="">-- Chon --</option>
+                            <option value="">-- Chọn --</option>
                             @foreach (var t in Model.Types)
                             {
                                 <option value="@t.TypeId">@t.TypeName</option>
@@ -86,34 +86,39 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">So cho</label>
+                        <label class="form-label">Số chỗ</label>
                         <input class="form-control" name="Seats" type="number" min="2" max="60" value="4" required />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Hop so</label>
+                        <label class="form-label">Hộp số</label>
                         <input class="form-control" name="Transmission" value="Auto" required />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Nhien lieu</label>
-                        <input class="form-control" name="FuelType" value="Gas" required />
+                        <label class="form-label">Nhiên liệu</label>
+                        <select class="form-select" name="FuelType" required>
+                            <option value="">-- Chọn --</option>
+                            <option value="Xăng">Xăng</option>
+                            <option value="Dầu">Dầu</option>
+                            <option value="Điện">Điện</option>
+                        </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Gia/ngay</label>
+                        <label class="form-label">Giá/ngày</label>
                         <input class="form-control" name="PricePerDay" type="number" step="1000" min="1" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Trang thai</label>
+                        <label class="form-label">Trạng thái</label>
                         <select class="form-select" name="Status">
                             <option value="AVAILABLE">AVAILABLE</option>
                             <option value="MAINTENANCE">MAINTENANCE</option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Anh xe (moi URL mot dong)</label>
+                        <label class="form-label">Ảnh xe (mỗi URL một dòng)</label>
                         <textarea class="form-control" name="ImageUrls" rows="4" placeholder="https://.../xe-1.jpg&#10;https://.../xe-2.jpg"></textarea>
                     </div>
                     <div class="col-12">
-                        <label class="form-label d-block">Tien nghi san co</label>
+                        <label class="form-label d-block">Tiện nghi sẵn có</label>
                         <div class="row g-2">
                             @foreach (var am in Model.AmenityOptions)
                             {
@@ -127,7 +132,7 @@
                         </div>
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Them xe</button>
+                        <button type="submit" class="btn btn-primary">Thêm xe</button>
                     </div>
                 </form>
             </div>
@@ -136,7 +141,7 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Duyet cap CCCD + Bang lai theo tung khach hang</div>
+    <div class="card-header fw-semibold">Duyệt cập CCCD + Bằng lái theo từng khách hàng</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
@@ -144,14 +149,14 @@
                 <th>User</th>
                 <th>CCCD</th>
                 <th>DRIVER_LICENSES</th>
-                <th>Xu ly</th>
+                <th>Xử lý</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.PendingVerifications.Count == 0)
             {
                 <tr>
-                    <td colspan="4" class="text-muted">Chua co bo giay to nao cho duyet cap doi.</td>
+                    <td colspan="4" class="text-muted">Chưa có bộ giấy tở nào cho duyệt cấp đôi.</td>
                 </tr>
             }
             else
@@ -163,7 +168,7 @@
                         <td>
                             @if (string.IsNullOrWhiteSpace(v.CccdFileUrl))
                             {
-                                <span class="text-muted">Khong co link</span>
+                                <span class="text-muted">Không có link</span>
                             }
                             else
                             {
@@ -173,11 +178,11 @@
                         <td>
                             @if (string.IsNullOrWhiteSpace(v.DriverLicenseFileUrl))
                             {
-                                <span class="text-muted">Khong co link</span>
+                                <span class="text-muted">Không có link</span>
                             }
                             else
                             {
-                                <a href="@v.DriverLicenseFileUrl" target="_blank" rel="noopener">Xem bang lai</a>
+                                <a href="@v.DriverLicenseFileUrl" target="_blank" rel="noopener">Xem bằng lái</a>
                             }
                         </td>
                         <td>
@@ -186,13 +191,13 @@
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="UserId" value="@v.UserId" />
                                     <input type="hidden" name="IsMatched" value="true" />
-                                    <button type="submit" class="btn btn-sm btn-success">Khop - Duyet</button>
+                                    <button type="submit" class="btn btn-sm btn-success">Khớp - Duyệt</button>
                                 </form>
                                 <form asp-action="ReviewDocuments" method="post">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="UserId" value="@v.UserId" />
                                     <input type="hidden" name="IsMatched" value="false" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Khong khop - Tu choi</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Không khớp - Từ chối</button>
                                 </form>
                             </div>
                         </td>

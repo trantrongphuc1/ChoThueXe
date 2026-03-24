@@ -51,4 +51,9 @@ public interface IRentalRepository
     Task CreateContractDraftAsync(int customerId, int employeeId);
     Task RentVehicleAsync(RentVehicleInputModel input);
     Task MakePaymentAsync(PaymentInputModel input);
+
+    Task<IReadOnlyList<DriveLicenseViewModel>> GetDriveLicensesAsync(int userId);
+    Task SubmitDriveLicenseAsync(int userId, string licenseNumber, DateTime issuedAt, DateTime expireAt, string issuedBy);
+
+    Task LogActivityAsync(int? userId, string action, string details);
 }

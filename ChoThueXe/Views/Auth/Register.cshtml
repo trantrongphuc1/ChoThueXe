@@ -1,12 +1,12 @@
 @model ChoThueXe.Models.Auth.RegisterInputModel
 @{
-    ViewData["Title"] = "Dang ky";
+    ViewData["Title"] = "Đăng ký";
 }
 
 <div class="row justify-content-center mt-4">
     <div class="col-md-6">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Dang ky tai khoan khach hang</div>
+            <div class="card-header fw-semibold">Đăng ký tài khoản khách hàng</div>
             <div class="card-body">
                 @if (ViewData["Error"] is string error)
                 {
@@ -16,7 +16,7 @@
                 <form asp-action="Register" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
-                        <label asp-for="FullName" class="form-label">Ho ten</label>
+                        <label asp-for="FullName" class="form-label">Họ tên</label>
                         <input asp-for="FullName" class="form-control" />
                         <span asp-validation-for="FullName" class="text-danger"></span>
                     </div>
@@ -26,25 +26,25 @@
                         <span asp-validation-for="Email" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="Phone" class="form-label">So dien thoai</label>
+                        <label asp-for="Phone" class="form-label">Số điện thoại</label>
                         <input asp-for="Phone" class="form-control" />
                         <span asp-validation-for="Phone" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="Password" class="form-label">Mat khau</label>
+                        <label asp-for="Password" class="form-label">Mật khẩu</label>
                         <input asp-for="Password" id="registerPassword" type="password" class="form-control" autocomplete="new-password" />
-                        <div class="form-text">Mat khau toi thieu 8 ky tu, co chu hoa, chu thuong va so.</div>
+                        <div class="form-text">Mật khẩu tối thiểu 8 ký tự, có chữ hoa, chữ thường và số.</div>
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
                     <div class="col-md-6">
-                        <label asp-for="ConfirmPassword" class="form-label">Nhap lai mat khau</label>
+                        <label asp-for="ConfirmPassword" class="form-label">Nhập lại mật khẩu</label>
                         <input asp-for="ConfirmPassword" id="registerConfirmPassword" type="password" class="form-control" autocomplete="new-password" />
                         <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                     </div>
                     <div class="col-12 d-flex gap-2 flex-wrap">
-                        <button type="submit" class="btn btn-primary">Dang ky</button>
-                        <button type="button" class="btn btn-outline-info" id="btnSuggestPassword">Goi y mat khau manh</button>
-                        <a asp-action="Login" class="btn btn-outline-secondary">Da co tai khoan</a>
+                        <button type="submit" class="btn btn-primary">Đăng ký</button>
+                        <button type="button" class="btn btn-outline-info" id="btnSuggestPassword">Gợi ý mật khẩu mạnh</button>
+                        <a asp-action="Login" class="btn btn-outline-secondary">Đã có tài khoản</a>
                     </div>
                 </form>
             </div>

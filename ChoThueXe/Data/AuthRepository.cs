@@ -109,6 +109,109 @@ public class AuthRepository : IAuthRepository
         transaction.Commit();
     }
 
+    public async Task<string> GenerateOtpAsync(string email)
+    {
+        const string selectUserSql = @"
+            select user_id
+            from users
+            where lower(email) = lower(:p_email)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        int? userId = null;
+        await using (var selectCommand = new OracleCommand(selectUserSql, connection))
+        {
+            selectCommand.Parameters.Add("p_email", OracleDbType.Varchar2, email, ParameterDirection.Input);
+            var raw = await selectCommand.ExecuteScalarAsync();
+            if (raw is not null && raw != DBNull.Value)
+            {
+                userId = Convert.ToInt32(raw);
+            }
+            else
+            {
+                throw new InvalidOperationException("Email khong ton tai.");
+            }
+        }
+
+        var otpCode = new Random().Next(100000, 999999).ToString();
+        var expiresAt = DateTime.UtcNow.AddMinutes(15);
+
+        const string insertSql = @"
+            insert into otp_codes (otp_id, user_id, email, otp_code, expires_at, is_used, created_at)
+            values ((select nvl(max(otp_id), 0) + 1 from otp_codes), :p_user_id, :p_email, :p_otp_code, :p_expires_at, 0, sysdate)";
+
+        await using (var insertCommand = new OracleCommand(insertSql, connection))
+        {
+            insertCommand.Parameters.Add("p_user_id", OracleDbType.Int32, userId.Value, ParameterDirection.Input);
+            insertCommand.Parameters.Add("p_email", OracleDbType.Varchar2, email, ParameterDirection.Input);
+            insertCommand.Parameters.Add("p_otp_code", OracleDbType.Varchar2, otpCode, ParameterDirection.Input);
+            insertCommand.Parameters.Add("p_expires_at", OracleDbType.Date, expiresAt, ParameterDirection.Input);
+            await insertCommand.ExecuteNonQueryAsync();
+        }
+
+        return otpCode;
+    }
+
+    public async Task<bool> ValidateOtpAsync(string email, string otpCode)
+    {
+        const string selectSql = @"
+            select otp_id
+            from otp_codes
+            where lower(email) = lower(:p_email)
+              and otp_code = :p_otp_code
+              and is_used = 0
+              and expires_at >= sysdate";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        object? otpId;
+        await using (var selectCommand = new OracleCommand(selectSql, connection))
+        {
+            selectCommand.Parameters.Add("p_email", OracleDbType.Varchar2, email, ParameterDirection.Input);
+            selectCommand.Parameters.Add("p_otp_code", OracleDbType.Varchar2, otpCode, ParameterDirection.Input);
+            otpId = await selectCommand.ExecuteScalarAsync();
+        }
+
+        if (otpId is null || otpId == DBNull.Value)
+        {
+            return false;
+        }
+
+        const string updateSql = @"
+            update otp_codes
+            set is_used = 1
+            where otp_id = :p_otp_id";
+
+        await using var updateCommand = new OracleCommand(updateSql, connection);
+        updateCommand.Parameters.Add("p_otp_id", OracleDbType.Int32, Convert.ToInt32(otpId), ParameterDirection.Input);
+        await updateCommand.ExecuteNonQueryAsync();
+
+        return true;
+    }
+
+    public async Task ResetPasswordAsync(string email, string newPassword)
+    {
+        const string sql = @"
+            update users
+            set password = :p_password
+            where lower(email) = lower(:p_email)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_password", OracleDbType.Varchar2, newPassword, ParameterDirection.Input);
+        command.Parameters.Add("p_email", OracleDbType.Varchar2, email, ParameterDirection.Input);
+
+        var affected = await command.ExecuteNonQueryAsync();
+        if (affected == 0)
+        {
+            throw new InvalidOperationException("Email khong ton tai.");
+        }
+    }
+
     private static async Task<int> GetNextUserIdAsync(OracleConnection connection, OracleTransaction transaction)
     {
         const string sql = "select nvl(max(user_id), 0) + 1 from users";

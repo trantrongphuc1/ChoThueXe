@@ -1,12 +1,12 @@
 @model ChoThueXe.Models.Auth.LoginInputModel
 @{
-    ViewData["Title"] = "Dang nhap";
+    ViewData["Title"] = "Đăng nhập";
 }
 
 <div class="row justify-content-center mt-4">
     <div class="col-md-5">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Dang nhap he thong cho thue xe</div>
+            <div class="card-header fw-semibold">Đăng nhập hệ thống cho thuê xe</div>
             <div class="card-body">
                 @if (ViewData["Error"] is string error)
                 {
@@ -30,15 +30,15 @@
                         <span asp-validation-for="Password" class="text-danger"></span>
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary w-100">Dang nhap</button>
+                        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
                     </div>
                 </form>
 
                 <div class="mt-3 small text-muted">
-                    Tai khoan mau: user1@mail.com / 123456 (ADMIN), user3@mail.com / 123456 (EMPLOYEE), user11@mail.com / 123456 (CUSTOMER)
+                    Tài khoản mẫu: user1@mail.com / 123456 (ADMIN), user3@mail.com / 123456 (EMPLOYEE), user11@mail.com / 123456 (CUSTOMER)
                 </div>
                 <div class="mt-2">
-                    <a asp-action="Register">Chua co tai khoan? Dang ky ngay</a>
+                    <a asp-action="Register">Chưa có tài khoản? Đăng ký ngay</a>
                 </div>
             </div>
         </div>

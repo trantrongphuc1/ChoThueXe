@@ -1,9 +1,9 @@
 @model ChoThueXe.Models.Portal.CustomerDashboardViewModel
 @{
-    ViewData["Title"] = "Khach hang - Thue xe";
+    ViewData["Title"] = "Khách hàng - Thuê xe";
 }
 
-<h2 class="mb-3">Khach hang: Xem xe, cap nhat thong tin, dat thue</h2>
+<h2 class="mb-3">Khách hàng: Xem xe, cập nhật thông tin, đặt thuê</h2>
 
 @if (TempData["Success"] is string success)
 {
@@ -19,21 +19,21 @@
 }
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Thong bao tu he thong va Admin</div>
+    <div class="card-header fw-semibold">Thông báo từ hệ thống và Admin</div>
     <div class="table-responsive">
         <table class="table table-sm table-striped mb-0">
             <thead>
             <tr>
-                <th>Thoi gian</th>
-                <th>Tieu de</th>
-                <th>Noi dung</th>
+                <th>Thời gian</th>
+                <th>Tiêu đề</th>
+                <th>Nội dung</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.Notifications.Count == 0)
             {
                 <tr>
-                    <td colspan="3" class="text-muted">Chua co thong bao nao.</td>
+                    <td colspan="3" class="text-muted">Chưa có thông báo nào.</td>
                 </tr>
             }
             else
@@ -53,15 +53,15 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Tim kiem xe theo tu khoa va tien nghi</div>
+    <div class="card-header fw-semibold">Tìm kiếm xe theo từ khóa và tiện nghi</div>
     <div class="card-body">
         <form asp-action="Index" method="get" class="row g-3">
             <div class="col-lg-4">
-                <label class="form-label">Tu khoa</label>
-                <input class="form-control" type="text" name="q" value="@Model.SearchKeyword" placeholder="VD: toyota, sedan, 7 cho" />
+                <label class="form-label">Từ khóa</label>
+                <input class="form-control" type="text" name="q" value="@Model.SearchKeyword" placeholder="VD: toyota, sedan, 7 chỗ" />
             </div>
             <div class="col-lg-8">
-                <label class="form-label d-block">Loc theo tien nghi</label>
+                <label class="form-label d-block">Lọc theo tiện nghi</label>
                 <div class="row g-2">
                     @foreach (var am in Model.AmenityOptions)
                     {
@@ -76,8 +76,8 @@
                 </div>
             </div>
             <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Tim va loc</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Xoa loc</a>
+                <button type="submit" class="btn btn-primary">Tìm và lọc</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
             </div>
         </form>
     </div>
@@ -86,13 +86,13 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">Cap nhat thong tin ca nhan</div>
+            <div class="card-header fw-semibold">Cập nhật thông tin cá nhân</div>
             <div class="card-body">
-                <p class="small text-muted mb-3">Thay doi ho ten/so dien thoai se tao yeu cau cho Admin duyet truoc khi cap nhat.</p>
+                <p class="small text-muted mb-3">Thay đổi họ tên/số điện thoại sẽ tạo yêu cầu cho Admin duyệt trước khi cập nhật.</p>
                 <form asp-action="UpdateProfile" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
-                        <label class="form-label">Ho ten</label>
+                        <label class="form-label">Họ tên</label>
                         <input class="form-control" name="FullName" value="@Model.FullName" required />
                     </div>
                     <div class="col-12">
@@ -100,11 +100,11 @@
                         <input class="form-control" value="@Model.Email" disabled />
                     </div>
                     <div class="col-12">
-                        <label class="form-label">So dien thoai</label>
+                        <label class="form-label">Số điện thoại</label>
                         <input class="form-control" name="Phone" value="@Model.Phone" required />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-primary">Luu thong tin</button>
+                        <button type="submit" class="btn btn-outline-primary">Lưu thông tin</button>
                     </div>
                 </form>
             </div>
@@ -113,23 +113,49 @@
 
     <div class="col-lg-6">
         <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">Upload giay to (CCCD/Bang lai)</div>
+            <div class="card-header fw-semibold">Upload giấy tở (CCCD/Bằng lái)</div>
             <div class="card-body">
                 <form asp-action="SubmitDocument" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
-                        <label class="form-label">Loai giay to</label>
+                        <label class="form-label">Loại giấy tở</label>
                         <select name="DocType" class="form-select">
                             <option value="CCCD">CCCD</option>
                             <option value="DRIVER_LICENSES">DRIVER_LICENSES</option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Link tep (neu co)</label>
+                        <label class="form-label">Link tệp (nếu có)</label>
                         <input class="form-control" name="FileUrl" placeholder="https://..." />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-secondary">Gui duyet</button>
+                        <button type="submit" class="btn btn-outline-secondary">Gửi duyệt</button>
+                    </div>
+                </form>
+
+                <hr />
+
+                <h6>Gửi thông tin bằng lái (lưu trong drive_licenses)</h6>
+                <form asp-action="SubmitDriveLicense" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-12">
+                        <label class="form-label">Số bằng lái</label>
+                        <input class="form-control" name="LicenseNumber" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Cơ quan cấp</label>
+                        <input class="form-control" name="IssuedBy" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày cấp</label>
+                        <input type="date" class="form-control" name="IssuedAt" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày hết hạn</label>
+                        <input type="date" class="form-control" name="ExpireAt" required />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Gửi bằng lái</button>
                     </div>
                 </form>
             </div>
@@ -138,14 +164,14 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Review xe sau khi hoan tat hop dong</div>
+    <div class="card-header fw-semibold">Review xe sau khi hoàn tất hợp đồng</div>
     <div class="card-body">
         <form asp-action="SubmitReview" method="post" class="row g-3 align-items-end">
             @Html.AntiForgeryToken()
             <div class="col-lg-4">
-                <label class="form-label">Hop dong co the review</label>
+                <label class="form-label">Hợp đồng có thể review</label>
                 <select name="ContractId" class="form-select" required>
-                    <option value="">-- Chon hop dong --</option>
+                    <option value="">-- Chọn hợp đồng --</option>
                     @foreach (var rc in Model.ReviewableContracts)
                     {
                         <option value="@rc.ContractId">#@rc.ContractId - @rc.VehicleName - @rc.EndDate:yyyy-MM-dd</option>
@@ -153,7 +179,7 @@
                 </select>
             </div>
             <div class="col-lg-2">
-                <label class="form-label">Danh gia</label>
+                <label class="form-label">Danh giá</label>
                 <select name="Rating" class="form-select" required>
                     <option value="5">5 sao</option>
                     <option value="4">4 sao</option>
@@ -163,11 +189,11 @@
                 </select>
             </div>
             <div class="col-lg-4">
-                <label class="form-label">Nhan xet</label>
-                <input class="form-control" name="Comment" maxlength="1000" placeholder="Trai nghiem cua ban ve xe..." />
+                <label class="form-label">Nhận xét</label>
+                <input class="form-control" name="Comment" maxlength="1000" placeholder="Trải nghiệm của bạn về xe..." />
             </div>
             <div class="col-lg-2">
-                <button type="submit" class="btn btn-success w-100">Gui review</button>
+                <button type="submit" class="btn btn-success w-100">Gửi review</button>
             </div>
         </form>
     </div>
@@ -176,16 +202,16 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Preview chi phi</div>
+            <div class="card-header fw-semibold">Preview chi phí</div>
             <div class="card-body">
                 <form asp-action="Preview" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="CustomerId" value="0" />
                     <input type="hidden" name="EmployeeId" value="0" />
                     <div class="col-12">
-                        <label class="form-label">Chon xe</label>
+                        <label class="form-label">Chọn xe</label>
                         <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chon xe --</option>
+                            <option value="">-- Chọn xe --</option>
                             @foreach (var v in Model.Vehicles)
                             {
                                 <option value="@v.VehicleId">@v.VehicleName - @v.BrandName - @v.PricePerDay.ToString("N0") VND/ngay</option>
@@ -193,15 +219,15 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay bat dau</label>
+                        <label class="form-label">Ngày bắt đầu</label>
                         <input type="date" name="StartDate" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay ket thuc</label>
+                        <label class="form-label">Ngày kết thúc</label>
                         <input type="date" name="EndDate" class="form-control" required />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-dark">Tinh truoc chi phi</button>
+                        <button type="submit" class="btn btn-outline-dark">Tính trước chi phí</button>
                     </div>
                 </form>
             </div>
@@ -210,16 +236,16 @@
 
     <div class="col-lg-6">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Dat thue xe</div>
+            <div class="card-header fw-semibold">Đặt thuê xe</div>
             <div class="card-body">
                 <form asp-action="Rent" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="CustomerId" value="0" />
                     <input type="hidden" name="EmployeeId" value="0" />
                     <div class="col-12">
-                        <label class="form-label">Chon xe</label>
+                        <label class="form-label">Chọn xe</label>
                         <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chon xe --</option>
+                            <option value="">-- Chọn xe --</option>
                             @foreach (var v in Model.Vehicles)
                             {
                                 <option value="@v.VehicleId">@v.VehicleName - @v.BrandName - @v.PricePerDay.ToString("N0") VND/ngay</option>
@@ -227,15 +253,15 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay bat dau</label>
+                        <label class="form-label">Ngày bắt đầu</label>
                         <input type="date" name="StartDate" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay ket thuc</label>
+                        <label class="form-label">Ngày kết thúc</label>
                         <input type="date" name="EndDate" class="form-control" required />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Dat thue</button>
+                        <button type="submit" class="btn btn-primary">Đặt thuê</button>
                     </div>
                 </form>
             </div>
@@ -244,15 +270,15 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Nhan tin voi Admin</div>
+    <div class="card-header fw-semibold">Nhận tin với Admin</div>
     <div class="card-body">
         <form asp-action="SendMessage" method="post" class="row g-3">
             @Html.AntiForgeryToken()
             <div class="col-lg-10">
-                <input class="form-control" name="Content" maxlength="1000" placeholder="Can ho tro gi ve xe, hop dong, thanh toan..." required />
+                <input class="form-control" name="Content" maxlength="1000" placeholder="Cần hỗ trợ gì về xe, hợp đồng, thanh toán..." required />
             </div>
             <div class="col-lg-2">
-                <button type="submit" class="btn btn-outline-primary w-100">Gui</button>
+                <button type="submit" class="btn btn-outline-primary w-100">Gửi</button>
             </div>
         </form>
     </div>
@@ -260,17 +286,17 @@
         <table class="table table-sm table-striped mb-0">
             <thead>
             <tr>
-                <th>Thoi gian</th>
-                <th>Tin nhan</th>
-                <th>Phan hoi Admin</th>
-                <th>Trang thai</th>
+                <th>Thời gian</th>
+                <th>Tin nhắn</th>
+                <th>Phản hồi Admin</th>
+                <th>Trạng thái</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.Messages.Count == 0)
             {
                 <tr>
-                    <td colspan="4" class="text-muted">Ban chua gui tin nhan nao.</td>
+                    <td colspan="4" class="text-muted">Bạn chưa gửi tin nhắn nào.</td>
                 </tr>
             }
             else
@@ -283,7 +309,7 @@
                         <td>
                             @if (string.IsNullOrWhiteSpace(m.ReplyContent))
                             {
-                                <span class="text-muted">Dang cho tra loi</span>
+                                <span class="text-muted">Đang chờ trả lời</span>
                             }
                             else
                             {
@@ -300,23 +326,23 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Danh sach xe yeu thich</div>
+    <div class="card-header fw-semibold">Danh sách xe yêu thích</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
             <tr>
                 <th>Xe</th>
-                <th>Hang</th>
-                <th>Loai</th>
-                <th>Tien nghi</th>
-                <th>Gia/ngay</th>
+                <th>Hãng</th>
+                <th>Loại</th>
+                <th>Tiện nghi</th>
+                <th>Giá/ngày</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.FavoriteVehicles.Count == 0)
             {
                 <tr>
-                    <td colspan="5" class="text-muted">Ban chua co xe nao trong danh sach yeu thich.</td>
+                    <td colspan="5" class="text-muted">Bạn chưa có xe nào trong danh sách yêu thích.</td>
                 </tr>
             }
             else
@@ -329,12 +355,7 @@
                             {
                                 <img src="@f.PrimaryImageUrl" alt="@f.VehicleName" style="width:64px;height:44px;object-fit:cover;border-radius:6px;margin-right:8px;" />
                             }
-                            @f.VehicleName
-                        </td>
-                        <td>@f.BrandName</td>
-                        <td>@f.TypeName</td>
-                        <td>@(string.IsNullOrWhiteSpace(f.AmenitiesText) ? "-" : f.AmenitiesText)</td>
-                        <td>@f.PricePerDay.ToString("N0")</td>
+                            <a href="@f.PrimaryImageUrl" target="_blank" rel="noopener">Xem CCCD</a>
                     </tr>
                 }
             }
@@ -344,14 +365,14 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Thanh toan hop dong cua toi</div>
+    <div class="card-header fw-semibold">Thanh toán hợp đồng của tôi</div>
     <div class="card-body">
         <form asp-action="Pay" method="post" class="row g-3 align-items-end">
             @Html.AntiForgeryToken()
             <div class="col-md-6">
-                <label class="form-label">Hop dong PENDING</label>
+                <label class="form-label">Hợp đồng PENDING</label>
                 <select name="ContractId" class="form-select" required>
-                    <option value="">-- Chon hop dong --</option>
+                    <option value="">-- Chọn hợp đồng --</option>
                     @foreach (var p in Model.PendingContracts)
                     {
                         <option value="@p.ContractId">#@p.ContractId - Tong: @p.TotalAmount.ToString("N0") - Da tra: @p.PaidAmount.ToString("N0") - Con: @p.DueAmount.ToString("N0")</option>
@@ -359,30 +380,30 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">So tien tra</label>
+                <label class="form-label">Số tiền trả</label>
                 <input type="number" step="1000" min="1" name="Amount" class="form-control" required />
             </div>
             <div class="col-md-3">
-                <button type="submit" class="btn btn-success w-100">Thanh toan</button>
+                <button type="submit" class="btn btn-success w-100">Thanh toán</button>
             </div>
         </form>
     </div>
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Xe dang co (vw_vehicle_detail)</div>
+    <div class="card-header fw-semibold">Xe đang có (vw_vehicle_detail)</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
             <tr>
-                <th>Anh</th>
+                <th>Ảnh</th>
                 <th>ID</th>
-                <th>Ten xe</th>
-                <th>Hang</th>
-                <th>Loai</th>
-                <th>Tien nghi</th>
-                <th>Gia/ngay</th>
-                <th>Yeu thich</th>
+                <th>Tên xe</th>
+                <th>Hãng</th>
+                <th>Loại</th>
+                <th>Tiện nghi</th>
+                <th>Giá/ngày</th>
+                <th>Yêu thích</th>
             </tr>
             </thead>
             <tbody>
@@ -396,7 +417,7 @@
                         }
                         else
                         {
-                            <span class="text-muted">Khong co</span>
+                            <span class="text-muted">Không có</span>
                         }
                     </td>
                     <td>@v.VehicleId</td>
@@ -409,8 +430,8 @@
                         <form asp-action="ToggleFavorite" method="post">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                            <button type="submit" class="btn btn-sm @(v.IsFavorite ? "btn-danger" : "btn-outline-secondary")" title="Yeu thich">
-                                @(v.IsFavorite ? "Tim" : "Them")
+                            <button type="submit" class="btn btn-sm @(v.IsFavorite ? "btn-danger" : "btn-outline-secondary")" title="Yêu thích">
+                                @(v.IsFavorite ? "Bỏ tím" : "Thêm")
                             </button>
                         </form>
                     </td>
@@ -422,17 +443,17 @@
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-header fw-semibold">Hop dong cua toi</div>
+    <div class="card-header fw-semibold">Hợp đồng của tôi</div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
             <tr>
                 <th>ID</th>
                 <th>Xe</th>
-                <th>Tu ngay</th>
-                <th>Den ngay</th>
-                <th>Tong tien</th>
-                <th>Trang thai</th>
+                <th>Từ ngày</th>
+                <th>Đến ngày</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
             </tr>
             </thead>
             <tbody>

@@ -84,6 +84,29 @@ public class CustomerController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitDriveLicense(SubmitDriveLicenseInputModel input)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Thong tin bang lai khong hop le.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        try
+        {
+            await _rentalRepository.SubmitDriveLicenseAsync(User.GetUserId(), input.LicenseNumber, input.IssuedAt, input.ExpireAt, input.IssuedBy);
+            TempData["Success"] = "Da gui thong tin bang lai, vui long doi Admin duyet.";
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = $"Loi gui bang lai: {ex.Message}";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Preview(RentVehicleInputModel input)
     {
         if (input.StartDate == default || input.EndDate == default || input.StartDate > input.EndDate)

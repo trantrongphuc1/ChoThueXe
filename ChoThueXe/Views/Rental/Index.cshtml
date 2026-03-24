@@ -1,10 +1,10 @@
 @model ChoThueXe.Models.Rental.RentalDashboardViewModel
 @{
-    ViewData["Title"] = "Quan ly thue xe";
+    ViewData["Title"] = "Quản lý thuê xe";
 }
 
 <div class="d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0">He thong Cho Thue Xe</h2>
+    <h2 class="mb-0">Hệ thống Cho Thuê Xe</h2>
     <span class="badge text-bg-primary">Oracle Procedure + Trigger + View</span>
 </div>
 
@@ -24,14 +24,14 @@
 <div class="row g-4">
     <div class="col-lg-6">
         <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">B1 - Tao hop dong nhap (sp_create_contract)</div>
+            <div class="card-header fw-semibold">B1 - Tạo hợp đồng nhập (sp_create_contract)</div>
             <div class="card-body">
                 <form asp-action="CreateDraft" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
-                        <label class="form-label">Khach hang</label>
+                        <label class="form-label">Khách hàng</label>
                         <select name="CustomerId" class="form-select" required>
-                            <option value="">-- Chon khach hang --</option>
+                            <option value="">-- Chọn khách hàng --</option>
                             @foreach (var user in Model.Users)
                             {
                                 <option value="@user.UserId">@user.UserId - @user.FullName (@user.Email)</option>
@@ -39,9 +39,9 @@
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Nhan vien phu trach</label>
+                        <label class="form-label">Nhân viên phụ trách</label>
                         <select name="EmployeeId" class="form-select" required>
-                            <option value="">-- Chon nhan vien --</option>
+                            <option value="">-- Chọn nhân viên --</option>
                             @foreach (var user in Model.Users)
                             {
                                 <option value="@user.UserId">@user.UserId - @user.FullName</option>
@@ -49,7 +49,7 @@
                         </select>
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-primary">Tao Draft Contract</button>
+                        <button type="submit" class="btn btn-outline-primary">Tạo Draft Contract</button>
                     </div>
                 </form>
             </div>
@@ -58,30 +58,30 @@
 
     <div class="col-lg-6">
         <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">B2-B4 - Thue xe (fn_is_user_verified + sp_rent_vehicle)</div>
+            <div class="card-header fw-semibold">B2-B4 - Thuê xe (fn_is_user_verified + sp_rent_vehicle)</div>
             <div class="card-body">
                 <form asp-action="Preview" method="post" class="row g-3 mb-2">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
                         <label class="form-label">Xe</label>
                         <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chon xe --</option>
+                            <option value="">-- Chọn xe --</option>
                             @foreach (var v in Model.Vehicles)
                             {
-                                <option value="@v.VehicleId">@v.VehicleId - @v.VehicleName (@v.PricePerDay.ToString("N0") VND/ngay)</option>
+                                <option value="@v.VehicleId">@v.VehicleId - @v.VehicleName (@v.PricePerDay.ToString("N0") VND/ngày)</option>
                             }
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay bat dau</label>
+                        <label class="form-label">Ngày bắt đầu</label>
                         <input type="date" name="StartDate" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay ket thuc</label>
+                        <label class="form-label">Ngày kết thúc</label>
                         <input type="date" name="EndDate" class="form-control" required />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-outline-secondary">Preview gia (fn_calculate_rental_cost)</button>
+                        <button type="submit" class="btn btn-outline-secondary">Preview giá (fn_calculate_rental_cost)</button>
                     </div>
                 </form>
 
@@ -90,9 +90,9 @@
                 <form asp-action="Rent" method="post" class="row g-3">
                     @Html.AntiForgeryToken()
                     <div class="col-12">
-                        <label class="form-label">Khach hang</label>
+                        <label class="form-label">Khách hàng</label>
                         <select name="CustomerId" class="form-select" required>
-                            <option value="">-- Chon khach hang --</option>
+                            <option value="">-- Chọn khách hàng --</option>
                             @foreach (var user in Model.Users)
                             {
                                 <option value="@user.UserId">@user.UserId - @user.FullName</option>
@@ -100,9 +100,9 @@
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Nhan vien phu trach</label>
+                        <label class="form-label">Nhân viên phụ trách</label>
                         <select name="EmployeeId" class="form-select" required>
-                            <option value="">-- Chon nhan vien --</option>
+                            <option value="">-- Chọn nhân viên --</option>
                             @foreach (var user in Model.Users)
                             {
                                 <option value="@user.UserId">@user.UserId - @user.FullName</option>
@@ -112,23 +112,23 @@
                     <div class="col-12">
                         <label class="form-label">Xe</label>
                         <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chon xe --</option>
+                            <option value="">-- Chọn xe --</option>
                             @foreach (var v in Model.Vehicles)
                             {
-                                <option value="@v.VehicleId">@v.VehicleId - @v.VehicleName (@v.PricePerDay.ToString("N0") VND/ngay)</option>
+                                <option value="@v.VehicleId">@v.VehicleId - @v.VehicleName (@v.PricePerDay.ToString("N0") VND/ngày)</option>
                             }
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay bat dau</label>
+                        <label class="form-label">Ngày bắt đầu</label>
                         <input type="date" name="StartDate" class="form-control" required />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Ngay ket thuc</label>
+                        <label class="form-label">Ngày kết thúc</label>
                         <input type="date" name="EndDate" class="form-control" required />
                     </div>
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Thuc hien thue xe</button>
+                        <button type="submit" class="btn btn-primary">Thực hiện thuê xe</button>
                     </div>
                 </form>
             </div>
@@ -137,26 +137,26 @@
 
     <div class="col-lg-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">B5 - Thanh toan (sp_make_payment + trg_payment_update_contract)</div>
+            <div class="card-header fw-semibold">B5 - Thanh toán (sp_make_payment + trg_payment_update_contract)</div>
             <div class="card-body">
                 <form asp-action="Pay" method="post" class="row g-3 align-items-end">
                     @Html.AntiForgeryToken()
                     <div class="col-md-4">
-                        <label class="form-label">Hop dong dang PENDING</label>
+                        <label class="form-label">Hợp đồng đang PENDING</label>
                         <select name="ContractId" class="form-select" required>
-                            <option value="">-- Chon hop dong --</option>
+                            <option value="">-- Chọn hợp đồng --</option>
                             @foreach (var c in Model.PendingContracts)
                             {
-                                <option value="@c.ContractId">#@c.ContractId - @c.CustomerName - Con lai: @c.DueAmount.ToString("N0")</option>
+                                <option value="@c.ContractId">#@c.ContractId - @c.CustomerName - Còn lại: @c.DueAmount.ToString("N0")</option>
                             }
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">So tien thanh toan</label>
+                        <label class="form-label">Số tiền thanh toán</label>
                         <input type="number" step="1000" min="1" name="Amount" class="form-control" required />
                     </div>
                     <div class="col-md-3">
-                        <button type="submit" class="btn btn-success">Thanh toan</button>
+                        <button type="submit" class="btn btn-success">Thanh toán</button>
                     </div>
                 </form>
             </div>
@@ -165,16 +165,16 @@
 
     <div class="col-lg-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Danh sach xe (vw_vehicle_detail)</div>
+            <div class="card-header fw-semibold">Danh sách xe (vw_vehicle_detail)</div>
             <div class="table-responsive">
                 <table class="table table-striped mb-0">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Ten xe</th>
-                        <th>Hang</th>
-                        <th>Loai</th>
-                        <th>Gia/ngay</th>
+                        <th>Tên xe</th>
+                        <th>Hãng</th>
+                        <th>Loại</th>
+                        <th>Giá/ngày</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -196,18 +196,18 @@
 
     <div class="col-lg-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Hop dong tong hop (vw_contract_full)</div>
+            <div class="card-header fw-semibold">Hợp đồng tổng hợp (vw_contract_full)</div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Khach hang</th>
+                        <th>Khách hàng</th>
                         <th>Xe</th>
-                        <th>Tu ngay</th>
-                        <th>Den ngay</th>
-                        <th>Tong tien</th>
-                        <th>Trang thai</th>
+                        <th>Từ ngày</th>
+                        <th>Đến ngày</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -231,7 +231,7 @@
 
     <div class="col-lg-12">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Thong ke doanh thu (vw_revenue)</div>
+            <div class="card-header fw-semibold">Thống kê doanh thu (vw_revenue)</div>
             <div class="table-responsive">
                 <table class="table table-bordered mb-0">
                     <thead>

@@ -23,12 +23,12 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Customer" asp-action="Index">Khach Hang</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Customer" asp-action="Index">Khách Hàng</a>
                             </li>
                             @if (User.IsInRole("EMPLOYEE"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Nhan Vien</a>
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Nhân Viên</a>
                                 </li>
                             }
                             @if (User.IsInRole("ADMIN"))
@@ -44,7 +44,7 @@
                         {
                             var profileController = User.IsInRole("ADMIN") ? "Admin" : User.IsInRole("EMPLOYEE") ? "Employee" : "Customer";
                             <li class="nav-item d-flex align-items-center me-2 text-muted">
-                                <a class="profile-avatar-link" asp-controller="@profileController" asp-action="Index" title="Trang ca nhan">
+                                <a class="profile-avatar-link" asp-controller="@profileController" asp-action="Index" title="Trang cá nhân">
                                     @((User.Identity?.Name ?? "U").Trim()[0].ToString().ToUpperInvariant())
                                 </a>
                             </li>
@@ -54,17 +54,17 @@
                             <li class="nav-item">
                                 <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Dang xuat</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Đăng xuất</button>
                                 </form>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">Dang nhap</a>
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Register">Dang ky</a>
+                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Register">Đăng ký</a>
                             </li>
                         }
                     </ul>

@@ -17,6 +17,7 @@ public class RentalRepository : IRentalRepository
     private const string NotificationsTable = "notifications";
     private const string VehicleReviewsTable = "vehicle_reviews";
     private const string ProfileUpdateRequestsTable = "profile_update_requests";
+    private const string ActivityLogsTable = "activity_logs";
 
     private static readonly IReadOnlyList<AmenityOptionViewModel> DefaultAmenityOptions =
     [
@@ -82,20 +83,28 @@ public class RentalRepository : IRentalRepository
         await using var command = new OracleCommand(sql, connection);
         command.Parameters.Add("p_user_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
 
-        await using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new VehicleDetailViewModel
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
-                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                BrandName = Convert.ToString(reader["BRAND_NAME"]) ?? string.Empty,
-                TypeName = Convert.ToString(reader["TYPE_NAME"]) ?? string.Empty,
-                PricePerDay = Convert.ToDecimal(reader["PRICE_PER_DAY"]),
-                AmenitiesText = Convert.ToString(reader["AMENITIES_TEXT"]) ?? string.Empty,
-                PrimaryImageUrl = Convert.ToString(reader["PRIMARY_IMAGE_URL"]) ?? string.Empty,
-                IsFavorite = true
-            });
+                result.Add(new VehicleDetailViewModel
+                {
+                    VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    BrandName = Convert.ToString(reader["BRAND_NAME"]) ?? string.Empty,
+                    TypeName = Convert.ToString(reader["TYPE_NAME"]) ?? string.Empty,
+                    PricePerDay = Convert.ToDecimal(reader["PRICE_PER_DAY"]),
+                    AmenitiesText = Convert.ToString(reader["AMENITIES_TEXT"]) ?? string.Empty,
+                    PrimaryImageUrl = Convert.ToString(reader["PRIMARY_IMAGE_URL"]) ?? string.Empty,
+                    IsFavorite = true
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // favorite_vehicles table may not exist in early db provisioning.
+            return [];
         }
 
         return result;
@@ -628,6 +637,71 @@ public class RentalRepository : IRentalRepository
         }
 
         return result;
+    }
+
+    public async Task<IReadOnlyList<DriveLicenseViewModel>> GetDriveLicensesAsync(int userId)
+    {
+        const string sql = @"
+            select drive_license_id, user_id, license_number, issued_by, issued_at, expire_at, created_at
+            from drive_licenses
+            where user_id = :p_user_id
+            order by created_at desc";
+
+        var result = new List<DriveLicenseViewModel>();
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new DriveLicenseViewModel
+                {
+                    DriveLicenseId = Convert.ToInt32(reader["DRIVE_LICENSE_ID"]),
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    LicenseNumber = Convert.ToString(reader["LICENSE_NUMBER"]) ?? string.Empty,
+                    IssuedBy = Convert.ToString(reader["ISSUED_BY"]) ?? string.Empty,
+                    IssuedAt = reader["ISSUED_AT"] == DBNull.Value ? null : Convert.ToDateTime(reader["ISSUED_AT"]),
+                    ExpireAt = reader["EXPIRE_AT"] == DBNull.Value ? null : Convert.ToDateTime(reader["EXPIRE_AT"]),
+                    CreatedAt = Convert.ToDateTime(reader["CREATED_AT"])
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
+        }
+
+        return result;
+    }
+
+    public async Task SubmitDriveLicenseAsync(int userId, string licenseNumber, DateTime issuedAt, DateTime expireAt, string issuedBy)
+    {
+        const string sql = @"
+            insert into drive_licenses (
+                drive_license_id, user_id, license_number, issued_by, issued_at, expire_at, created_at
+            ) values (
+                (select nvl(max(drive_license_id), 0) + 1 from drive_licenses),
+                :p_user_id, :p_license_number, :p_issued_by, :p_issued_at, :p_expire_at, sysdate
+            )";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+        command.Parameters.Add("p_license_number", OracleDbType.Varchar2, licenseNumber, ParameterDirection.Input);
+        command.Parameters.Add("p_issued_by", OracleDbType.Varchar2, issuedBy, ParameterDirection.Input);
+        command.Parameters.Add("p_issued_at", OracleDbType.Date, issuedAt, ParameterDirection.Input);
+        command.Parameters.Add("p_expire_at", OracleDbType.Date, expireAt, ParameterDirection.Input);
+
+        await command.ExecuteNonQueryAsync();
+        await LogActivityAsync(userId, "SubmitDriveLicense", $"LicenseNumber={licenseNumber}, IssuedBy={issuedBy}");
     }
 
     public async Task<IReadOnlyList<BrandOptionViewModel>> GetBrandsAsync()
@@ -1248,6 +1322,8 @@ public class RentalRepository : IRentalRepository
             userId,
             "Ket qua cap nhat thong tin",
             isApproved ? "Yeu cau sua thong tin cua ban da duoc duyet." : "Yeu cau sua thong tin cua ban da bi tu choi.");
+
+        await LogActivityAsync(approvedBy, "ReviewProfileUpdateRequest", $"RequestId={requestId}, UserId={userId}, Approved={isApproved}");
     }
 
     public async Task SubmitUserDocumentAsync(int userId, SubmitDocumentInputModel input)
@@ -1267,6 +1343,7 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_file_url", OracleDbType.Varchar2, input.FileUrl, ParameterDirection.Input);
 
         await command.ExecuteNonQueryAsync();
+        await LogActivityAsync(userId, "SubmitDocument", $"DocType={normalizedDocType}, Url={input.FileUrl}");
     }
 
     public async Task ApproveDocumentAsync(int documentId, int approvedBy)
@@ -1306,6 +1383,7 @@ public class RentalRepository : IRentalRepository
         if (userId.HasValue)
         {
             await AddNotificationSafeAsync(connection, userId.Value, "Duyet giay to", "Admin da duyet giay to cua ban.");
+            await LogActivityAsync(userId.Value, "ApproveDocument", $"DocumentId={documentId}, ApprovedBy={approvedBy}");
         }
     }
 
@@ -1337,6 +1415,7 @@ public class RentalRepository : IRentalRepository
             : "CCCD va bang lai chua khop, vui long upload lai giay to ro rang hon.";
 
         await AddNotificationSafeAsync(connection, userId, "Ket qua duyet giay to", message);
+        await LogActivityAsync(approvedBy, "ReviewUserDocuments", $"UserId={userId}, IsMatched={isMatched}");
     }
 
     public async Task AddVehicleAsync(CreateVehicleInputModel input)
@@ -1437,6 +1516,8 @@ public class RentalRepository : IRentalRepository
         {
             // Ignore if notification storage is not provisioned yet.
         }
+
+        await LogActivityAsync(input.OwnerId, "AddVehicle", $"VehicleId={vehicleId}, Name={input.VehicleName}, FuelType={input.FuelType}");
     }
 
     public async Task ToggleFavoriteVehicleAsync(int customerId, int vehicleId)
@@ -1468,7 +1549,14 @@ public class RentalRepository : IRentalRepository
         mutateCommand.Parameters.Add("p_user_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
         mutateCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
 
-        await mutateCommand.ExecuteNonQueryAsync();
+        try
+        {
+            await mutateCommand.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Ignore missing favorites table in this deployment environment.
+        }
     }
 
     public async Task SendMessageToAdminAsync(int customerId, string content)
@@ -1713,6 +1801,29 @@ public class RentalRepository : IRentalRepository
             SentAt = Convert.ToDateTime(reader["SENT_AT"]),
             RepliedAt = reader["REPLIED_AT"] == DBNull.Value ? null : Convert.ToDateTime(reader["REPLIED_AT"])
         };
+    }
+
+    public async Task LogActivityAsync(int? userId, string action, string details)
+    {
+        const string sql = @"
+            insert into activity_logs (activity_id, user_id, action, details, created_at)
+            values ((select nvl(max(activity_id), 0) + 1 from activity_logs), :p_user_id, :p_action, :p_details, sysdate)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_user_id", OracleDbType.Int32, userId.HasValue ? userId.Value : (object?)null, ParameterDirection.Input);
+            command.Parameters.Add("p_action", OracleDbType.Varchar2, action, ParameterDirection.Input);
+            command.Parameters.Add("p_details", OracleDbType.Varchar2, details, ParameterDirection.Input);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Activity logs table may not exist yet in this environment.
+        }
     }
 
     private static bool IsMissingObjectError(OracleException exception)
