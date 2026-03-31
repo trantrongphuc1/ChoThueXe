@@ -1,0 +1,518 @@
+@{
+    ViewData["Title"] = "Câu hỏi thường gặp";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .faq-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .faq-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .faq-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .faq-header p {
+        font-size: 16px;
+        color: var(--text-secondary);
+    }
+
+    .faq-search {
+        margin-bottom: 40px;
+    }
+
+    .search-box {
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 16px 40px 16px 16px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 16px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        color: var(--text-secondary);
+    }
+
+    .faq-categories {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .category-btn {
+        padding: 8px 16px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .category-btn:hover,
+    .category-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .faq-section {
+        margin-bottom: 40px;
+    }
+
+    .faq-section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .faq-item {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .faq-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .faq-question:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .faq-question-text {
+        font-weight: 600;
+        color: var(--text-primary);
+        flex: 1;
+    }
+
+    .faq-toggle {
+        font-size: 18px;
+        color: var(--accent);
+        transition: transform 0.3s ease;
+    }
+
+    .faq-item.open .faq-toggle {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border-top: 1px solid var(--border);
+    }
+
+    .faq-item.open .faq-answer {
+        max-height: 1000px;
+    }
+
+    .faq-answer-text {
+        padding: 20px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .faq-answer-text strong {
+        color: var(--text-primary);
+    }
+
+    .faq-answer ul {
+        margin-left: 20px;
+        margin-top: 8px;
+    }
+
+    .faq-answer li {
+        margin-bottom: 6px;
+    }
+
+    .contact-cta {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .contact-cta h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .contact-cta p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .contact-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    @@media (max-width: 768px) {
+        .faq-container {
+            padding: 0 16px;
+        }
+
+        .faq-header h1 {
+            font-size: 28px;
+        }
+
+        .faq-question {
+            padding: 16px;
+        }
+
+        .contact-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="faq-container">
+    <div class="faq-header">
+        <h1>❓ Câu hỏi thường gặp</h1>
+        <p>Tìm câu trả lời cho những câu hỏi phổ biến nhất về dịch vụ của chúng tôi</p>
+    </div>
+
+    <!-- Search -->
+    <div class="faq-search">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Tìm kiếm câu hỏi..." oninput="searchFAQ()" />
+            <span class="search-icon">🔍</span>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="faq-categories">
+        <button class="category-btn active" onclick="filterCategory('all')">Tất cả</button>
+        <button class="category-btn" onclick="filterCategory('booking')">Đặt xe</button>
+        <button class="category-btn" onclick="filterCategory('payment')">Thanh toán</button>
+        <button class="category-btn" onclick="filterCategory('rental')">Thuê xe</button>
+        <button class="category-btn" onclick="filterCategory('support')">Hỗ trợ</button>
+    </div>
+
+    <!-- Booking FAQs -->
+    <div class="faq-section" data-category="booking">
+        <div class="faq-section-title">📍 Về Đặt Xe</div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Làm sao để đặt xe trên ChoThueXe?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Để đặt xe, bạn cần:
+                    <ul>
+                        <li>Đăng ký tài khoản hoặc đăng nhập</li>
+                        <li>Chọn ngày, giờ lấy và trả xe</li>
+                        <li>Chọn loại xe phù hợp</li>
+                        <li>Điền thông tin khách hàng</li>
+                        <li>Chọn phương thức thanh toán</li>
+                        <li>Xác nhận đơn hàng</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Có thể đặt xe cho người khác không?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Có thể. Bạn có thể đặt xe cho người khác miễn sao người đó có bằng lái xe còn giá trị. Tuy nhiên, người lái xe phải có mặt để ký hợp đồng khi nhận xe.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Tôi có thể thay đổi ngày đặt xe không?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Bạn có thể thay đổi ngày đặt xe miễn sao thực hiện trước 24 giờ so với thời gian lấy xe. Để thay đổi, vào "Đơn hàng của tôi" và nhấp "Chỉnh sửa".
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment FAQs -->
+    <div class="faq-section" data-category="payment">
+        <div class="faq-section-title">💳 Về Thanh Toán</div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Những phương thức thanh toán nào được chấp nhận?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Chúng tôi chấp nhận:
+                    <ul>
+                        <li>Thẻ tín dụng/Ghi nợ (Visa, Mastercard)</li>
+                        <li>Mobile payments (Momo, Zalopay, Grab Pay)</li>
+                        <li>Chuyển khoản ngân hàng</li>
+                        <li>Ví điện tử</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Khi nào tiền của tôi sẽ bị trừ?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Tiền sẽ bị trừ khi bạn xác nhận đơn hàng. Một phần giá tiền (thường là 30%) được ghi như tiền đặt cọc, và phần còn lại sẽ được thanh toán khi bạn nhận xe.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Chính sách hoàn tiền là gì?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    <strong>Hoàn tiền 100%:</strong> Hủy trước 24 giờ<br>
+                    <strong>Hoàn tiền 90%:</strong> Hủy 12-24 giờ<br>
+                    <strong>Hoàn tiền 75%:</strong> Hủy 6-12 giờ<br>
+                    <strong>Hoàn tiền 50%:</strong> Hủy dưới 6 giờ
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental FAQs -->
+    <div class="faq-section" data-category="rental">
+        <div class="faq-section-title">🚗 Về Thuê Xe</div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Những giấy tờ nào cần để thuê xe?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Bạn cần mang theo:
+                    <ul>
+                        <li>CMND/Hộ chiếu còn giá trị</li>
+                        <li>Bằng lái xe quốc tế hoặc bằng lái Việt Nam có bảo hiểm</li>
+                        <li>Thẻ tín dụng để ký hợp đồng</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Xe của bạn có bảo hiểm không?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Tất cả xe đều có bảo hiểm bắt buộc (TNDS). Bạn có thể mua thêm bảo hiểm toàn diện (Dasco) để được bảo vệ tốt hơn với giá ưu đãi.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Có giới hạn quãng đường không?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Không có giới hạn quãng đường trong nước. Tuy nhiên, nếu bạn định đi ra nước ngoài, vui lòng thông báo trước để chúng tôi kiểm tra giấy tờ xe.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support FAQs -->
+    <div class="faq-section" data-category="support">
+        <div class="faq-section-title">📞 Về Hỗ Trợ</div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Giờ làm việc của hỗ trợ là bao nhiêu?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Chúng tôi hỗ trợ 24/7. Bạn có thể liên hệ qua chat, email hoặc điện thoại bất kỳ lúc nào.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Nếu xe bị hỏng giữa đường thì sao?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Gọi ngay số hỗ trợ khẩn cấp 1900-0000. Chúng tôi sẽ cử tổ chức sửa chữa tới nơi hoặc đưa bạn tới trạm sửa chữa gần nhất. Bạn không cần phải trả tiền thêm.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFAQ(this)">
+            <div class="faq-question">
+                <span class="faq-question-text">Làm sao để liên hệ hỗ trợ?</span>
+                <span class="faq-toggle">▼</span>
+            </div>
+            <div class="faq-answer">
+                <div class="faq-answer-text">
+                    Bạn có thể liên hệ chúng tôi qua:
+                    <ul>
+                        <li>📞 Điện thoại: 1900-0000</li>
+                        <li>💬 Chat: Sử dụng nút chat trên ứng dụng</li>
+                        <li>📧 Email: support@chothueXe.com</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact CTA -->
+    <div class="contact-cta">
+        <h3>Không tìm thấy câu trả lời?</h3>
+        <p>Liên hệ với đội hỗ trợ của chúng tôi để được giúp đỡ thêm</p>
+        <div class="contact-buttons">
+            <a href="/Home/Contact" class="btn">📧 Gửi email</a>
+            <a href="tel:1900000" class="btn">📞 Gọi điện</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFAQ(element) {
+        element.classList.toggle('open');
+    }
+
+    function filterCategory(category) {
+        // Update buttons
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // Filter sections
+        document.querySelectorAll('.faq-section').forEach(section => {
+            if (category === 'all' || section.dataset.category === category) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    }
+
+    function searchFAQ() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.faq-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(query) ? 'block' : 'none';
+        });
+    }
+</script>

@@ -1,0 +1,441 @@
+@{
+    ViewData["Title"] = "Quản lý xe - Nhân viên";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .btn-danger {
+        background-color: transparent;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+    }
+
+    .btn-danger:hover {
+        background-color: rgba(248, 81, 73, 0.1);
+    }
+
+    .table-wrapper {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    th {
+        background-color: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        padding: 12px;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background-color: rgba(63, 185, 80, 0.2);
+        color: var(--success);
+    }
+
+    .status-inactive {
+        background-color: rgba(139, 148, 158, 0.2);
+        color: var(--text-secondary);
+    }
+
+    .status-maintenance {
+        background-color: rgba(251, 191, 36, 0.2);
+        color: #fbbf24;
+    }
+
+    .actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .action-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 32px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 8px 12px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .modal-actions button {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .modal-actions .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .modal-actions .btn-cancel {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    @@media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        table {
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 8px;
+        }
+
+        .actions {
+            flex-direction: column;
+        }
+
+        .action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="header">
+        <h1>🚗 Quản lý xe</h1>
+        <button class="btn" onclick="openAddModal()">➕ Thêm xe mới</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Biển số</th>
+                    <th>Tên xe</th>
+                    <th>Loại</th>
+                    <th>Năm</th>
+                    <th>Giá/ngày</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>51A-12345</td>
+                    <td>Toyota Camry</td>
+                    <td>Sedan</td>
+                    <td>2024</td>
+                    <td>2.500.000đ</td>
+                    <td><span class="status-badge status-active">✓ Sẵn sàng</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-outline action-btn" onclick="editVehicle(1)">Sửa</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteVehicle(1)">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>51A-12346</td>
+                    <td>Honda CR-V</td>
+                    <td>SUV</td>
+                    <td>2023</td>
+                    <td>2.200.000đ</td>
+                    <td><span class="status-badge status-active">✓ Sẵn sàng</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-outline action-btn" onclick="editVehicle(2)">Sửa</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteVehicle(2)">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>51A-12347</td>
+                    <td>Mazda 3</td>
+                    <td>Sedan</td>
+                    <td>2024</td>
+                    <td>1.800.000đ</td>
+                    <td><span class="status-badge status-maintenance">🔧 Bảo dưỡng</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-outline action-btn" onclick="editVehicle(3)">Sửa</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteVehicle(3)">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>51A-12348</td>
+                    <td>BMW 3 Series</td>
+                    <td>Sedan</td>
+                    <td>2023</td>
+                    <td>3.500.000đ</td>
+                    <td><span class="status-badge status-active">✓ Sẵn sàng</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-outline action-btn" onclick="editVehicle(4)">Sửa</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteVehicle(4)">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>51A-12349</td>
+                    <td>Hyundai Starex</td>
+                    <td>Van</td>
+                    <td>2023</td>
+                    <td>2.800.000đ</td>
+                    <td><span class="status-badge status-inactive">○ Tạm dừng</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="btn btn-outline action-btn" onclick="editVehicle(5)">Sửa</button>
+                            <button class="btn btn-danger action-btn" onclick="deleteVehicle(5)">Xóa</button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add/Edit Vehicle -->
+<div class="modal" id="vehicleModal">
+    <div class="modal-content">
+        <div class="modal-header" id="modalTitle">➕ Thêm xe mới</div>
+        <form onsubmit="saveVehicle(event)">
+            <div class="form-group">
+                <label>Biển số</label>
+                <input type="text" id="licensePlate" required placeholder="51A-12345">
+            </div>
+            <div class="form-group">
+                <label>Tên xe</label>
+                <input type="text" id="vehicleName" required placeholder="Toyota Camry">
+            </div>
+            <div class="form-group">
+                <label>Loại xe</label>
+                <select id="vehicleType" required>
+                    <option value="">-- Chọn loại --</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Van">Van</option>
+                    <option value="Luxury">Xe sang</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Năm sản xuất</label>
+                <input type="number" id="year" required placeholder="2024" min="2000" max="2030">
+            </div>
+            <div class="form-group">
+                <label>Giá thuê/ngày (đ)</label>
+                <input type="number" id="price" required placeholder="2500000" min="0">
+            </div>
+            <div class="form-group">
+                <label>Trạng thái</label>
+                <select id="status" required>
+                    <option value="active">✓ Sẵn sàng</option>
+                    <option value="maintenance">🔧 Bảo dưỡng</option>
+                    <option value="inactive">○ Tạm dừng</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-primary">Lưu</button>
+                <button type="button" class="btn-cancel" onclick="closeModal()">Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = '➕ Thêm xe mới';
+        document.getElementById('vehicleModal').classList.add('active');
+    }
+
+    function editVehicle(id) {
+        document.getElementById('modalTitle').textContent = '✏️ Sửa thông tin xe';
+        document.getElementById('vehicleModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('vehicleModal').classList.remove('active');
+    }
+
+    function saveVehicle(event) {
+        event.preventDefault();
+        alert('Đã lưu thông tin xe thành công!');
+        closeModal();
+    }
+
+    function deleteVehicle(id) {
+        if (confirm('Bạn chắc chắn muốn xóa xe này?')) {
+            alert('Đã xóa xe thành công!');
+        }
+    }
+</script>

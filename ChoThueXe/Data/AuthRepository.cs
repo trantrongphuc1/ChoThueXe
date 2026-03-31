@@ -2,11 +2,17 @@ using ChoThueXe.Models.Auth;
 using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using System.Data;
+using System.Security.Cryptography;
 
 namespace ChoThueXe.Data;
 
 public class AuthRepository : IAuthRepository
 {
+    private const string Pbkdf2Prefix = "PBKDF2";
+    private const int Pbkdf2Iterations = 100_000;
+    private const int SaltSize = 16;
+    private const int HashSize = 32;
+
     private readonly string _connectionString;
 
     public AuthRepository(IConfiguration configuration)
@@ -18,23 +24,33 @@ public class AuthRepository : IAuthRepository
     public async Task<AuthenticatedUserViewModel?> AuthenticateAsync(string email, string password)
     {
         const string sql = @"
-            select u.user_id, u.full_name, u.email, r.role_name
+                        select u.user_id, u.full_name, u.email, u.password, r.role_name
             from users u
             join roles r on r.role_id = u.role_id
             where lower(u.email) = lower(:p_email)
-              and u.password = :p_password";
+                        fetch first 1 row only";
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
         await using var command = new OracleCommand(sql, connection);
         command.Parameters.Add("p_email", OracleDbType.Varchar2, email, System.Data.ParameterDirection.Input);
-        command.Parameters.Add("p_password", OracleDbType.Varchar2, password, System.Data.ParameterDirection.Input);
 
         await using var reader = await command.ExecuteReaderAsync();
         if (!await reader.ReadAsync())
         {
             return null;
+        }
+
+        var storedPassword = Convert.ToString(reader["PASSWORD"]) ?? string.Empty;
+        if (!VerifyPassword(password, storedPassword))
+        {
+            return null;
+        }
+
+        if (!storedPassword.StartsWith(Pbkdf2Prefix + "$", StringComparison.Ordinal))
+        {
+            await UpgradePasswordHashAsync(Convert.ToInt32(reader["USER_ID"]), password);
         }
 
         return new AuthenticatedUserViewModel
@@ -65,6 +81,8 @@ public class AuthRepository : IAuthRepository
 
     public async Task RegisterCustomerAsync(RegisterInputModel input)
     {
+        ValidatePasswordStrength(input.Password);
+
         const string roleSql = @"
             select role_id
             from roles
@@ -101,7 +119,7 @@ public class AuthRepository : IAuthRepository
             insertCommand.Parameters.Add("p_role_id", OracleDbType.Int32, roleId, ParameterDirection.Input);
             insertCommand.Parameters.Add("p_full_name", OracleDbType.Varchar2, input.FullName.Trim(), ParameterDirection.Input);
             insertCommand.Parameters.Add("p_email", OracleDbType.Varchar2, input.Email.Trim(), ParameterDirection.Input);
-            insertCommand.Parameters.Add("p_password", OracleDbType.Varchar2, input.Password, ParameterDirection.Input);
+            insertCommand.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(input.Password), ParameterDirection.Input);
             insertCommand.Parameters.Add("p_phone", OracleDbType.Varchar2, input.Phone?.Trim() ?? string.Empty, ParameterDirection.Input);
             await insertCommand.ExecuteNonQueryAsync();
         }
@@ -193,6 +211,8 @@ public class AuthRepository : IAuthRepository
 
     public async Task ResetPasswordAsync(string email, string newPassword)
     {
+        ValidatePasswordStrength(newPassword);
+
         const string sql = @"
             update users
             set password = :p_password
@@ -202,7 +222,7 @@ public class AuthRepository : IAuthRepository
         await connection.OpenAsync();
 
         await using var command = new OracleCommand(sql, connection);
-        command.Parameters.Add("p_password", OracleDbType.Varchar2, newPassword, ParameterDirection.Input);
+        command.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(newPassword), ParameterDirection.Input);
         command.Parameters.Add("p_email", OracleDbType.Varchar2, email, ParameterDirection.Input);
 
         var affected = await command.ExecuteNonQueryAsync();
@@ -212,6 +232,49 @@ public class AuthRepository : IAuthRepository
         }
     }
 
+    public async Task ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        ValidatePasswordStrength(newPassword);
+
+        const string selectSql = @"
+            select password
+            from users
+            where user_id = :p_user_id
+            fetch first 1 row only";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        string? storedPassword;
+        await using (var selectCommand = new OracleCommand(selectSql, connection))
+        {
+            selectCommand.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+            var raw = await selectCommand.ExecuteScalarAsync();
+            if (raw is null || raw == DBNull.Value)
+            {
+                throw new InvalidOperationException("Khong tim thay tai khoan.");
+            }
+
+            storedPassword = Convert.ToString(raw);
+        }
+
+        if (string.IsNullOrWhiteSpace(storedPassword) || !VerifyPassword(currentPassword, storedPassword))
+        {
+            throw new UnauthorizedAccessException("Mat khau hien tai khong dung.");
+        }
+
+        const string updateSql = @"
+            update users
+            set password = :p_password
+            where user_id = :p_user_id";
+
+        await using var updateCommand = new OracleCommand(updateSql, connection);
+        updateCommand.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(newPassword), ParameterDirection.Input);
+        updateCommand.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+
+        await updateCommand.ExecuteNonQueryAsync();
+    }
+
     private static async Task<int> GetNextUserIdAsync(OracleConnection connection, OracleTransaction transaction)
     {
         const string sql = "select nvl(max(user_id), 0) + 1 from users";
@@ -219,5 +282,86 @@ public class AuthRepository : IAuthRepository
         command.Transaction = transaction;
         var raw = await command.ExecuteScalarAsync();
         return Convert.ToInt32(raw);
+    }
+
+    private async Task UpgradePasswordHashAsync(int userId, string plaintextPassword)
+    {
+        const string sql = @"
+            update users
+            set password = :p_password
+            where user_id = :p_user_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(plaintextPassword), ParameterDirection.Input);
+        command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static string HashPassword(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Pbkdf2Iterations, HashAlgorithmName.SHA256, HashSize);
+
+        return string.Join("$",
+            Pbkdf2Prefix,
+            Pbkdf2Iterations.ToString(),
+            Convert.ToBase64String(salt),
+            Convert.ToBase64String(hash));
+    }
+
+    private static bool VerifyPassword(string inputPassword, string storedPassword)
+    {
+        if (!storedPassword.StartsWith(Pbkdf2Prefix + "$", StringComparison.Ordinal))
+        {
+            return string.Equals(inputPassword, storedPassword, StringComparison.Ordinal);
+        }
+
+        var parts = storedPassword.Split('$');
+        if (parts.Length != 4)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[1], out var iterations) || iterations <= 0)
+        {
+            return false;
+        }
+
+        byte[] salt;
+        byte[] expectedHash;
+
+        try
+        {
+            salt = Convert.FromBase64String(parts[2]);
+            expectedHash = Convert.FromBase64String(parts[3]);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        var actualHash = Rfc2898DeriveBytes.Pbkdf2(inputPassword, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+    }
+
+    private static void ValidatePasswordStrength(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        {
+            throw new InvalidOperationException("Mat khau phai co it nhat 8 ky tu.");
+        }
+
+        var hasUpper = password.Any(char.IsUpper);
+        var hasLower = password.Any(char.IsLower);
+        var hasDigit = password.Any(char.IsDigit);
+        var hasSpecial = password.Any(ch => !char.IsLetterOrDigit(ch));
+
+        if (!hasUpper || !hasLower || !hasDigit || !hasSpecial)
+        {
+            throw new InvalidOperationException("Mat khau phai co chu hoa, chu thuong, so va ky tu dac biet.");
+        }
     }
 }

@@ -1,0 +1,526 @@
+@{
+    ViewData["Title"] = "So sánh xe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .comparison-container {
+        max-width: 1400px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .comp-header {
+        margin-bottom: 40px;
+    }
+
+    .comp-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .comp-header p {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .comp-table-wrapper {
+        overflow-x: auto;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    .comp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .comp-table th {
+        background-color: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border);
+        padding: 16px;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-primary);
+        border-right: 1px solid var(--border);
+    }
+
+    .comp-table th:first-child {
+        width: 200px;
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background-color: var(--bg-tertiary);
+    }
+
+    .comp-table td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+    }
+
+    .comp-table td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 9;
+        background-color: var(--bg-secondary);
+        font-weight: 600;
+        color: var(--text-secondary);
+        width: 200px;
+    }
+
+    .comp-table tr:hover td {
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .vehicle-header {
+        text-align: center;
+    }
+
+    .vehicle-header-img {
+        width: 100%;
+        height: 120px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 56px;
+        margin-bottom: 8px;
+    }
+
+    .vehicle-header-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-header-year {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .remove-btn {
+        padding: 6px 12px;
+        background-color: rgba(248, 81, 73, 0.1);
+        border: 1px solid rgba(248, 81, 73, 0.3);
+        color: var(--danger);
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .remove-btn:hover {
+        background-color: rgba(248, 81, 73, 0.2);
+        border-color: var(--danger);
+    }
+
+    .value-better {
+        color: var(--success);
+        font-weight: 600;
+    }
+
+    .value-worse {
+        color: var(--danger);
+        font-weight: 600;
+    }
+
+    .rating-stars {
+        color: var(--warning);
+    }
+
+    .price-highlight {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    .comparison-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .action-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        text-align: center;
+    }
+
+    .action-card h3 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .add-vehicle-section {
+        background-color: var(--bg-secondary);
+        border: 1px dashed var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .add-vehicle-section h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .add-vehicle-section p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .legend {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        padding: 16px;
+        background-color: var(--bg-secondary);
+        border-radius: var(--radius);
+        margin-bottom: 24px;
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }
+
+    .legend-better {
+        background-color: rgba(63, 185, 80, 0.3);
+    }
+
+    .legend-worse {
+        background-color: rgba(248, 81, 73, 0.3);
+    }
+
+    @@media (max-width: 1024px) {
+        .comp-table th:first-child,
+        .comp-table td:first-child {
+            width: 150px;
+        }
+
+        .comparison-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .comp-header h1 {
+            font-size: 24px;
+        }
+
+        .comp-table {
+            font-size: 12px;
+        }
+
+        .comp-table th,
+        .comp-table td {
+            padding: 12px;
+        }
+
+        .vehicle-header-img {
+            height: 100px;
+            font-size: 40px;
+        }
+
+        .legend {
+            gap: 12px;
+        }
+    }
+</style>
+
+<div class="comparison-container">
+    <div class="comp-header">
+        <h1>🔄 So sánh xe</h1>
+        <p>Chọn tối đa 5 xe để so sánh thông số kỹ thuật, giá cả và tính năng</p>
+    </div>
+
+    <div class="add-vehicle-section">
+        <h3>➕ Thêm xe để so sánh</h3>
+        <p>Bạn đã chọn 3 xe. Có thể thêm tối đa 5 xe.</p>
+        <a href="/Rental/Search" class="btn btn-outline">Tìm xe khác</a>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot legend-better"></div>
+            <span>Giá trị tốt nhất</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot legend-worse"></div>
+            <span>Giá trị thấp hơn</span>
+        </div>
+    </div>
+
+    <div class="comp-table-wrapper">
+        <table class="comp-table">
+            <thead>
+                <tr>
+                    <th>Tiêu chí</th>
+                    <th>
+                        <div class="vehicle-header">
+                            <div class="vehicle-header-img">🚗</div>
+                            <div class="vehicle-header-name">Toyota Camry</div>
+                            <div class="vehicle-header-year">2024</div>
+                            <button class="remove-btn">Xóa</button>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="vehicle-header">
+                            <div class="vehicle-header-img">🚙</div>
+                            <div class="vehicle-header-name">Honda CR-V</div>
+                            <div class="vehicle-header-year">2023</div>
+                            <button class="remove-btn">Xóa</button>
+                        </div>
+                    </th>
+                    <th>
+                        <div class="vehicle-header">
+                            <div class="vehicle-header-img">🏎️</div>
+                            <div class="vehicle-header-name">BMW 3 Series</div>
+                            <div class="vehicle-header-year">2023</div>
+                            <button class="remove-btn">Xóa</button>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Giá -->
+                <tr>
+                    <td>💰 Giá thuê/ngày</td>
+                    <td><span class="price-highlight">2.500.000đ</span></td>
+                    <td><span class="price-highlight value-better">2.200.000đ</span></td>
+                    <td><span class="price-highlight value-worse">3.500.000đ</span></td>
+                </tr>
+
+                <!-- Loại xe -->
+                <tr>
+                    <td>🚗 Loại xe</td>
+                    <td>Sedan</td>
+                    <td>SUV</td>
+                    <td>Sedan</td>
+                </tr>
+
+                <!-- Năm sản xuất -->
+                <tr>
+                    <td>📅 Năm sản xuất</td>
+                    <td><span class="value-better">2024</span></td>
+                    <td>2023</td>
+                    <td>2023</td>
+                </tr>
+
+                <!-- Số chỗ -->
+                <tr>
+                    <td>👥 Số chỗ ngồi</td>
+                    <td>5 chỗ</td>
+                    <td><span class="value-better">7 chỗ</span></td>
+                    <td>5 chỗ</td>
+                </tr>
+
+                <!-- Hộp số -->
+                <tr>
+                    <td>⚙️ Hộp số</td>
+                    <td colspan="3">Tất cả tự động</td>
+                </tr>
+
+                <!-- Nhiên liệu -->
+                <tr>
+                    <td>⛽ Loại nhiên liệu</td>
+                    <td>Xăng</td>
+                    <td>Xăng</td>
+                    <td>Xăng</td>
+                </tr>
+
+                <!-- Công suất -->
+                <tr>
+                    <td>💪 Công suất (HP)</td>
+                    <td>203</td>
+                    <td>190</td>
+                    <td><span class="value-better">255</span></td>
+                </tr>
+
+                <!-- Tiêu hao nhiên liệu -->
+                <tr>
+                    <td>📊 Tiêu hao (km/l)</td>
+                    <td>8.5</td>
+                    <td><span class="value-better">9.2</span></td>
+                    <td><span class="value-worse">7.8</span></td>
+                </tr>
+
+                <!-- Dung tích bình xăng -->
+                <tr>
+                    <td>🛢️ Dung tích (lít)</td>
+                    <td>60</td>
+                    <td>58</td>
+                    <td><span class="value-better">65</span></td>
+                </tr>
+
+                <!-- Đánh giá -->
+                <tr>
+                    <td>⭐ Đánh giá trung bình</td>
+                    <td><span class="rating-stars">⭐⭐⭐⭐⭐</span> 4.8/5</td>
+                    <td><span class="rating-stars">⭐⭐⭐⭐</span> 4.7/5</td>
+                    <td><span class="rating-stars">⭐⭐⭐⭐⭐</span> 4.9/5</td>
+                </tr>
+
+                <!-- Số đánh giá -->
+                <tr>
+                    <td>📝 Số đánh giá</td>
+                    <td>324</td>
+                    <td>268</td>
+                    <td><span class="value-better">445</span></td>
+                </tr>
+
+                <!-- Tiện nghi -->
+                <tr>
+                    <td>🎯 Hệ thống định vị</td>
+                    <td>GPS</td>
+                    <td>GPS</td>
+                    <td>GPS + Navigation</td>
+                </tr>
+
+                <tr>
+                    <td>📱 Kết nối điện thoại</td>
+                    <td colspan="3">Bluetooth, Apple CarPlay, Android Auto</td>
+                </tr>
+
+                <tr>
+                    <td>❄️ Điều hòa</td>
+                    <td colspan="3">Điều hòa tự động hai vùng</td>
+                </tr>
+
+                <tr>
+                    <td>🔐 Bảo mật</td>
+                    <td>ABS, ESP</td>
+                    <td><span class="value-better">ABS, ESP, 6 Air Bag</span></td>
+                    <td><span class="value-better">ABS, ESP, 8 Air Bag</span></td>
+                </tr>
+
+                <!-- Tình trạng xe -->
+                <tr>
+                    <td>✨ Tình trạng</td>
+                    <td><span class="value-better">Rất tốt</span></td>
+                    <td>Tốt</td>
+                    <td>Tốt</td>
+                </tr>
+
+                <!-- Sẵn có -->
+                <tr>
+                    <td>📅 Sẵn có vào:</td>
+                    <td>01/04 - 30/05</td>
+                    <td><span class="value-better">Liên tục</span></td>
+                    <td>10/04 - 25/05</td>
+                </tr>
+
+                <!-- Hành động -->
+                <tr style="background-color: var(--bg-tertiary);">
+                    <td style="background-color: var(--bg-tertiary);">🎯 Hành động</td>
+                    <td><a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a></td>
+                    <td><a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a></td>
+                    <td><a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="comparison-actions">
+        <div class="action-card">
+            <h3>Cần trợ giúp?</h3>
+            <a href="/Home/Help" class="btn btn-outline">Liên hệ hỗ trợ</a>
+        </div>
+        <div class="action-card">
+            <h3>Không chắc chắn?</h3>
+            <a href="/Rental/Recommendations" class="btn btn-outline">Xem gợi ý</a>
+        </div>
+        <div class="action-card">
+            <h3>Tìm kiếm thêm?</h3>
+            <a href="/Rental/Search" class="btn btn-outline">Quay lại tìm kiếm</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Placeholder for comparison functionality
+    console.log('Comparison page loaded');
+</script>

@@ -1,0 +1,740 @@
+@{
+    ViewData["Title"] = "Xe được đề xuất";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .recommendations-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .rec-header {
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .rec-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .rec-header p {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .rec-section {
+        margin-bottom: 48px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+    }
+
+    .vehicles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        transform: translateY(-4px);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 180px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 72px;
+        position: relative;
+    }
+
+    .favorite-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .favorite-badge:hover {
+        background-color: rgba(248, 81, 73, 0.8);
+    }
+
+    .match-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: linear-gradient(135deg, var(--success) 0%, #2ea043 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .vehicle-body {
+        padding: 16px;
+    }
+
+    .vehicle-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .vehicle-rating {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+
+    .stars {
+        color: var(--warning);
+    }
+
+    .vehicle-price {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 12px;
+    }
+
+    .vehicle-price small {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 400;
+    }
+
+    .vehicle-features {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .feature-tag {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: var(--accent);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .vehicle-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .filters {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 14px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .comparison-info {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .comparison-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .comparison-icon {
+        width: 40px;
+        height: 40px;
+        background-color: rgba(59, 130, 246, 0.1);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .comparison-text label {
+        display: block;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 2px;
+    }
+
+    .comparison-text span {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .cta-section {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border: 1px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 32px;
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    .cta-section h3 {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .cta-section p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .cta-btn {
+        display: inline-block;
+        padding: 12px 32px;
+        background-color: var(--accent);
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .cta-btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    @@media (max-width: 768px) {
+        .rec-header h1 {
+            font-size: 24px;
+        }
+
+        .vehicles-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .comparison-info {
+            grid-template-columns: 1fr;
+        }
+
+        .cta-section {
+            padding: 20px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .vehicles-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .vehicle-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .filters {
+            flex-direction: column;
+        }
+
+        .filter-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="recommendations-container">
+    <div class="rec-header">
+        <h1>💡 Xe được đề xuất cho bạn</h1>
+        <p>Dựa trên lịch sử tìm kiếm và đặt xe của bạn</p>
+    </div>
+
+    <!-- Similar Vehicles Section -->
+    <div class="rec-section">
+        <h2 class="section-title">🎯 Xe tương tự như lần trước bạn đặt</h2>
+        
+        <div class="filters">
+            <button class="filter-btn active" onclick="filterVehicles('all')">Tất cả</button>
+            <button class="filter-btn" onclick="filterVehicles('sedan')">Sedan</button>
+            <button class="filter-btn" onclick="filterVehicles('suv')">SUV</button>
+            <button class="filter-btn" onclick="filterVehicles('van')">Van</button>
+        </div>
+
+        <div class="vehicles-grid">
+            <!-- Vehicle 1 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">95% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Toyota Camry 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(324 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        2.500.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                        <span class="feature-tag">Mới</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 2 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">92% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚙
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Honda CR-V 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐</span>
+                        <span>(268 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        2.200.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                        <span class="feature-tag">Popular</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 3 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">88% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Mazda 3 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(445 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        1.800.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 4 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">85% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🏎️
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">BMW 3 Series 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(189 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        3.500.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                        <span class="feature-tag">Premium</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 5 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">82% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚌
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Hyundai Starex 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 7 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐</span>
+                        <span>(156 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        2.800.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Diesel</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 6 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge">80% Match</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Hyundai Tucson 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(392 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        2.100.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Section -->
+    <div class="rec-section">
+        <h2 class="section-title">🔥 Đang được thuê nhiều nhất</h2>
+        
+        <div class="vehicles-grid">
+            <!-- Vehicle Trending 1 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge" style="background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%);">Trending</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Kia Cerato 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(612 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        1.600.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                        <span class="feature-tag">Rẻ</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Trending 2 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge" style="background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%);">Trending</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🚙
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Mitsubishi Outlander 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 7 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(528 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        2.600.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Trending 3 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="match-badge" style="background: linear-gradient(135deg, var(--warning) 0%, #f59e0b 100%);">Trending</span>
+                    <span class="favorite-badge" onclick="toggleFav(this)">🤍</span>
+                    🏎️
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Mercedes-Benz C-Class 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP. Hồ Chí Minh</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span class="stars">⭐⭐⭐⭐⭐</span>
+                        <span>(234 đánh giá)</span>
+                    </div>
+                    <div class="vehicle-price">
+                        4.200.000đ <small>/ngày</small>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-tag">Tự động</span>
+                        <span class="feature-tag">Xăng</span>
+                        <span class="feature-tag">Luxury</span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Info -->
+    <div class="comparison-info">
+        <div class="comparison-item">
+            <div class="comparison-icon">📊</div>
+            <div class="comparison-text">
+                <label>Hiệu suất khớp</label>
+                <span>So sánh với xe bạn đã đặt</span>
+            </div>
+        </div>
+        <div class="comparison-item">
+            <div class="comparison-icon">💬</div>
+            <div class="comparison-text">
+                <label>Đánh giá</label>
+                <span>Dựa trên 5000+ reviews</span>
+            </div>
+        </div>
+        <div class="comparison-item">
+            <div class="comparison-icon">⏱️</div>
+            <div class="comparison-text">
+                <label>Thời gian sẵn sàng</label>
+                <span>Kiểm tra lịch ngay bây giờ</span>
+            </div>
+        </div>
+        <div class="comparison-item">
+            <div class="comparison-icon">💰</div>
+            <div class="comparison-text">
+                <label>Giá tốt nhất</label>
+                <span>Gọi ngay để nhận khuyến mãi</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="cta-section">
+        <h3>Chưa tìm thấy chiếc xe bạn muốn?</h3>
+        <p>Duyệt qua hơn 5000 xe có sẵn trên nền tảng của chúng tôi</p>
+        <a href="/Rental/Search" class="cta-btn">Tìm kiếm xe khác</a>
+    </div>
+</div>
+
+<script>
+    function filterVehicles(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        console.log('Filtering by:', category);
+    }
+
+    function toggleFav(element) {
+        const currentText = element.textContent;
+        element.textContent = currentText === '🤍' ? '❤️' : '🤍';
+        element.style.opacity = currentText === '🤍' ? 1 : 0.7;
+    }
+</script>

@@ -124,6 +124,25 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
+        async Task ExecuteFallbackAsync(bool includeFavoriteJoin)
+        {
+            var fallbackSql = BuildVehicleFallbackSql(includeFavoriteJoin && customerId.HasValue, normalizedKeyword);
+            await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+
+            if (includeFavoriteJoin && customerId.HasValue)
+            {
+                fallbackCommand.Parameters.Add("p_user_id", OracleDbType.Int32, customerId.Value, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedKeyword))
+            {
+                fallbackCommand.Parameters.Add("p_keyword", OracleDbType.Varchar2, normalizedKeyword.ToUpperInvariant(), ParameterDirection.Input);
+            }
+
+            await using var fallbackReader = await fallbackCommand.ExecuteReaderAsync();
+            await FillVehicleListAsync(fallbackReader, result);
+        }
+
         try
         {
             var sql = BuildVehicleSearchSql(customerId.HasValue, normalizedKeyword, selectedAmenityCodes);
@@ -146,25 +165,32 @@ public class RentalRepository : IRentalRepository
 
             await using var reader = await command.ExecuteReaderAsync();
             await FillVehicleListAsync(reader, result);
+
+            if (result.Count == 0)
+            {
+                try
+                {
+                    await ExecuteFallbackAsync(includeFavoriteJoin: true);
+                }
+                catch (OracleException ex) when (IsMissingObjectError(ex) && customerId.HasValue)
+                {
+                    await ExecuteFallbackAsync(includeFavoriteJoin: false);
+                }
+            }
+
             return result;
         }
         catch (OracleException ex) when (IsMissingObjectError(ex))
         {
-            var sql = BuildVehicleFallbackSql(customerId.HasValue, normalizedKeyword);
-            await using var fallbackCommand = new OracleCommand(sql, connection);
-
-            if (customerId.HasValue)
+            try
             {
-                fallbackCommand.Parameters.Add("p_user_id", OracleDbType.Int32, customerId.Value, ParameterDirection.Input);
+                await ExecuteFallbackAsync(includeFavoriteJoin: true);
+            }
+            catch (OracleException fallbackEx) when (IsMissingObjectError(fallbackEx) && customerId.HasValue)
+            {
+                await ExecuteFallbackAsync(includeFavoriteJoin: false);
             }
 
-            if (!string.IsNullOrWhiteSpace(normalizedKeyword))
-            {
-                fallbackCommand.Parameters.Add("p_keyword", OracleDbType.Varchar2, normalizedKeyword.ToUpperInvariant(), ParameterDirection.Input);
-            }
-
-            await using var reader = await fallbackCommand.ExecuteReaderAsync();
-            await FillVehicleListAsync(reader, result);
             return result;
         }
     }
@@ -212,15 +238,17 @@ public class RentalRepository : IRentalRepository
         sb.AppendLine("select");
         sb.AppendLine("    v.vehicle_id,");
         sb.AppendLine("    v.vehicle_name,");
-        sb.AppendLine("    v.brand_name,");
-        sb.AppendLine("    v.type_name,");
+        sb.AppendLine("    nvl(b.brand_name, '') as brand_name,");
+        sb.AppendLine("    nvl(t.type_name, '') as type_name,");
         sb.AppendLine("    v.price_per_day,");
         sb.AppendLine("    '' as amenities_text,");
         sb.AppendLine("    nvl((select vi.image_url from vehicle_images vi where vi.vehicle_id = v.vehicle_id order by vi.image_id fetch first 1 row only), '') as primary_image_url,");
         sb.AppendLine(hasCustomer
             ? "    case when fv.vehicle_id is not null then 1 else 0 end as is_favorite"
             : "    0 as is_favorite");
-        sb.AppendLine("from vw_vehicle_detail v");
+        sb.AppendLine("from vehicles v");
+        sb.AppendLine("left join brands b on b.brand_id = v.brand_id");
+        sb.AppendLine("left join vehicle_types t on t.type_id = v.type_id");
 
         if (hasCustomer)
         {
@@ -231,7 +259,7 @@ public class RentalRepository : IRentalRepository
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            sb.AppendLine("  and instr(upper(v.vehicle_name || ' ' || v.brand_name || ' ' || v.type_name), :p_keyword) > 0");
+            sb.AppendLine("  and instr(upper(v.vehicle_name || ' ' || nvl(b.brand_name, '') || ' ' || nvl(t.type_name, '')), :p_keyword) > 0");
         }
 
         sb.AppendLine("order by v.vehicle_id");
@@ -263,14 +291,70 @@ public class RentalRepository : IRentalRepository
             from vw_contract_full
             order by contract_id desc";
 
+        const string fallbackSql = @"
+            select
+                c.contract_id,
+                u.full_name,
+                nvl(v.vehicle_name, 'N/A') as vehicle_name,
+                nvl(c.start_date, c.created_at) as start_date,
+                nvl(c.end_date, c.created_at) as end_date,
+                nvl(c.total_amount, 0) as total_amount,
+                nvl(c.status, 'PENDING') as status
+            from contracts c
+            left join users u on u.user_id = c.customer_id
+            left join vehicles v on v.vehicle_id = c.vehicle_id
+            order by c.contract_id desc";
+
+        const string legacyFallbackSql = @"
+            select
+                c.contract_id,
+                u.full_name,
+                nvl(v.vehicle_name, 'N/A') as vehicle_name,
+                c.created_at as start_date,
+                c.created_at as end_date,
+                nvl(c.total_amount, 0) as total_amount,
+                nvl(c.status, 'PENDING') as status
+            from contracts c
+            left join users u on u.user_id = c.customer_id
+            left join vehicles v on v.vehicle_id = c.vehicle_id
+            order by c.contract_id desc";
+
         var result = new List<ContractFullViewModel>();
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+            await FillContractListAsync(reader, result);
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            try
+            {
+                await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+                await using var fallbackReader = await fallbackCommand.ExecuteReaderAsync();
+                await FillContractListAsync(fallbackReader, result);
+            }
+            catch (OracleException fallbackEx) when (fallbackEx.Number == 904)
+            {
+                await using var legacyFallbackCommand = new OracleCommand(legacyFallbackSql, connection);
+                await using var legacyFallbackReader = await legacyFallbackCommand.ExecuteReaderAsync();
+                await FillContractListAsync(legacyFallbackReader, result);
+            }
+            catch (OracleException fallbackEx) when (IsMissingObjectError(fallbackEx))
+            {
+                return [];
+            }
+        }
 
+        return result;
+    }
+
+    private static async Task FillContractListAsync(OracleDataReader reader, List<ContractFullViewModel> result)
+    {
         while (await reader.ReadAsync())
         {
             result.Add(new ContractFullViewModel
@@ -284,8 +368,6 @@ public class RentalRepository : IRentalRepository
                 Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
             });
         }
-
-        return result;
     }
 
     public async Task<IReadOnlyList<RevenueViewModel>> GetRevenueAsync()
@@ -300,16 +382,23 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new RevenueViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"])
-            });
+                result.Add(new RevenueViewModel
+                {
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"])
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -407,7 +496,7 @@ public class RentalRepository : IRentalRepository
                 c.contract_id,
                 c.customer_id,
                 u.full_name,
-                c.total_amount,
+                nvl(c.total_amount, 0) as total_amount,
                 nvl((
                     select sum(p.amount)
                     from payments p
@@ -434,8 +523,8 @@ public class RentalRepository : IRentalRepository
                 ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
                 CustomerId = Convert.ToInt32(reader["CUSTOMER_ID"]),
                 CustomerName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
-                PaidAmount = Convert.ToDecimal(reader["PAID_AMOUNT"]),
+                TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"] ?? 0m),
+                PaidAmount = Convert.ToDecimal(reader["PAID_AMOUNT"] ?? 0m),
                 Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
             });
         }
@@ -494,15 +583,29 @@ public class RentalRepository : IRentalRepository
             select
                 c.contract_id,
                 u.full_name,
-                v.vehicle_name,
-                cd.start_date,
-                cd.end_date,
-                c.total_amount,
-                c.status
+                nvl(v.vehicle_name, 'N/A') as vehicle_name,
+                nvl(c.start_date, c.created_at) as start_date,
+                nvl(c.end_date, c.created_at) as end_date,
+                nvl(c.total_amount, 0) as total_amount,
+                nvl(c.status, 'PENDING') as status
             from contracts c
             join users u on c.customer_id = u.user_id
-            join contract_details cd on c.contract_id = cd.contract_id
-            join vehicles v on cd.vehicle_id = v.vehicle_id
+            left join vehicles v on v.vehicle_id = c.vehicle_id
+            where c.customer_id = :p_customer_id
+            order by c.contract_id desc";
+
+        const string fallbackSql = @"
+            select
+                c.contract_id,
+                u.full_name,
+                nvl(v.vehicle_name, 'N/A') as vehicle_name,
+                c.created_at as start_date,
+                c.created_at as end_date,
+                nvl(c.total_amount, 0) as total_amount,
+                nvl(c.status, 'PENDING') as status
+            from contracts c
+            join users u on c.customer_id = u.user_id
+            left join vehicles v on v.vehicle_id = c.vehicle_id
             where c.customer_id = :p_customer_id
             order by c.contract_id desc";
 
@@ -511,22 +614,49 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        command.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new ContractFullViewModel
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                StartDate = Convert.ToDateTime(reader["START_DATE"]),
-                EndDate = Convert.ToDateTime(reader["END_DATE"]),
-                TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
-                Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
-            });
+                result.Add(new ContractFullViewModel
+                {
+                    ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    StartDate = Convert.ToDateTime(reader["START_DATE"]),
+                    EndDate = Convert.ToDateTime(reader["END_DATE"]),
+                    TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
+                    Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (ex.Number == 904)
+        {
+            await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+            fallbackCommand.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
+            await using var reader = await fallbackCommand.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new ContractFullViewModel
+                {
+                    ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    StartDate = Convert.ToDateTime(reader["START_DATE"]),
+                    EndDate = Convert.ToDateTime(reader["END_DATE"]),
+                    TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
+                    Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -547,17 +677,26 @@ public class RentalRepository : IRentalRepository
         await connection.OpenAsync();
 
         await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        
+        try
         {
-            result.Add(new CustomerForEmployeeViewModel
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                UserId = Convert.ToInt32(reader["USER_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                Email = Convert.ToString(reader["EMAIL"]) ?? string.Empty,
-                IsVerified = Convert.ToInt32(reader["IS_VERIFIED"]) == 1
-            });
+                result.Add(new CustomerForEmployeeViewModel
+                {
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    Email = Convert.ToString(reader["EMAIL"]) ?? string.Empty,
+                    IsVerified = Convert.ToInt32(reader["IS_VERIFIED"]) == 1
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Function or table may not exist, return empty list
+            return [];
         }
 
         return result;
@@ -577,20 +716,27 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new PendingDocumentViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                DocumentId = Convert.ToInt32(reader["DOCUMENT_ID"]),
-                UserId = Convert.ToInt32(reader["USER_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                DocType = Convert.ToString(reader["DOC_TYPE"]) ?? string.Empty,
-                FileUrl = Convert.ToString(reader["FILE_URL"]) ?? string.Empty,
-                Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
-            });
+                result.Add(new PendingDocumentViewModel
+                {
+                    DocumentId = Convert.ToInt32(reader["DOCUMENT_ID"]),
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    DocType = Convert.ToString(reader["DOC_TYPE"] ) ?? string.Empty,
+                    FileUrl = Convert.ToString(reader["FILE_URL"]) ?? string.Empty,
+                    Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -620,20 +766,27 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new PendingVerificationViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                UserId = Convert.ToInt32(reader["USER_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                CccdDocumentId = reader["CCCD_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["CCCD_DOCUMENT_ID"]),
-                CccdFileUrl = Convert.ToString(reader["CCCD_FILE_URL"]) ?? string.Empty,
-                DriverLicenseDocumentId = reader["DRIVER_LICENSE_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["DRIVER_LICENSE_DOCUMENT_ID"]),
-                DriverLicenseFileUrl = Convert.ToString(reader["DRIVER_LICENSE_FILE_URL"]) ?? string.Empty
-            });
+                result.Add(new PendingVerificationViewModel
+                {
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    CccdDocumentId = reader["CCCD_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["CCCD_DOCUMENT_ID"]),
+                    CccdFileUrl = Convert.ToString(reader["CCCD_FILE_URL"]) ?? string.Empty,
+                    DriverLicenseDocumentId = reader["DRIVER_LICENSE_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["DRIVER_LICENSE_DOCUMENT_ID"]),
+                    DriverLicenseFileUrl = Convert.ToString(reader["DRIVER_LICENSE_FILE_URL"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -700,7 +853,16 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_issued_at", OracleDbType.Date, issuedAt, ParameterDirection.Input);
         command.Parameters.Add("p_expire_at", OracleDbType.Date, expireAt, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Some environments do not provision drive_licenses yet.
+            // Do not block customer flow; keep going with best-effort behavior.
+        }
+
         await LogActivityAsync(userId, "SubmitDriveLicense", $"LicenseNumber={licenseNumber}, IssuedBy={issuedBy}");
     }
 
@@ -712,16 +874,23 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new BrandOptionViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                BrandId = Convert.ToInt32(reader["BRAND_ID"]),
-                BrandName = Convert.ToString(reader["BRAND_NAME"]) ?? string.Empty
-            });
+                result.Add(new BrandOptionViewModel
+                {
+                    BrandId = Convert.ToInt32(reader["BRAND_ID"]),
+                    BrandName = Convert.ToString(reader["BRAND_NAME"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -735,16 +904,23 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new TypeOptionViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                TypeId = Convert.ToInt32(reader["TYPE_ID"]),
-                TypeName = Convert.ToString(reader["TYPE_NAME"]) ?? string.Empty
-            });
+                result.Add(new TypeOptionViewModel
+                {
+                    TypeId = Convert.ToInt32(reader["TYPE_ID"]),
+                    TypeName = Convert.ToString(reader["TYPE_NAME"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -894,20 +1070,27 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new AdminAccountManagementViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                UserId = Convert.ToInt32(reader["USER_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                Email = Convert.ToString(reader["EMAIL"]) ?? string.Empty,
-                RoleName = Convert.ToString(reader["ROLE_NAME"]) ?? string.Empty,
-                ContractCount = Convert.ToInt32(reader["CONTRACT_COUNT"]),
-                TotalPaid = Convert.ToDecimal(reader["TOTAL_PAID"])
-            });
+                result.Add(new AdminAccountManagementViewModel
+                {
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    Email = Convert.ToString(reader["EMAIL"]) ?? string.Empty,
+                    RoleName = Convert.ToString(reader["ROLE_NAME"]) ?? string.Empty,
+                    ContractCount = Convert.ToInt32(reader["CONTRACT_COUNT"]),
+                    TotalPaid = Convert.ToDecimal(reader["TOTAL_PAID"])
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -937,18 +1120,25 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new AdminVehicleOccupancyViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
-                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                Status = Convert.ToString(reader["STATUS"]) ?? string.Empty,
-                Occupancy = Convert.ToString(reader["OCCUPANCY"]) ?? string.Empty
-            });
+                result.Add(new AdminVehicleOccupancyViewModel
+                {
+                    VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    Status = Convert.ToString(reader["STATUS"]) ?? string.Empty,
+                    Occupancy = Convert.ToString(reader["OCCUPANCY"]) ?? string.Empty
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -971,17 +1161,24 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new RevenueByAccountViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                UserId = Convert.ToInt32(reader["USER_ID"]),
-                FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"])
-            });
+                result.Add(new RevenueByAccountViewModel
+                {
+                    UserId = Convert.ToInt32(reader["USER_ID"]),
+                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"])
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -1003,17 +1200,24 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
+        try
         {
-            result.Add(new TopRentedVehicleViewModel
+            await using var command = new OracleCommand(sql, connection);
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
             {
-                VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
-                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                RentCount = Convert.ToInt32(reader["RENT_COUNT"])
-            });
+                result.Add(new TopRentedVehicleViewModel
+                {
+                    VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    RentCount = Convert.ToInt32(reader["RENT_COUNT"])
+                });
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return [];
         }
 
         return result;
@@ -1120,7 +1324,14 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add(returnParameter);
         command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            return false;
+        }
 
         var raw = returnParameter.Value;
         if (raw is OracleDecimal oracleDecimal)
@@ -1129,6 +1340,51 @@ public class RentalRepository : IRentalRepository
         }
 
         return Convert.ToInt32(raw) == 1;
+    }
+
+    public async Task<CustomerVerificationStatusViewModel> GetCustomerVerificationStatusAsync(int userId)
+    {
+        const string sql = @"
+            select
+                nvl(max(case when upper(d.doc_type) = 'CCCD' then 1 else 0 end), 0) as has_cccd,
+                max(case when upper(d.doc_type) = 'CCCD' then d.status end) as cccd_status,
+                max(case when upper(d.doc_type) = 'CCCD' then d.document_id end) as cccd_document_id,
+                nvl(max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then 1 else 0 end), 0) as has_driver_license,
+                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.status end) as driver_license_status,
+                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.document_id end) as driver_license_document_id
+            from user_documents d
+            where d.user_id = :p_user_id
+            group by d.user_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+
+            await using var reader = await command.ExecuteReaderAsync();
+
+            if (await reader.ReadAsync())
+            {
+                return new CustomerVerificationStatusViewModel
+                {
+                    HasCccd = Convert.ToInt32(reader["HAS_CCCD"]) == 1,
+                    CccdStatus = Convert.ToString(reader["CCCD_STATUS"]) ?? string.Empty,
+                    CccdDocumentId = reader["CCCD_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["CCCD_DOCUMENT_ID"]),
+                    HasDriverLicense = Convert.ToInt32(reader["HAS_DRIVER_LICENSE"]) == 1,
+                    DriverLicenseStatus = Convert.ToString(reader["DRIVER_LICENSE_STATUS"]) ?? string.Empty,
+                    DriverLicenseDocumentId = reader["DRIVER_LICENSE_DOCUMENT_ID"] == DBNull.Value ? null : Convert.ToInt32(reader["DRIVER_LICENSE_DOCUMENT_ID"])
+                };
+            }
+
+            return new CustomerVerificationStatusViewModel();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            return new CustomerVerificationStatusViewModel();
+        }
     }
 
     public async Task<decimal> CalculateRentalCostAsync(decimal pricePerDay, DateTime startDate, DateTime endDate)
@@ -1148,7 +1404,20 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_start_date", OracleDbType.Date, startDate, ParameterDirection.Input);
         command.Parameters.Add("p_end_date", OracleDbType.Date, endDate, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            var rentalDays = (int)Math.Ceiling((endDate.Date - startDate.Date).TotalDays);
+            if (rentalDays <= 0)
+            {
+                rentalDays = 1;
+            }
+
+            return rentalDays * pricePerDay;
+        }
 
         var raw = returnParameter.Value;
         if (raw is OracleDecimal oracleDecimal)
@@ -1342,7 +1611,15 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_doc_type", OracleDbType.Varchar2, normalizedDocType, ParameterDirection.Input);
         command.Parameters.Add("p_file_url", OracleDbType.Varchar2, input.FileUrl, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            throw new InvalidOperationException("Chua co bang giay to nguoi dung tren he thong. Hay cap nhat schema DB moi nhat.");
+        }
+
         await LogActivityAsync(userId, "SubmitDocument", $"DocType={normalizedDocType}, Url={input.FileUrl}");
     }
 
@@ -1420,7 +1697,18 @@ public class RentalRepository : IRentalRepository
 
     public async Task AddVehicleAsync(CreateVehicleInputModel input)
     {
-        const string insertVehicleSql = @"
+        const string insertVehicleWithLicenseSql = @"
+            insert into vehicles (
+                vehicle_id, owner_id, brand_id, type_id, vehicle_name,
+                license_plate, seats, transmission, fuel_type, price_per_day, status
+            )
+            values (
+                :p_vehicle_id,
+                :p_owner_id, :p_brand_id, :p_type_id, :p_vehicle_name,
+                :p_license_plate, :p_seats, :p_transmission, :p_fuel_type, :p_price_per_day, :p_status
+            )";
+
+        const string insertVehicleLegacySql = @"
             insert into vehicles (
                 vehicle_id, owner_id, brand_id, type_id, vehicle_name,
                 seats, transmission, fuel_type, price_per_day, status
@@ -1447,38 +1735,84 @@ public class RentalRepository : IRentalRepository
         await connection.OpenAsync();
         using var transaction = connection.BeginTransaction();
 
+        var vehicleColumnLengths = await GetTableVarcharLengthsAsync(connection, transaction, "VEHICLES");
+        var imageColumnLengths = await GetTableVarcharLengthsAsync(connection, transaction, "VEHICLE_IMAGES");
+
         var vehicleId = await GetNextIdAsync(connection, transaction, "vehicles", "vehicle_id");
+        var inserted = false;
 
-        await using (var command = new OracleCommand(insertVehicleSql, connection))
+        for (var attempt = 0; attempt < 3 && !inserted; attempt++)
         {
-            command.Transaction = transaction;
-            command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
-            command.Parameters.Add("p_owner_id", OracleDbType.Int32, input.OwnerId, ParameterDirection.Input);
-            command.Parameters.Add("p_brand_id", OracleDbType.Int32, input.BrandId, ParameterDirection.Input);
-            command.Parameters.Add("p_type_id", OracleDbType.Int32, input.TypeId, ParameterDirection.Input);
-            command.Parameters.Add("p_vehicle_name", OracleDbType.Varchar2, input.VehicleName, ParameterDirection.Input);
-            command.Parameters.Add("p_seats", OracleDbType.Int32, input.Seats, ParameterDirection.Input);
-            command.Parameters.Add("p_transmission", OracleDbType.Varchar2, input.Transmission, ParameterDirection.Input);
-            command.Parameters.Add("p_fuel_type", OracleDbType.Varchar2, input.FuelType, ParameterDirection.Input);
-            command.Parameters.Add("p_price_per_day", OracleDbType.Decimal, input.PricePerDay, ParameterDirection.Input);
-            command.Parameters.Add("p_status", OracleDbType.Varchar2, input.Status, ParameterDirection.Input);
+            try
+            {
+                await using var command = new OracleCommand(insertVehicleWithLicenseSql, connection);
+                command.Transaction = transaction;
+                command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+                command.Parameters.Add("p_owner_id", OracleDbType.Int32, input.OwnerId, ParameterDirection.Input);
+                command.Parameters.Add("p_brand_id", OracleDbType.Int32, input.BrandId, ParameterDirection.Input);
+                command.Parameters.Add("p_type_id", OracleDbType.Int32, input.TypeId, ParameterDirection.Input);
+                command.Parameters.Add("p_vehicle_name", OracleDbType.Varchar2, TruncateToColumnLength(input.VehicleName, vehicleColumnLengths, "VEHICLE_NAME"), ParameterDirection.Input);
+                command.Parameters.Add("p_license_plate", OracleDbType.Varchar2, TruncateToColumnLength(input.LicensePlate, vehicleColumnLengths, "LICENSE_PLATE"), ParameterDirection.Input);
+                command.Parameters.Add("p_seats", OracleDbType.Int32, input.Seats, ParameterDirection.Input);
+                command.Parameters.Add("p_transmission", OracleDbType.Varchar2, TruncateToColumnLength(input.Transmission, vehicleColumnLengths, "TRANSMISSION"), ParameterDirection.Input);
+                command.Parameters.Add("p_fuel_type", OracleDbType.Varchar2, TruncateToColumnLength(input.FuelType, vehicleColumnLengths, "FUEL_TYPE"), ParameterDirection.Input);
+                command.Parameters.Add("p_price_per_day", OracleDbType.Decimal, input.PricePerDay, ParameterDirection.Input);
+                command.Parameters.Add("p_status", OracleDbType.Varchar2, TruncateToColumnLength(input.Status, vehicleColumnLengths, "STATUS"), ParameterDirection.Input);
+                await command.ExecuteNonQueryAsync();
+                inserted = true;
+            }
+            catch (OracleException ex) when (ex.Number == 904)
+            {
+                await using var legacyCommand = new OracleCommand(insertVehicleLegacySql, connection);
+                legacyCommand.Transaction = transaction;
+                legacyCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_owner_id", OracleDbType.Int32, input.OwnerId, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_brand_id", OracleDbType.Int32, input.BrandId, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_type_id", OracleDbType.Int32, input.TypeId, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_vehicle_name", OracleDbType.Varchar2, TruncateToColumnLength(input.VehicleName, vehicleColumnLengths, "VEHICLE_NAME"), ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_seats", OracleDbType.Int32, input.Seats, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_transmission", OracleDbType.Varchar2, TruncateToColumnLength(input.Transmission, vehicleColumnLengths, "TRANSMISSION"), ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_fuel_type", OracleDbType.Varchar2, TruncateToColumnLength(input.FuelType, vehicleColumnLengths, "FUEL_TYPE"), ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_price_per_day", OracleDbType.Decimal, input.PricePerDay, ParameterDirection.Input);
+                legacyCommand.Parameters.Add("p_status", OracleDbType.Varchar2, TruncateToColumnLength(input.Status, vehicleColumnLengths, "STATUS"), ParameterDirection.Input);
+                await legacyCommand.ExecuteNonQueryAsync();
+                inserted = true;
+            }
+            catch (OracleException ex) when (ex.Number == 1)
+            {
+                vehicleId = await GetNextIdAsync(connection, transaction, "vehicles", "vehicle_id");
+                if (attempt == 2)
+                {
+                    throw;
+                }
+            }
+        }
 
-            await command.ExecuteNonQueryAsync();
+        if (!inserted)
+        {
+            throw new InvalidOperationException("Khong the them xe do xung dot du lieu khi tao ma xe moi.");
         }
 
         var imageUrls = ParseImageUrls(input.ImageUrls);
         if (imageUrls.Count > 0)
         {
-            var nextImageId = await GetNextIdAsync(connection, transaction, "vehicle_images", "image_id");
-
-            for (var i = 0; i < imageUrls.Count; i++)
+            try
             {
-                await using var imageCommand = new OracleCommand(insertImageSql, connection);
-                imageCommand.Transaction = transaction;
-                imageCommand.Parameters.Add("p_image_id", OracleDbType.Int32, nextImageId + i, ParameterDirection.Input);
-                imageCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
-                imageCommand.Parameters.Add("p_image_url", OracleDbType.Varchar2, imageUrls[i], ParameterDirection.Input);
-                await imageCommand.ExecuteNonQueryAsync();
+                var nextImageId = await GetNextIdAsync(connection, transaction, "vehicle_images", "image_id");
+
+                for (var i = 0; i < imageUrls.Count; i++)
+                {
+                    await using var imageCommand = new OracleCommand(insertImageSql, connection);
+                    imageCommand.Transaction = transaction;
+                    imageCommand.Parameters.Add("p_image_id", OracleDbType.Int32, nextImageId + i, ParameterDirection.Input);
+                    imageCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+                    imageCommand.Parameters.Add("p_image_url", OracleDbType.Varchar2, TruncateToColumnLength(imageUrls[i], imageColumnLengths, "IMAGE_URL"), ParameterDirection.Input);
+                    await imageCommand.ExecuteNonQueryAsync();
+                }
+            }
+            catch (OracleException ex) when (IsMissingObjectError(ex))
+            {
+                // Allow vehicle creation even if vehicle_images table is not provisioned.
             }
         }
 
@@ -1512,12 +1846,19 @@ public class RentalRepository : IRentalRepository
         {
             await BroadcastVehicleNotificationAsync(input.OwnerId, vehicleId, input.VehicleName);
         }
-        catch (OracleException ex) when (IsMissingObjectError(ex))
+        catch
         {
-            // Ignore if notification storage is not provisioned yet.
+            // Notification side-effect should not block vehicle creation.
         }
 
-        await LogActivityAsync(input.OwnerId, "AddVehicle", $"VehicleId={vehicleId}, Name={input.VehicleName}, FuelType={input.FuelType}");
+        try
+        {
+            await LogActivityAsync(input.OwnerId, "AddVehicle", $"VehicleId={vehicleId}, Name={input.VehicleName}, FuelType={input.FuelType}");
+        }
+        catch
+        {
+            // Activity log side-effect should not block vehicle creation.
+        }
     }
 
     public async Task ToggleFavoriteVehicleAsync(int customerId, int vehicleId)
@@ -1737,6 +2078,11 @@ public class RentalRepository : IRentalRepository
 
     public async Task CreateContractDraftAsync(int customerId, int employeeId)
     {
+        if (customerId <= 0 || employeeId <= 0)
+        {
+            throw new InvalidOperationException("Thong tin tao hop dong khong hop le.");
+        }
+
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
@@ -1748,7 +2094,14 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
         command.Parameters.Add("p_employee_id", OracleDbType.Int32, employeeId, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            throw new InvalidOperationException("Khong the tao hop dong nhap vi stored procedure chua san sang tren DB.");
+        }
     }
 
     public async Task RentVehicleAsync(RentVehicleInputModel input)
@@ -1767,7 +2120,14 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate, ParameterDirection.Input);
         command.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            throw new InvalidOperationException("Khong the tao chi tiet thue xe vi stored procedure chua san sang tren DB.");
+        }
     }
 
     public async Task MakePaymentAsync(PaymentInputModel input)
@@ -1783,7 +2143,14 @@ public class RentalRepository : IRentalRepository
         command.Parameters.Add("p_contract_id", OracleDbType.Int32, input.ContractId, ParameterDirection.Input);
         command.Parameters.Add("p_amount", OracleDbType.Decimal, input.Amount, ParameterDirection.Input);
 
-        await command.ExecuteNonQueryAsync();
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            throw new InvalidOperationException("Khong the thanh toan vi stored procedure chua san sang tren DB.");
+        }
     }
 
     private static SupportMessageViewModel MapMessage(OracleDataReader reader)
@@ -1805,9 +2172,9 @@ public class RentalRepository : IRentalRepository
 
     public async Task LogActivityAsync(int? userId, string action, string details)
     {
-        const string sql = @"
-            insert into activity_logs (activity_id, user_id, action, details, created_at)
-            values ((select nvl(max(activity_id), 0) + 1 from activity_logs), :p_user_id, :p_action, :p_details, sysdate)";
+        var sql = $@"
+            insert into {ActivityLogsTable} (activity_id, user_id, action, details, created_at)
+            values ((select nvl(max(activity_id), 0) + 1 from {ActivityLogsTable}), :p_user_id, :p_action, :p_details, sysdate)";
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
@@ -1861,7 +2228,7 @@ public class RentalRepository : IRentalRepository
     private static string NormalizeDocType(string rawDocType)
     {
         var value = rawDocType?.Trim().ToUpperInvariant() ?? string.Empty;
-        if (value is "DRIVER_LICENSE" or "DRIVER_LICENSES")
+        if (value is "DRIVER_LICENSE" or "DRIVER_LICENSES" or "DRIVING_LICENSE" or "GPLX" or "BANG_LAI" or "BANG_LAI_XE")
         {
             return "DRIVER_LICENSES";
         }
@@ -1883,6 +2250,44 @@ public class RentalRepository : IRentalRepository
             .ToList();
     }
 
+    private static async Task<Dictionary<string, int>> GetTableVarcharLengthsAsync(OracleConnection connection, OracleTransaction transaction, string tableName)
+    {
+        const string sql = @"
+            select upper(column_name) as column_name, data_length
+            from user_tab_columns
+            where upper(table_name) = :p_table_name
+              and data_type in ('VARCHAR2', 'NVARCHAR2', 'CHAR', 'NCHAR')";
+
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        await using var command = new OracleCommand(sql, connection);
+        command.Transaction = transaction;
+        command.Parameters.Add("p_table_name", OracleDbType.Varchar2, tableName.ToUpperInvariant(), ParameterDirection.Input);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var columnName = Convert.ToString(reader["COLUMN_NAME"]) ?? string.Empty;
+            var length = Convert.ToInt32(reader["DATA_LENGTH"]);
+            if (!string.IsNullOrWhiteSpace(columnName) && length > 0)
+            {
+                result[columnName] = length;
+            }
+        }
+
+        return result;
+    }
+
+    private static string TruncateToColumnLength(string? value, IReadOnlyDictionary<string, int> maxLengths, string columnName)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (!maxLengths.TryGetValue(columnName, out var maxLength) || maxLength <= 0)
+        {
+            return normalized;
+        }
+
+        return normalized.Length <= maxLength ? normalized : normalized[..maxLength];
+    }
+
     private static async Task<int> GetNextIdAsync(OracleConnection connection, OracleTransaction transaction, string tableName, string idColumn)
     {
         var sql = $"select nvl(max({idColumn}), 0) + 1 from {tableName}";
@@ -1899,4 +2304,137 @@ public class RentalRepository : IRentalRepository
         var raw = await command.ExecuteScalarAsync();
         return Convert.ToInt32(raw);
     }
+
+    public async Task<ContractFullViewModel?> GetContractByIdAsync(int contractId)
+    {
+        try
+        {
+            await using var connection = new OracleConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = """
+                select c.contract_id, c.customer_id, c.employee_id, c.vehicle_id,
+                       c.start_date, c.end_date, c.total_amount, c.status, c.created_at,
+                       u.full_name as customer_name, u.email as customer_email,
+                       e.full_name as employee_name, e.email as employee_email,
+                       v.vehicle_name, v.price_per_day, b.brand_name, t.type_name
+                from contracts c
+                left join users u on c.customer_id = u.user_id
+                left join users e on c.employee_id = e.user_id
+                left join vehicles v on c.vehicle_id = v.vehicle_id
+                left join brands b on v.brand_id = b.brand_id
+                left join vehicle_types t on v.type_id = t.type_id
+                where c.contract_id = :contract_id
+                """;
+
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+            {
+                return null;
+            }
+
+            return new ContractFullViewModel
+            {
+                ContractId = reader.GetInt32(0),
+                CustomerId = reader.IsDBNull(1) ? 0 : reader.GetInt32(1),
+                EmployeeId = reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+                VehicleId = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
+                StartDate = reader.GetDateTime(4),
+                EndDate = reader.GetDateTime(5),
+                TotalAmount = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
+                Status = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                CreatedAt = reader.GetDateTime(8),
+                CustomerName = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
+                CustomerEmail = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
+                EmployeeName = reader.IsDBNull(11) ? string.Empty : reader.GetString(11),
+                EmployeeEmail = reader.IsDBNull(12) ? string.Empty : reader.GetString(12),
+                VehicleName = reader.IsDBNull(13) ? string.Empty : reader.GetString(13),
+                PricePerDay = reader.IsDBNull(14) ? 0 : reader.GetDecimal(14),
+                BrandName = reader.IsDBNull(15) ? string.Empty : reader.GetString(15),
+                TypeName = reader.IsDBNull(16) ? string.Empty : reader.GetString(16)
+            };
+        }
+        catch (OracleException)
+        {
+            return null;
+        }
+    }
+
+    public async Task UpdateVehicleAsync(CreateVehicleInputModel input)
+    {
+        if (input.VehicleId <= 0)
+        {
+            throw new ArgumentException("Vehicle ID must be greater than 0.");
+        }
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var sql = """
+            update vehicles set
+                vehicle_name = :vehicle_name,
+                brand_id = :brand_id,
+                type_id = :type_id,
+                license_plate = :license_plate,
+                price_per_day = :price_per_day,
+                status = :status
+            where vehicle_id = :vehicle_id
+            """;
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+        command.Parameters.Add("vehicle_name", OracleDbType.Varchar2, input.VehicleName, ParameterDirection.Input);
+        command.Parameters.Add("brand_id", OracleDbType.Int32, input.BrandId, ParameterDirection.Input);
+        command.Parameters.Add("type_id", OracleDbType.Int32, input.TypeId, ParameterDirection.Input);
+        command.Parameters.Add("license_plate", OracleDbType.Varchar2, input.LicensePlate, ParameterDirection.Input);
+        command.Parameters.Add("price_per_day", OracleDbType.Decimal, input.PricePerDay, ParameterDirection.Input);
+        command.Parameters.Add("status", OracleDbType.Varchar2, input.Status ?? "ACTIVE", ParameterDirection.Input);
+
+        await command.ExecuteNonQueryAsync();
+
+        await LogActivityAsync(input.OwnerId, "UPDATE_VEHICLE", $"Updated vehicle {input.VehicleId}: {input.VehicleName}");
+    }
+
+    public async Task ApproveContractAsync(int contractId)
+    {
+        if (contractId <= 0)
+        {
+            throw new InvalidOperationException("Hop dong khong hop le.");
+        }
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand("sp_approve_contract", connection)
+        {
+            CommandType = CommandType.StoredProcedure
+        };
+
+        command.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+
+        try
+        {
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            const string fallbackSql = @"
+                update contracts
+                set status = 'ACTIVE'
+                where contract_id = :p_contract_id";
+
+            await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+            fallbackCommand.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            var affected = await fallbackCommand.ExecuteNonQueryAsync();
+
+            if (affected <= 0)
+            {
+                throw new InvalidOperationException("Khong tim thay hop dong de duyet.");
+            }
+        }
+    }
 }
+

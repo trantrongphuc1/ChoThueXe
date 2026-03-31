@@ -1,0 +1,682 @@
+@using ChoThueXe.Models.Portal
+@model UpdateProfileInputModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa hồ sơ";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .profile-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .profile-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .profile-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .profile-header p {
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    .profile-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tab-button {
+        padding: 16px 20px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+    }
+
+    .tab-button:hover {
+        color: var(--text-primary);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .card-header h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 12px 14px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-group input:disabled {
+        background-color: var(--bg-tertiary);
+        opacity: 0.6;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row.three {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .info-section {
+        background-color: var(--bg-tertiary);
+        border-left: 3px solid var(--accent);
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
+
+    .info-section label {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .info-section span {
+        color: var(--text-primary);
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+        flex: 1;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    .avatar-section {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #1e40af);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        margin: 0 auto 16px;
+        border: 3px solid var(--border);
+    }
+
+    .avatar-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .avatar-email {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .upload-area {
+        border: 2px dashed var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .upload-area:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .upload-area input[type="file"] {
+        display: none;
+    }
+
+    .error-message {
+        color: var(--danger);
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .success-message {
+        background-color: rgba(63, 185, 80, 0.1);
+        border-left: 3px solid var(--success);
+        padding: 12px 14px;
+        border-radius: 6px;
+        color: var(--success);
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .profile-container {
+            margin: 20px auto;
+        }
+
+        .profile-header h1 {
+            font-size: 24px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-row.three {
+            grid-template-columns: 1fr;
+        }
+
+        .button-group {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+
+        .profile-tabs {
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 12px 16px;
+            font-size: 13px;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Hồ sơ cá nhân</h1>
+        <p>Quản lý thông tin tài khoản và cài đặt</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="profile-tabs">
+        <button type="button" class="tab-button active" onclick="switchTab('personal')">
+            👤 Thông tin cá nhân
+        </button>
+        <button type="button" class="tab-button" onclick="switchTab('security')">
+            🔒 Bảo mật
+        </button>
+        <button type="button" class="tab-button" onclick="switchTab('documents')">
+            📄 Tài liệu
+        </button>
+        <button type="button" class="tab-button" onclick="switchTab('preferences')">
+            ⚙️ Tùy chọn
+        </button>
+    </div>
+
+    <!-- Personal Info Tab -->
+    <div id="personal" class="tab-content active">
+        <div class="card">
+            <div class="avatar-section">
+                <div class="avatar">👤</div>
+                <div class="avatar-name">@Html.DisplayFor(model => model.FullName)</div>
+                <div class="avatar-email">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
+            </div>
+
+            <form asp-action="Update" asp-controller="Customer" method="post">
+                @if (ViewBag.SuccessMessage != null)
+                {
+                    <div class="success-message">
+                        ✓ @ViewBag.SuccessMessage
+                    </div>
+                }
+
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label for="fullName">Họ và tên</label>
+                        <input asp-for="FullName" type="text" id="fullName" required />
+                        <span asp-validation-for="FullName" class="error-message"></span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" disabled value="@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value" />
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Số điện thoại</label>
+                        <input asp-for="Phone" type="tel" id="phone" />
+                        <span asp-validation-for="Phone" class="error-message"></span>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">💾 Lưu thay đổi</button>
+                    <a href="/Customer/Index" class="btn btn-secondary">← Quay lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Security Tab -->
+    <div id="security" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2>Thay đổi mật khẩu</h2>
+            </div>
+
+            <form asp-action="ChangePassword" asp-controller="Customer" method="post">
+                <div class="form-group">
+                    <label for="currentPassword">Mật khẩu hiện tại</label>
+                    <input type="password" id="currentPassword" name="currentPassword" placeholder="Nhập mật khẩu hiện tại" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới</label>
+                    <input type="password" id="newPassword" name="newPassword" placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)" minlength="8" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu mới" required />
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">🔄 Cập nhật mật khẩu</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Phiên đang hoạt động</h2>
+            </div>
+
+            <div class="info-section">
+                <label>Thiết bị hiện tại</label>
+                <span>💻 Windows - Chrome</span>
+            </div>
+
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Đăng xuất tất cả các phiên khác để bảo vệ tài khoản
+            </p>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" style="flex: 1;">🚪 Đăng xuất từ thiết bị khác</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documents Tab -->
+    <div id="documents" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2>Tài liệu xác thực</h2>
+            </div>
+            <div class="info-section">
+                <label>Hướng dẫn</label>
+                <span>Tải file ảnh/PDF giấy tờ trước, sau đó bấm gửi tài liệu để Admin duyệt.</span>
+            </div>
+
+            <form asp-action="SubmitDocument" asp-controller="Customer" method="post" style="margin-bottom: 24px;">
+                @Html.AntiForgeryToken()
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="docType">Loại giấy tờ</label>
+                        <select id="docType" name="DocType" required>
+                            <option value="CCCD" selected>CCCD</option>
+                            <option value="DRIVER_LICENSES">Bằng lái xe</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tải file giấy tờ (JPG/PNG/PDF, tối đa 5MB)</label>
+                        <input id="documentFileInput" type="file" accept=".jpg,.jpeg,.png,.pdf" />
+                    </div>
+                </div>
+
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label for="fileUrl">Đường dẫn file đã tải lên</label>
+                        <input id="fileUrl" name="FileUrl" type="text" readonly required placeholder="Vui lòng tải file trước" />
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="uploadDocumentFileButton" type="button" class="btn btn-secondary">📤 Tải file lên server</button>
+                    <button type="submit" class="btn btn-primary">✅ Gửi giấy tờ</button>
+                </div>
+            </form>
+
+            <form asp-action="SubmitDriveLicense" asp-controller="Customer" method="post">
+                @Html.AntiForgeryToken()
+                <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Thông tin bằng lái xe</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="licenseNumber">Số bằng lái</label>
+                        <input id="licenseNumber" name="LicenseNumber" type="text" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="issuedBy">Nơi cấp</label>
+                        <input id="issuedBy" name="IssuedBy" type="text" required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="issuedAt">Ngày cấp</label>
+                        <input id="issuedAt" name="IssuedAt" type="date" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="expireAt">Ngày hết hạn</label>
+                        <input id="expireAt" name="ExpireAt" type="date" required />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tải file bằng lái (JPG/PNG/PDF, tối đa 5MB)</label>
+                        <input id="driveLicenseFileInput" type="file" accept=".jpg,.jpeg,.png,.pdf" />
+                    </div>
+                    <div class="form-group">
+                        <label for="driveLicenseFileUrl">Đường dẫn file bằng lái</label>
+                        <input id="driveLicenseFileUrl" name="FileUrl" type="text" readonly placeholder="Vui lòng tải file trước" />
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="uploadDriveLicenseFileButton" type="button" class="btn btn-secondary">📤 Tải file bằng lái lên server</button>
+                    <button type="submit" class="btn btn-primary">🪪 Gửi thông tin bằng lái</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Preferences Tab -->
+    <div id="preferences" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <h2>Thông báo</h2>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" checked />
+                    <span>📧 Nhận email về đơn đặt xe</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" checked />
+                    <span>📱 Nhận SMS thông báo</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" />
+                    <span>📢 Nhận khuyến mại và ưu đãi</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" checked />
+                    <span>📰 Nhận tin tức từ ChoThueXe</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Ngôn ngữ và khu vực</h2>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label for="language">Ngôn ngữ</label>
+                    <select id="language">
+                        <option selected>Tiếng Việt</option>
+                        <option>English</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row full">
+                <div class="form-group">
+                    <label for="timezone">Múi giờ</label>
+                    <select id="timezone">
+                        <option selected>GMT +7 (Giờ Đông Dương)</option>
+                        <option>GMT +8</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-primary">💾 Lưu cài đặt</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Nguy hiểm</h2>
+            </div>
+
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                Xóa tài khoản sẽ xóa tất cả dữ liệu của bạn vĩnh viễn. Hành động này không thể hoàn tác.
+            </p>
+
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" style="flex: 1; border-color: var(--danger); color: var(--danger);">
+                    🗑️ Xóa tài khoản
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    async function uploadDocumentFile(fileInputId, fileUrlInputId, uploadButtonId) {
+        const fileInput = document.getElementById(fileInputId);
+        const fileUrlInput = document.getElementById(fileUrlInputId);
+        const uploadButton = document.getElementById(uploadButtonId);
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert('Vui lòng chọn file trước khi tải lên.');
+            return;
+        }
+
+        if (!tokenInput) {
+            alert('Thiếu anti-forgery token. Vui lòng tải lại trang.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('__RequestVerificationToken', tokenInput.value);
+
+        uploadButton.disabled = true;
+        uploadButton.textContent = '⏳ Đang tải lên...';
+
+        try {
+            const response = await fetch('/Customer/UploadDocumentFile', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                alert(data.error || 'Tải file thất bại.');
+                return;
+            }
+
+            fileUrlInput.value = data.fileUrl || '';
+            alert('Tải file thành công. Bây giờ bạn có thể bấm "Gửi giấy tờ".');
+        } catch {
+            alert('Không thể tải file lên lúc này. Vui lòng thử lại.');
+        } finally {
+            uploadButton.disabled = false;
+            if (uploadButtonId === 'uploadDriveLicenseFileButton') {
+                uploadButton.textContent = '📤 Tải file bằng lái lên server';
+            } else {
+                uploadButton.textContent = '📤 Tải file lên server';
+            }
+        }
+    }
+
+        document.getElementById('uploadDocumentFileButton')?.addEventListener('click', () => {
+            uploadDocumentFile('documentFileInput', 'fileUrl', 'uploadDocumentFileButton');
+        });
+
+        document.getElementById('uploadDriveLicenseFileButton')?.addEventListener('click', () => {
+            uploadDocumentFile('driveLicenseFileInput', 'driveLicenseFileUrl', 'uploadDriveLicenseFileButton');
+        });
+</script>

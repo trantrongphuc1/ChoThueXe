@@ -1,0 +1,499 @@
+@model ChoThueXe.Models.Portal.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    var contractStatusFilter = (ViewData["ContractStatusFilter"] as string) ?? string.Empty;
+    var contractKeywordFilter = (ViewData["ContractKeywordFilter"] as string) ?? string.Empty;
+}
+
+<style>
+    .admin-wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .admin-header h1 { margin: 0; font-size: 28px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .summary-box { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg-secondary); }
+    .summary-box .label { color: var(--text-secondary); font-size: 12px; }
+    .summary-box .value { font-size: 20px; font-weight: 700; }
+    .panel { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-secondary); margin-bottom: 16px; overflow: hidden; }
+    .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .panel-body { padding: 12px 14px; }
+    .empty { color: var(--text-secondary); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
+    th { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .alert { border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid transparent; }
+    .alert-success { background: var(--success-light); border-color: var(--success); color: #14532d; }
+    .alert-danger { background: var(--error-light); border-color: var(--error); color: #7f1d1d; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .form-control, select, textarea { width: 100%; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 8px 10px; }
+    .btn { border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+    .btn-success { background: #15803d; border-color: #15803d; color: #fff; }
+    .small { font-size: 12px; color: var(--text-secondary); }
+</style>
+
+<div class="admin-wrap">
+    <div class="admin-header">
+        <h1>Quản trị</h1>
+        <a class="btn" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+    </div>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    <div class="summary">
+        <div class="summary-box"><div class="label">Giấy tờ chờ duyệt</div><div class="value">@Model.PendingDocuments.Count</div></div>
+        <div class="summary-box"><div class="label">Người dùng chờ đối chiếu</div><div class="value">@Model.PendingVerifications.Count</div></div>
+        <div class="summary-box"><div class="label">Yêu cầu đổi hồ sơ</div><div class="value">@Model.PendingProfileUpdates.Count</div></div>
+        <div class="summary-box"><div class="label">Tin nhắn hỗ trợ</div><div class="value">@Model.Messages.Count</div></div>
+        <div class="summary-box"><div class="label">Tổng xe hệ thống</div><div class="value">@Model.Vehicles.Count</div></div>
+        <div class="summary-box"><div class="label">Tổng đơn thuê</div><div class="value">@Model.Contracts.Count</div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">1) Duyệt từng giấy tờ</div>
+        <div class="panel-body">
+            @if (!Model.PendingDocuments.Any())
+            {
+                <div class="empty">Không có giấy tờ chờ duyệt.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Document</th>
+                        <th>User</th>
+                        <th>Loại</th>
+                        <th>File</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var d in Model.PendingDocuments)
+                    {
+                        <tr>
+                            <td>#@d.DocumentId</td>
+                            <td>@d.UserId - @d.FullName</td>
+                            <td>@d.DocType</td>
+                            <td><a href="@d.FileUrl" target="_blank" rel="noopener">Xem file</a></td>
+                            <td>@d.Status</td>
+                            <td>
+                                <form asp-action="ApproveDocument" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="documentId" value="@d.DocumentId" />
+                                    <button type="submit" class="btn btn-success">Duyệt giấy tờ</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">2) Đối chiếu CCCD và bằng lái theo người dùng</div>
+        <div class="panel-body">
+            @if (!Model.PendingVerifications.Any())
+            {
+                <div class="empty">Không có hồ sơ cần đối chiếu.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>CCCD</th>
+                        <th>Bằng lái</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var v in Model.PendingVerifications)
+                    {
+                        <tr>
+                            <td>@v.UserId - @v.FullName</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(v.CccdFileUrl))
+                                {
+                                    <a href="@v.CccdFileUrl" target="_blank" rel="noopener">Xem CCCD</a>
+                                    <div class="small">DocId: @v.CccdDocumentId</div>
+                                }
+                                else
+                                {
+                                    <span class="small">Chưa có</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(v.DriverLicenseFileUrl))
+                                {
+                                    <a href="@v.DriverLicenseFileUrl" target="_blank" rel="noopener">Xem bằng lái</a>
+                                    <div class="small">DocId: @v.DriverLicenseDocumentId</div>
+                                }
+                                else
+                                {
+                                    <span class="small">Chưa có</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="actions">
+                                    <form asp-action="ReviewDocuments" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="UserId" value="@v.UserId" />
+                                        <input type="hidden" name="IsMatched" value="true" />
+                                        <button type="submit" class="btn btn-success">Khớp (Duyệt)</button>
+                                    </form>
+                                    <form asp-action="ReviewDocuments" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="UserId" value="@v.UserId" />
+                                        <input type="hidden" name="IsMatched" value="false" />
+                                        <button type="submit" class="btn btn-danger">Không khớp (Từ chối)</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">3) Duyệt yêu cầu cập nhật hồ sơ</div>
+        <div class="panel-body">
+            @if (!Model.PendingProfileUpdates.Any())
+            {
+                <div class="empty">Không có yêu cầu cập nhật hồ sơ.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Hiện tại</th>
+                        <th>Yêu cầu mới</th>
+                        <th>Thời gian</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var p in Model.PendingProfileUpdates)
+                    {
+                        <tr>
+                            <td>@p.UserId</td>
+                            <td>@p.CurrentFullName - @p.CurrentPhone</td>
+                            <td>@p.RequestedFullName - @p.RequestedPhone</td>
+                            <td>@p.RequestedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <div class="actions">
+                                    <form asp-action="ReviewProfileUpdate" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="RequestId" value="@p.RequestId" />
+                                        <input type="hidden" name="IsApproved" value="true" />
+                                        <button type="submit" class="btn btn-success">Duyệt</button>
+                                    </form>
+                                    <form asp-action="ReviewProfileUpdate" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="RequestId" value="@p.RequestId" />
+                                        <input type="hidden" name="IsApproved" value="false" />
+                                        <button type="submit" class="btn btn-danger">Từ chối</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">4) Thêm xe mới</div>
+        <div class="panel-body">
+            <form id="addVehicleForm" asp-action="AddVehicle" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="OwnerId" value="0" />
+                <div class="form-grid">
+                    <div><label>Tên xe</label><input class="form-control" name="VehicleName" required /></div>
+                    <div><label>Biển số</label><input class="form-control" name="LicensePlate" required /></div>
+                    <div>
+                        <label>Hãng xe</label>
+                        <select name="BrandId" required>
+                            <option value="">-- Chọn --</option>
+                            @foreach (var b in Model.Brands)
+                            {
+                                <option value="@b.BrandId">@b.BrandName</option>
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label>Loại xe</label>
+                        <select name="TypeId" required>
+                            <option value="">-- Chọn --</option>
+                            @foreach (var t in Model.Types)
+                            {
+                                <option value="@t.TypeId">@t.TypeName</option>
+                            }
+                        </select>
+                    </div>
+                    <div><label>Số chỗ</label><input class="form-control" name="Seats" type="number" min="2" max="60" value="4" required /></div>
+                    <div><label>Hộp số</label><input class="form-control" name="Transmission" value="Auto" required /></div>
+                    <div><label>Nhiên liệu</label><input class="form-control" name="FuelType" value="Gas" required /></div>
+                    <div><label>Giá/ngày</label><input class="form-control" name="PricePerDay" type="number" step="1000" min="1" required /></div>
+                    <div>
+                        <label>Trạng thái</label>
+                        <select name="Status">
+                            <option value="AVAILABLE">AVAILABLE</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                        </select>
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <label>Ảnh xe (mỗi URL một dòng)</label>
+                        <textarea id="imageUrls" name="ImageUrls" rows="3"></textarea>
+                        <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <input id="vehicleImageFiles" type="file" accept=".jpg,.jpeg,.png,.webp" multiple />
+                            <button id="uploadVehicleImagesButton" type="button" class="btn btn-secondary">📤 Tải ảnh từ máy</button>
+                            <span class="small">Ảnh sẽ được upload và tự thêm URL vào ô trên.</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:10px;">
+                    <button type="submit" class="btn btn-primary">Thêm xe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">5) Tin nhắn hỗ trợ khách hàng</div>
+        <div class="panel-body">
+            @if (!Model.Messages.Any())
+            {
+                <div class="empty">Không có tin nhắn hỗ trợ.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Khách hàng</th>
+                        <th>Nội dung</th>
+                        <th>Trạng thái</th>
+                        <th>Phản hồi</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var m in Model.Messages.OrderByDescending(x => x.SentAt).Take(20))
+                    {
+                        <tr>
+                            <td>@m.SenderId - @m.SenderName</td>
+                            <td>@m.Content</td>
+                            <td>@m.Status</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(m.ReplyContent))
+                                {
+                                    <span>@m.ReplyContent</span>
+                                }
+                                else
+                                {
+                                    <form asp-action="ReplyMessage" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="MessageId" value="@m.MessageId" />
+                                        <textarea name="ReplyContent" rows="2" required></textarea>
+                                        <div style="margin-top:6px;">
+                                            <button type="submit" class="btn btn-primary">Gửi phản hồi</button>
+                                        </div>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">6) Quản lý xe</div>
+        <div class="panel-body">
+            @if (!Model.Vehicles.Any())
+            {
+                <div class="empty">Chưa có xe nào hiển thị cho admin. Hãy kiểm tra dữ liệu `vehicles` và trạng thái xe.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên xe</th>
+                        <th>Hãng/Loại</th>
+                        <th>Giá/ngày</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var v in Model.Vehicles.OrderByDescending(x => x.VehicleId).Take(50))
+                    {
+                        <tr>
+                            <td>#@v.VehicleId</td>
+                            <td>@v.VehicleName</td>
+                            <td>@v.BrandName / @v.TypeName</td>
+                            <td>@v.PricePerDay.ToString("N0") VND</td>
+                            <td>@v.Status</td>
+                            <td>
+                                <a class="btn" asp-action="EditVehicle" asp-route-vehicleId="@v.VehicleId">Sửa</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <div class="small" style="margin-top:8px;">Đang hiển thị tối đa 50 xe mới nhất.</div>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">7) Quản lý đơn thuê</div>
+        <div class="panel-body">
+            <form asp-action="Index" method="get" class="form-grid" style="margin-bottom: 12px;">
+                <div>
+                    <label>Trạng thái đơn</label>
+                    <select name="contractStatus">
+                        <option value="" selected="@(string.IsNullOrWhiteSpace(contractStatusFilter))">Tất cả</option>
+                        <option value="PENDING" selected="@string.Equals(contractStatusFilter, "PENDING", StringComparison.OrdinalIgnoreCase)">PENDING</option>
+                        <option value="APPROVED" selected="@string.Equals(contractStatusFilter, "APPROVED", StringComparison.OrdinalIgnoreCase)">APPROVED</option>
+                        <option value="PAID" selected="@string.Equals(contractStatusFilter, "PAID", StringComparison.OrdinalIgnoreCase)">PAID</option>
+                        <option value="REJECTED" selected="@string.Equals(contractStatusFilter, "REJECTED", StringComparison.OrdinalIgnoreCase)">REJECTED</option>
+                        <option value="CANCELLED" selected="@string.Equals(contractStatusFilter, "CANCELLED", StringComparison.OrdinalIgnoreCase)">CANCELLED</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Tìm theo mã đơn / khách / xe</label>
+                    <input class="form-control" type="text" name="contractQ" value="@contractKeywordFilter" placeholder="VD: 1024, Nguyen Van A, Camry" />
+                </div>
+                <div style="display:flex; gap:8px; align-items:end;">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a asp-action="Index" class="btn">Xóa lọc</a>
+                </div>
+            </form>
+
+            @if (!Model.Contracts.Any())
+            {
+                <div class="empty">Chưa có đơn thuê nào hiển thị cho admin.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Contract</th>
+                        <th>Khách hàng</th>
+                        <th>Xe</th>
+                        <th>Thời gian thuê</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var c in Model.Contracts.OrderByDescending(x => x.ContractId).Take(100))
+                    {
+                        <tr>
+                            <td>#@c.ContractId</td>
+                            <td>@c.FullName</td>
+                            <td>@c.VehicleName</td>
+                            <td>@c.StartDate.ToString("dd/MM/yyyy") - @c.EndDate.ToString("dd/MM/yyyy")</td>
+                            <td>@c.TotalAmount.ToString("N0") VND</td>
+                            <td>@c.Status</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <div class="small" style="margin-top:8px;">Đang hiển thị tối đa 100 đơn thuê mới nhất.</div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    async function uploadVehicleImages() {
+        const form = document.getElementById('addVehicleForm');
+        const fileInput = document.getElementById('vehicleImageFiles');
+        const button = document.getElementById('uploadVehicleImagesButton');
+        const imageUrls = document.getElementById('imageUrls');
+
+        if (!form || !fileInput || !button || !imageUrls) {
+            return;
+        }
+
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Vui lòng chọn ít nhất 1 ảnh trước khi tải lên.');
+            return;
+        }
+
+        const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+        if (!tokenInput) {
+            alert('Thiếu anti-forgery token. Vui lòng tải lại trang.');
+            return;
+        }
+
+        const payload = new FormData();
+        payload.append('__RequestVerificationToken', tokenInput.value);
+
+        for (const file of fileInput.files) {
+            payload.append('files', file);
+        }
+
+        button.disabled = true;
+        button.textContent = '⏳ Đang tải...';
+
+        try {
+            const response = await fetch('/Admin/UploadVehicleImages', {
+                method: 'POST',
+                body: payload
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                alert(data.error || 'Tải ảnh thất bại.');
+                return;
+            }
+
+            const urls = Array.isArray(data.urls) ? data.urls : [];
+            if (urls.length === 0) {
+                alert('Không có URL ảnh nào được trả về.');
+                return;
+            }
+
+            const current = imageUrls.value?.trim();
+            const merged = [current, ...urls].filter(Boolean).join('\n');
+            imageUrls.value = merged;
+            fileInput.value = '';
+
+            alert(`Đã tải ${urls.length} ảnh và thêm URL vào form.`);
+        } catch {
+            alert('Không thể tải ảnh lúc này. Vui lòng thử lại.');
+        } finally {
+            button.disabled = false;
+            button.textContent = '📤 Tải ảnh từ máy';
+        }
+    }
+
+    document.getElementById('uploadVehicleImagesButton')?.addEventListener('click', uploadVehicleImages);
+</script>

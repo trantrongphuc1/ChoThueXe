@@ -1,0 +1,614 @@
+@{
+    ViewData["Title"] = "Kết quả tìm kiếm";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .search-results-container {
+        max-width: 1400px;
+        margin: 40px auto;
+        padding: 0 20px;
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+    }
+
+    .search-filters {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .filter-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-group {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .filter-group:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+    }
+
+    .filter-item input {
+        cursor: pointer;
+    }
+
+    .filter-item label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .filter-item input:checked + label {
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .price-range {
+        margin-bottom: 12px;
+    }
+
+    .price-range input {
+        width: 100%;
+    }
+
+    .price-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+    }
+
+    .search-results-main {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .results-count {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .sort-dropdown {
+        padding: 8px 12px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        transform: translateY(-4px);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 180px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 64px;
+        position: relative;
+    }
+
+    .vehicle-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: linear-gradient(135deg, var(--success) 0%, #2ea043 100%);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .vehicle-body {
+        padding: 16px;
+    }
+
+    .vehicle-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .vehicle-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 12px;
+        font-size: 12px;
+    }
+
+    .vehicle-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 12px;
+    }
+
+    .vehicle-price small {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 400;
+    }
+
+    .vehicle-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 32px;
+    }
+
+    .page-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .page-btn:hover,
+    .page-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    .no-results-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+    }
+
+    .no-results-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .no-results-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    @@media (max-width: 1024px) {
+        .search-results-container {
+            grid-template-columns: 1fr;
+        }
+
+        .search-filters {
+            position: static;
+        }
+
+        .results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .results-header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .vehicle-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .results-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="search-results-container">
+    <!-- Filters Sidebar -->
+    <div class="search-filters">
+        <div class="filter-title">🔍 Bộ lọc</div>
+
+        <!-- Price Range -->
+        <div class="filter-group">
+            <div class="filter-title">💰 Giá</div>
+            <div class="price-range">
+                <input type="range" min="500000" max="10000000" value="5000000" oninput="updatePrice(this)">
+            </div>
+            <div class="price-display">
+                <span>Dưới</span>
+                <span id="priceValue">5.000.000đ</span>
+            </div>
+        </div>
+
+        <!-- Vehicle Type -->
+        <div class="filter-group">
+            <div class="filter-title">🚗 Loại xe</div>
+            <div class="filter-item">
+                <input type="checkbox" id="sedan" checked>
+                <label for="sedan">Sedan</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="suv" checked>
+                <label for="suv">SUV</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="van" checked>
+                <label for="van">Van/Minibus</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="luxury">
+                <label for="luxury">Xe sang</label>
+            </div>
+        </div>
+
+        <!-- Transmission -->
+        <div class="filter-group">
+            <div class="filter-title">⚙️ Hộp số</div>
+            <div class="filter-item">
+                <input type="checkbox" id="automatic" checked>
+                <label for="automatic">Tự động</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="manual">
+                <label for="manual">Số sàn</label>
+            </div>
+        </div>
+
+        <!-- Fuel Type -->
+        <div class="filter-group">
+            <div class="filter-title">⛽ Loại nhiên liệu</div>
+            <div class="filter-item">
+                <input type="checkbox" id="petrol" checked>
+                <label for="petrol">Xăng</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="diesel" checked>
+                <label for="diesel">Dầu diesel</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="hybrid">
+                <label for="hybrid">Hybrid</label>
+            </div>
+        </div>
+
+        <!-- Rating -->
+        <div class="filter-group">
+            <div class="filter-title">⭐ Đánh giá</div>
+            <div class="filter-item">
+                <input type="checkbox" id="rating5" checked>
+                <label for="rating5">5 sao (125)</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="rating4" checked>
+                <label for="rating4">4+ sao (312)</label>
+            </div>
+            <div class="filter-item">
+                <input type="checkbox" id="rating3">
+                <label for="rating3">3+ sao (48)</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="search-results-main">
+        <div class="results-header">
+            <div class="results-count">📊 Tìm thấy <strong>24</strong> xe phù hợp</div>
+            <select class="sort-dropdown" onchange="sortResults(this.value)">
+                <option value="relevant">Phù hợp nhất</option>
+                <option value="price-low">Giá thấp đến cao</option>
+                <option value="price-high">Giá cao đến thấp</option>
+                <option value="rating">Đánh giá cao nhất</option>
+                <option value="newest">Mới nhất</option>
+            </select>
+        </div>
+
+        <div class="results-grid">
+            <!-- Vehicle 1 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="vehicle-badge">Phổ biến</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Toyota Camry 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐⭐</span>
+                        <span>(324)</span>
+                    </div>
+                    <div class="vehicle-price">2.5M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 2 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    🚙
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Honda CR-V 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐</span>
+                        <span>(268)</span>
+                    </div>
+                    <div class="vehicle-price">2.2M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 3 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Mazda 3 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐⭐</span>
+                        <span>(445)</span>
+                    </div>
+                    <div class="vehicle-price">1.8M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 4 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    🏎️
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">BMW 3 Series 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐⭐</span>
+                        <span>(189)</span>
+                    </div>
+                    <div class="vehicle-price">3.5M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 5 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    🚌
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Hyundai Starex 2023</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 7 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐</span>
+                        <span>(156)</span>
+                    </div>
+                    <div class="vehicle-price">2.8M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle 6 -->
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    <span class="vehicle-badge">Mới</span>
+                    🚗
+                </div>
+                <div class="vehicle-body">
+                    <div class="vehicle-name">Kia Cerato 2024</div>
+                    <div class="vehicle-meta">
+                        <span>📍 TP.HCM</span>
+                        <span>🪑 5 chỗ</span>
+                    </div>
+                    <div class="vehicle-rating">
+                        <span style="color: var(--warning);">⭐⭐⭐⭐⭐</span>
+                        <span>(612)</span>
+                    </div>
+                    <div class="vehicle-price">1.6M <small>/ngày</small></div>
+                    <div class="vehicle-actions">
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                        <button class="btn btn-outline">Chi tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">4</button>
+            <button class="page-btn">...</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updatePrice(slider) {
+        const value = parseInt(slider.value).toLocaleString('vi-VN');
+        document.getElementById('priceValue').textContent = value + 'đ';
+    }
+
+    function sortResults(value) {
+        console.log('Sorting by:', value);
+    }
+</script>

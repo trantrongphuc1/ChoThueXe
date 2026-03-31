@@ -3,6 +3,7 @@ using ChoThueXe.Models.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Oracle.ManagedDataAccess.Client;
 using System.Security.Claims;
 
 namespace ChoThueXe.Controllers;
@@ -105,6 +106,11 @@ public class AuthController : Controller
             ViewData["Error"] = ex.Message;
             return View(input);
         }
+        catch (OracleException)
+        {
+            ViewData["Error"] = "Dang ky that bai do loi he thong. Vui long thu lai.";
+            return View(input);
+        }
     }
 
     [HttpGet]
@@ -130,9 +136,19 @@ public class AuthController : Controller
             TempData["Success"] = $"OTP da duoc gui den email {email}.";
             return RedirectToAction(nameof(ResetPassword));
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             ViewData["Error"] = ex.Message;
+            return View();
+        }
+        catch (OracleException)
+        {
+            ViewData["Error"] = "Khong the gui OTP luc nay do loi he thong du lieu.";
+            return View();
+        }
+        catch (Exception)
+        {
+            ViewData["Error"] = "Khong the gui OTP luc nay. Vui long thu lai.";
             return View();
         }
     }
@@ -165,9 +181,19 @@ public class AuthController : Controller
             TempData["Success"] = "Mat khau da duoc thay doi. Vui long dang nhap lai.";
             return RedirectToAction(nameof(Login));
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
             ViewData["Error"] = ex.Message;
+            return View();
+        }
+        catch (OracleException)
+        {
+            ViewData["Error"] = "Khong the dat lai mat khau luc nay do loi he thong du lieu.";
+            return View();
+        }
+        catch (Exception)
+        {
+            ViewData["Error"] = "Khong the dat lai mat khau luc nay. Vui long thu lai.";
             return View();
         }
     }

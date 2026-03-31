@@ -4,6 +4,9 @@ namespace ChoThueXe.Models.Portal;
 
 public class CreateVehicleInputModel
 {
+    [Range(0, int.MaxValue)]
+    public int VehicleId { get; set; }
+
     [Range(1, int.MaxValue)]
     public int OwnerId { get; set; }
 
@@ -15,6 +18,9 @@ public class CreateVehicleInputModel
 
     [Required]
     public string VehicleName { get; set; } = string.Empty;
+
+    [Required]
+    public string LicensePlate { get; set; } = string.Empty;
 
     [Range(2, 60)]
     public int Seats { get; set; }

@@ -1,0 +1,201 @@
+@{
+    ViewData["Title"] = "Trang không tìm thấy";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .error-container {
+        max-width: 600px;
+        margin: 80px auto;
+        padding: 40px 20px;
+        text-align: center;
+    }
+
+    .error-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 40px;
+    }
+
+    .error-icon {
+        font-size: 120px;
+        margin-bottom: 24px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .error-code {
+        font-size: 72px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-family: "Inter", monospace;
+    }
+
+    .error-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .error-description {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+        line-height: 1.6;
+    }
+
+    .error-suggestions {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .error-suggestions h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .error-suggestions ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .error-suggestions li {
+        padding: 8px 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-suggestions li:before {
+        content: "→";
+        color: var(--accent);
+        font-weight: 600;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-secondary);
+        border-color: var(--accent);
+    }
+
+    @@media (max-width: 480px) {
+        .error-icon {
+            font-size: 80px;
+        }
+
+        .error-code {
+            font-size: 48px;
+        }
+
+        .error-title {
+            font-size: 24px;
+        }
+
+        .error-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">🔍</div>
+    <div class="error-code">404</div>
+    <h1 class="error-title">Trang không tìm thấy</h1>
+    <p class="error-description">
+        Rất tiếc, trang bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
+    </p>
+
+    <div class="error-suggestions">
+        <h3>Bạn có thể thử:</h3>
+        <ul>
+            <li>Kiểm tra lại URL đã nhập</li>
+            <li>Quay lại trang chủ</li>
+            <li>Sử dụng menu điều hướng</li>
+            <li>Liên hệ với bộ phận hỗ trợ</li>
+        </ul>
+    </div>
+
+    <div class="error-actions">
+        <a href="/" class="btn btn-primary">🏠 Trang chủ</a>
+        <button onclick="history.back()" class="btn btn-secondary">← Quay lại</button>
+    </div>
+</div>

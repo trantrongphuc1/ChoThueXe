@@ -1,0 +1,376 @@
+@{
+    ViewData["Title"] = "Hóa đơn #ORD-2024-001523";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .invoice-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .invoice-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .invoice-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-small {
+        padding: 8px 16px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-small:hover {
+        background-color: #2563eb;
+    }
+
+    .invoice-content {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+    }
+
+    .invoice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-bottom: 40px;
+        padding-bottom: 40px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .invoice-section h3 {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .invoice-info {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+    }
+
+    .invoice-info strong {
+        color: var(--text-primary);
+        display: block;
+        font-weight: 600;
+    }
+
+    .invoice-details {
+        margin-bottom: 32px;
+    }
+
+    .details-header {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        padding: 12px 0;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
+
+    .detail-item {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .detail-item strong {
+        color: var(--text-primary);
+        display: block;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .summary-box {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-row label {
+        color: var(--text-secondary);
+    }
+
+    .summary-row span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        margin-top: 12px;
+        border-top: 2px solid var(--border);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .invoice-note {
+        background-color: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid var(--accent);
+        border-radius: 4px;
+        padding: 16px;
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .invoice-footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    @@media print {
+        body {
+            background: white;
+        }
+
+        .invoice-container {
+            max-width: 100%;
+        }
+
+        .invoice-header {
+            border: none;
+        }
+
+        .invoice-actions {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .invoice-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .details-header,
+        .detail-item {
+            grid-template-columns: 1fr;
+        }
+
+        .invoice-content {
+            padding: 20px;
+        }
+
+        .invoice-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+    }
+</style>
+
+<div class="invoice-container">
+    <div class="invoice-header">
+        <h1>🧾 Hóa đơn</h1>
+        <div class="invoice-actions">
+            <button class="btn-small" onclick="window.print()">🖨️ In</button>
+            <button class="btn-small" onclick="downloadPDF()">📥 PDF</button>
+        </div>
+    </div>
+
+    <div class="invoice-content">
+        <!-- Company & Order Info -->
+        <div class="invoice-grid">
+            <div>
+                <div class="invoice-section">
+                    <h3>Công ty</h3>
+                    <div class="invoice-info">
+                        <strong>ChoThueXe</strong>
+                        123 Nguyễn Huệ, Q1<br>
+                        TP HCM, Việt Nam<br>
+                        <br>
+                        Email: info@chothueXe.com<br>
+                        Phone: 1900-0000
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="invoice-section">
+                    <h3>Thông tin đơn hàng</h3>
+                    <div class="invoice-info">
+                        <strong>Mã đơn hàng</strong>
+                        ORD-2024-001523<br>
+                        <strong>Ngày:</strong> 01/04/2024<br>
+                        <strong>Hạn thanh toán:</strong> 01/04/2024<br>
+                        <strong>Trạng thái:</strong> <span style="color: var(--success);">✓ Đã thanh toán</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="invoice-grid">
+            <div>
+                <div class="invoice-section">
+                    <h3>Khách hàng</h3>
+                    <div class="invoice-info">
+                        <strong>Nguyễn Văn A</strong>
+                        Email: nguyenvana@email.com<br>
+                        Phone: 0901234567<br>
+                        <br>
+                        123 Đường ABC<br>
+                        TP HCM, Việt Nam
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="invoice-section">
+                    <h3>Chi tiết thanh toán</h3>
+                    <div class="invoice-info">
+                        <strong>Phương thức:</strong> Thẻ tín dụng<br>
+                        <strong>Số cuối:</strong> **** **** **** 1234<br>
+                        <strong>Người phê duyệt:</strong> ChoThueXe System
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rental Details -->
+        <div class="invoice-details">
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--text-primary);">Chi tiết thuê xe</h3>
+
+            <div class="details-header">
+                <div>Xe</div>
+                <div>Ngày</div>
+                <div>Giá/Ngày</div>
+                <div>Tổng</div>
+            </div>
+
+            <div class="detail-item">
+                <div>
+                    <strong>Toyota Camry 2024</strong>
+                    Biển số: 51 A-123<br>
+                    <span style="font-size: 12px;">Pickup: 123 Nguyễn Huệ, Q1</span>
+                </div>
+                <div>3 ngày</div>
+                <div>2.500.000đ</div>
+                <div>7.500.000đ</div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-box">
+            <div class="summary-row">
+                <label>Giá cơ bản (3 ngày × 2.500.000đ):</label>
+                <span>7.500.000đ</span>
+            </div>
+
+            <div class="summary-row">
+                <label>Phí dịch vụ:</label>
+                <span>150.000đ</span>
+            </div>
+
+            <div class="summary-row">
+                <label>Bảo hiểm thêm:</label>
+                <span>0đ</span>
+            </div>
+
+            <div class="summary-row">
+                <label>Giảm giá (Mã: WELCOME20):</label>
+                <span style="color: var(--success);">-250.000đ</span>
+            </div>
+
+            <div class="summary-total">
+                <label>Tổng cộng:</label>
+                <span>7.400.000đ</span>
+            </div>
+        </div>
+
+        <!-- Terms -->
+        <div class="invoice-note">
+            <strong>Lưu ý quan trọng:</strong> Hóa đơn này là bằng chứng thanh toán chính thức. Vui lòng giữ lại để làm hồ sơ. Nếu có khiếu nại, vui lòng liên hệ trong vòng 30 ngày kể từ ngày phát hành.
+        </div>
+
+        <!-- Footer -->
+        <div class="invoice-footer">
+            <p>Cảm ơn bạn đã sử dụng dịch vụ ChoThueXe!</p>
+            <p style="margin-top: 8px;">Hóa đơn này được tạo tự động và có hiệu lực pháp lý. © 2024 ChoThueXe.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function downloadPDF() {
+        alert('Tính năng tải PDF sẽ được cập nhật sớm');
+    }
+</script>

@@ -1,100 +1,357 @@
-@model ChoThueXe.Models.Auth.RegisterInputModel
+@using ChoThueXe.Models.Auth
+@model RegisterInputModel
 @{
-    ViewData["Title"] = "Đăng ký";
+    ViewData["Title"] = "Đăng ký - ChoThueXe";
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Đăng ký tài khoản khách hàng</div>
-            <div class="card-body">
-                @if (ViewData["Error"] is string error)
-                {
-                    <div class="alert alert-danger">@error</div>
-                }
+<style>
+    .auth-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 70px);
+        padding: 24px;
+    }
 
-                <form asp-action="Register" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12">
-                        <label asp-for="FullName" class="form-label">Họ tên</label>
-                        <input asp-for="FullName" class="form-control" />
-                        <span asp-validation-for="FullName" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Email" class="form-label">Email</label>
-                        <input asp-for="Email" class="form-control" autocomplete="username email" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Phone" class="form-label">Số điện thoại</label>
-                        <input asp-for="Phone" class="form-control" />
-                        <span asp-validation-for="Phone" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="Password" class="form-label">Mật khẩu</label>
-                        <input asp-for="Password" id="registerPassword" type="password" class="form-control" autocomplete="new-password" />
-                        <div class="form-text">Mật khẩu tối thiểu 8 ký tự, có chữ hoa, chữ thường và số.</div>
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label asp-for="ConfirmPassword" class="form-label">Nhập lại mật khẩu</label>
-                        <input asp-for="ConfirmPassword" id="registerConfirmPassword" type="password" class="form-control" autocomplete="new-password" />
-                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
-                    </div>
-                    <div class="col-12 d-flex gap-2 flex-wrap">
-                        <button type="submit" class="btn btn-primary">Đăng ký</button>
-                        <button type="button" class="btn btn-outline-info" id="btnSuggestPassword">Gợi ý mật khẩu mạnh</button>
-                        <a asp-action="Login" class="btn btn-outline-secondary">Đã có tài khoản</a>
-                    </div>
-                </form>
+    .auth-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .auth-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .auth-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: "DM Sans", sans-serif;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: var(--text-muted);
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .text-danger {
+        color: var(--error);
+        font-size: 12px;
+        margin-top: 4px;
+        display: block;
+    }
+
+    .password-toggle {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: var(--transition);
+        font-size: 16px;
+    }
+
+    .password-toggle-btn:hover {
+        color: var(--accent);
+    }
+
+    .password-strength {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+        height: 4px;
+    }
+
+    .password-strength-bar {
+        flex: 1;
+        height: 100%;
+        background-color: var(--border);
+        border-radius: 2px;
+        transition: var(--transition);
+    }
+
+    .password-strength-bar.weak {
+        background-color: var(--error);
+    }
+
+    .password-strength-bar.fair {
+        background-color: var(--warning);
+    }
+
+    .password-strength-bar.good {
+        background-color: var(--accent);
+    }
+
+    .password-strength-bar.strong {
+        background-color: var(--success);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-primary);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        margin: 24px 0;
+        gap: 12px;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background-color: var(--border);
+    }
+
+    .auth-login {
+        text-align: center;
+        margin-top: 24px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .auth-login a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .auth-login a:hover {
+        color: var(--accent-light);
+    }
+
+    @@media (max-width: 600px) {
+        .auth-card {
+            padding: 24px;
+        }
+
+        .auth-header h1 {
+            font-size: 24px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Đăng ký</h1>
+            <p>Tạo tài khoản mới để bắt đầu</p>
+        </div>
+
+        <form method="post" asp-action="Register">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group form-row full">
+                <label asp-for="FullName">Họ tên đầy đủ *</label>
+                <input asp-for="FullName" class="form-control" placeholder="Nguyễn Văn A" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
             </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="Email">Email *</label>
+                    <input asp-for="Email" class="form-control" placeholder="your.email@example.com" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Phone">Số điện thoại</label>
+                    <input asp-for="Phone" class="form-control" placeholder="0987654321" />
+                    <span asp-validation-for="Phone" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label asp-for="Password">Mật khẩu *</label>
+                    <div class="password-toggle">
+                        <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" onkeyup="checkPasswordStrength(this.value)" />
+                        <button type="button" class="password-toggle-btn" onclick="togglePassword('Password')" tabindex="-1">👁️</button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="strength-1"></div>
+                        <div class="password-strength-bar" id="strength-2"></div>
+                        <div class="password-strength-bar" id="strength-3"></div>
+                        <div class="password-strength-bar" id="strength-4"></div>
+                    </div>
+                    <div class="form-text">Tối thiểu 8 ký tự, chữ hoa, chữ thường và số</div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ConfirmPassword">Nhập lại mật khẩu *</label>
+                    <div class="password-toggle">
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="••••••••" />
+                        <button type="button" class="password-toggle-btn" onclick="togglePassword('ConfirmPassword')" tabindex="-1">👁️</button>
+                    </div>
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Đăng ký</button>
+                <button type="button" class="btn btn-secondary" onclick="suggestPassword()">Gợi ý</button>
+            </div>
+        </form>
+
+        <div class="auth-divider">hoặc</div>
+
+        <div class="auth-login">
+            Đã có tài khoản? <a href="/Auth/Login">Đăng nhập ngay</a>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-    <script>
-        (() => {
-            const suggestButton = document.getElementById('btnSuggestPassword');
-            if (!suggestButton) {
-                return;
-            }
+<script>
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const btn = event.target;
+        if (field.type === 'password') {
+            field.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            field.type = 'password';
+            btn.textContent = '👁️';
+        }
+    }
 
-            suggestButton.addEventListener('click', () => {
-                const charsetUpper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-                const charsetLower = 'abcdefghjkmnpqrstuvwxyz';
-                const charsetDigits = '23456789';
-                const charsetAll = charsetUpper + charsetLower + charsetDigits + '!#$%*?';
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        const bars = document.querySelectorAll('.password-strength-bar');
+        bars.forEach(bar => bar.className = 'password-strength-bar');
+        if (!password) return;
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        const strengthClass = strength <= 1 ? 'weak' : strength === 2 ? 'fair' : strength === 3 ? 'good' : 'strong';
+        for (let i = 0; i < strength; i++) bars[i].classList.add(strengthClass);
+    }
 
-                const randomChar = (chars) => chars[Math.floor(Math.random() * chars.length)];
-                const chars = [
-                    randomChar(charsetUpper),
-                    randomChar(charsetLower),
-                    randomChar(charsetDigits)
-                ];
-
-                while (chars.length < 12) {
-                    chars.push(randomChar(charsetAll));
-                }
-
-                for (let i = chars.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [chars[i], chars[j]] = [chars[j], chars[i]];
-                }
-
-                const suggested = chars.join('');
-                const passwordInput = document.getElementById('registerPassword');
-                const confirmInput = document.getElementById('registerConfirmPassword');
-                if (passwordInput && confirmInput) {
-                    passwordInput.value = suggested;
-                    confirmInput.value = suggested;
-                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-
-                alert('Da tao mat khau manh va dien san vao form. Trinh duyet se hien popup goi y luu mat khau khi dang ky thanh cong.');
-            });
-        })();
-    </script>
-}
+    function suggestPassword() {
+        const chars = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghjkmnpqrstuvwxyz', '23456789'];
+        let pwd = [chars[0][Math.random() * chars[0].length | 0], chars[1][Math.random() * chars[1].length | 0], chars[2][Math.random() * chars[2].length | 0]];
+        while (pwd.length < 12) pwd.push((chars[0] + chars[1] + chars[2])[Math.random() * (chars[0].length + chars[1].length + chars[2].length) | 0]);
+        pwd = pwd.sort(() => Math.random() - 0.5).join('');
+        document.getElementById('Password').value = pwd;
+        document.getElementById('ConfirmPassword').value = pwd;
+        checkPasswordStrength(pwd);
+    }
+</script>

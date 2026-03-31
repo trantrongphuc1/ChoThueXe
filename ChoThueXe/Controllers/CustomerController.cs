@@ -3,6 +3,8 @@ using ChoThueXe.Infrastructure;
 using ChoThueXe.Models.Portal;
 using ChoThueXe.Models.Rental;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Oracle.ManagedDataAccess.Client;
 
@@ -12,24 +14,128 @@ namespace ChoThueXe.Controllers;
 public class CustomerController : Controller
 {
     private readonly IRentalRepository _rentalRepository;
+    private readonly IAuthRepository _authRepository;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public CustomerController(IRentalRepository rentalRepository)
+    public CustomerController(IRentalRepository rentalRepository, IAuthRepository authRepository, IWebHostEnvironment webHostEnvironment)
     {
         _rentalRepository = rentalRepository;
+        _authRepository = authRepository;
+        _webHostEnvironment = webHostEnvironment;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(string? q, string[]? amenities)
     {
-        var userId = User.GetUserId();
-        var selectedAmenities = (amenities ?? [])
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Select(value => value.Trim().ToUpperInvariant())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        try
+        {
+            var userId = User.GetUserId();
+            var selectedAmenities = (amenities ?? [])
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim().ToUpperInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
-        var model = await BuildDashboardAsync(userId, q, selectedAmenities);
-        return View(model);
+            var model = await BuildDashboardAsync(userId, q, selectedAmenities);
+            return View(model);
+        }
+        catch (OracleException ex) when (ex.Number == 942)
+        {
+            // Missing table - return empty dashboard
+            var userId = User.GetUserId();
+            var model = new CustomerDashboardViewModel
+            {
+                UserId = userId,
+                FullName = string.Empty,
+                Email = string.Empty,
+                Phone = string.Empty,
+                Vehicles = [],
+                FavoriteVehicles = [],
+                Notifications = [],
+                Messages = [],
+                Contracts = [],
+                PendingContracts = [],
+                ReviewableContracts = [],
+                AmenityOptions = [],
+                VerificationStatus = new()
+            };
+            return View(model);
+        }
+        catch (Exception)
+        {
+            TempData["Error"] = "Khong the tai dashboard luc nay. Vui long thu lai.";
+            return RedirectToAction("Login", "Auth");
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Profile()
+    {
+        try
+        {
+            var userId = User.GetUserId();
+            var profile = await _rentalRepository.GetUserProfileAsync(userId);
+
+            var model = new UpdateProfileInputModel
+            {
+                FullName = profile.FullName,
+                Phone = profile.Phone
+            };
+
+            return View(model);
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = BuildOracleErrorMessage("tai ho so", ex);
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadDocumentFile(IFormFile file)
+    {
+        if (file is null || file.Length <= 0)
+        {
+            return BadRequest(new { error = "Vui long chon file de tai len." });
+        }
+
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg", ".jpeg", ".png", ".pdf"
+        };
+
+        var extension = Path.GetExtension(file.FileName);
+        if (string.IsNullOrWhiteSpace(extension) || !allowedExtensions.Contains(extension))
+        {
+            return BadRequest(new { error = "Dinh dang file khong hop le. Chi ho tro JPG, PNG, PDF." });
+        }
+
+        const long maxSizeInBytes = 5 * 1024 * 1024;
+        if (file.Length > maxSizeInBytes)
+        {
+            return BadRequest(new { error = "File vuot qua 5MB. Vui long chon file nho hon." });
+        }
+
+        var webRootPath = _webHostEnvironment.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRootPath))
+        {
+            return StatusCode(500, new { error = "Khong tim thay thu muc luu file tren he thong." });
+        }
+
+        var uploadFolder = Path.Combine(webRootPath, "uploads", "documents");
+        Directory.CreateDirectory(uploadFolder);
+
+        var safeFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var filePath = Path.Combine(uploadFolder, safeFileName);
+
+        await using (var stream = System.IO.File.Create(filePath))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var fileUrl = $"/uploads/documents/{safeFileName}";
+        return Json(new { fileUrl });
     }
 
     [HttpPost]
@@ -53,7 +159,46 @@ public class CustomerController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi cap nhat profile: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("cap nhat thong tin", ex);
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Update(UpdateProfileInputModel input)
+    {
+        // Alias for UpdateProfile to match View form call
+        return await UpdateProfile(input);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+    {
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || newPassword != confirmPassword)
+        {
+            TempData["Error"] = "Mat khau nhap lai khong khop hoac du lieu khong hop le.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        try
+        {
+            await _authRepository.ChangePasswordAsync(User.GetUserId(), currentPassword, newPassword);
+            TempData["Success"] = "Da thay doi mat khau thanh cong.";
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = BuildOracleErrorMessage("doi mat khau", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -74,9 +219,13 @@ public class CustomerController : Controller
             await _rentalRepository.SubmitUserDocumentAsync(User.GetUserId(), input);
             TempData["Success"] = "Da gui giay to, vui long doi Admin duyet.";
         }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi gui giay to: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("gui giay to", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -94,12 +243,31 @@ public class CustomerController : Controller
 
         try
         {
-            await _rentalRepository.SubmitDriveLicenseAsync(User.GetUserId(), input.LicenseNumber, input.IssuedAt, input.ExpireAt, input.IssuedBy);
-            TempData["Success"] = "Da gui thong tin bang lai, vui long doi Admin duyet.";
+            var userId = User.GetUserId();
+            await _rentalRepository.SubmitDriveLicenseAsync(userId, input.LicenseNumber, input.IssuedAt, input.ExpireAt, input.IssuedBy);
+
+            if (!string.IsNullOrWhiteSpace(input.FileUrl))
+            {
+                await _rentalRepository.SubmitUserDocumentAsync(userId, new SubmitDocumentInputModel
+                {
+                    DocType = "DRIVER_LICENSES",
+                    FileUrl = input.FileUrl
+                });
+
+                TempData["Success"] = "Da gui bang lai (thong tin + file), vui long doi Admin duyet.";
+            }
+            else
+            {
+                TempData["Success"] = "Da gui thong tin bang lai. Hay tai them file bang lai de Admin duyet nhanh hon.";
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi gui bang lai: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("gui bang lai", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -130,7 +298,7 @@ public class CustomerController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi preview chi phi: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("preview chi phi", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -166,9 +334,13 @@ public class CustomerController : Controller
             await _rentalRepository.RentVehicleAsync(input);
             TempData["Success"] = "Dat thue xe thanh cong.";
         }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi thue xe: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("thue xe", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -189,12 +361,23 @@ public class CustomerController : Controller
             await _rentalRepository.MakePaymentAsync(input);
             TempData["Success"] = "Thanh toan thanh cong.";
         }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi thanh toan: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("thanh toan", ex);
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddFavorite(int vehicleId)
+    {
+        return await ToggleFavorite(vehicleId);
     }
 
     [HttpPost]
@@ -214,7 +397,7 @@ public class CustomerController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi cap nhat yeu thich: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("cap nhat danh sach yeu thich", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -241,7 +424,7 @@ public class CustomerController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi gui tin nhan: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("gui tin nhan", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -268,10 +451,58 @@ public class CustomerController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"Loi gui review: {ex.Message}";
+            TempData["Error"] = BuildOracleErrorMessage("gui review", ex);
         }
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddReview(VehicleReviewInputModel input)
+    {
+        // Alias for SubmitReview to match View form call
+        return await SubmitReview(input);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ShowContract(int contractId)
+    {
+        if (contractId <= 0)
+        {
+            return BadRequest("Hop dong khong hop le.");
+        }
+
+        try
+        {
+            var contract = await _rentalRepository.GetContractByIdAsync(contractId);
+            if (contract is null)
+            {
+                return NotFound("Khong tim thay hop dong.");
+            }
+
+            var userId = User.GetUserId();
+            if (contract.CustomerId != userId)
+            {
+                return Forbid();
+            }
+
+            return Json(contract);
+        }
+        catch (OracleException ex)
+        {
+            return StatusCode(500, new { error = BuildOracleErrorMessage("lay thong tin hop dong", ex) });
+        }
+    }
+
+    private static string BuildOracleErrorMessage(string operation, OracleException ex)
+    {
+        if (ex.Number is 904 or 942 or 6550)
+        {
+            return $"Khong the {operation} do he thong du lieu chua san sang.";
+        }
+
+        return $"Khong the {operation} luc nay. Vui long thu lai.";
     }
 
     private async Task<CustomerDashboardViewModel> BuildDashboardAsync(int userId, string? keyword, IReadOnlyCollection<string> selectedAmenityCodes)
@@ -285,16 +516,30 @@ public class CustomerController : Controller
         var reviewableTask = _rentalRepository.GetReviewableContractsByCustomerAsync(userId);
         var contractsTask = _rentalRepository.GetContractsByCustomerAsync(userId);
         var pendingContractsTask = _rentalRepository.GetPendingContractsByCustomerAsync(userId);
+        var verificationStatusTask = _rentalRepository.GetCustomerVerificationStatusAsync(userId);
 
-        await Task.WhenAll(
-            amenitiesTask,
-            notificationsTask,
-            vehiclesTask,
-            favoritesTask,
-            messagesTask,
-            reviewableTask,
-            contractsTask,
-            pendingContractsTask);
+        try
+        {
+            await Task.WhenAll(
+                amenitiesTask,
+                notificationsTask,
+                vehiclesTask,
+                favoritesTask,
+                messagesTask,
+                reviewableTask,
+                contractsTask,
+                pendingContractsTask,
+                verificationStatusTask);
+        }
+        catch (OracleException ex) when (ex.Number == 942 || ex.Number == 904)
+        {
+            // Table/view/function missing - use fallback values for failed tasks
+        }
+        catch
+        {
+            // Other errors - use fallback values
+        }
+
         var profile = await profileTask;
 
         return new CustomerDashboardViewModel
@@ -304,15 +549,28 @@ public class CustomerController : Controller
             Email = profile.Email,
             Phone = profile.Phone,
             SearchKeyword = keyword?.Trim() ?? string.Empty,
-            AmenityOptions = amenitiesTask.Result,
+            AmenityOptions = TryGetResult(amenitiesTask, []),
             SelectedAmenityCodes = selectedAmenityCodes.ToArray(),
-            Notifications = notificationsTask.Result,
-            Vehicles = vehiclesTask.Result,
-            FavoriteVehicles = favoritesTask.Result,
-            Messages = messagesTask.Result,
-            ReviewableContracts = reviewableTask.Result,
-            Contracts = contractsTask.Result,
-            PendingContracts = pendingContractsTask.Result
+            Notifications = TryGetResult(notificationsTask, []),
+            Vehicles = TryGetResult(vehiclesTask, []),
+            FavoriteVehicles = TryGetResult(favoritesTask, []),
+            Messages = TryGetResult(messagesTask, []),
+            ReviewableContracts = TryGetResult(reviewableTask, []),
+            Contracts = TryGetResult(contractsTask, []),
+            PendingContracts = TryGetResult(pendingContractsTask, []),
+            VerificationStatus = TryGetResult(verificationStatusTask, new())
         };
+    }
+
+    private static T TryGetResult<T>(Task<T> task, T defaultValue)
+    {
+        try
+        {
+            return task.IsCompletedSuccessfully ? task.Result : defaultValue;
+        }
+        catch
+        {
+            return defaultValue;
+        }
     }
 }

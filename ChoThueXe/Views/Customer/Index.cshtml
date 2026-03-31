@@ -1,474 +1,611 @@
-@model ChoThueXe.Models.Portal.CustomerDashboardViewModel
+@using ChoThueXe.Models.Portal
+@model CustomerDashboardViewModel
 @{
-    ViewData["Title"] = "Khách hàng - Thuê xe";
+    ViewData["Title"] = "Dashboard - Khách hàng | ChoThueXe";
 }
 
-<h2 class="mb-3">Khách hàng: Xem xe, cập nhật thông tin, đặt thuê</h2>
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --error: #f85149;
+        --warning: #d29922;
+        --info: #58a6ff;
+        --radius: 8px;
+        --radius-sm: 4px;
+        --transition: all 0.2s ease;
+    }
 
-@if (TempData["Success"] is string success)
-{
-    <div class="alert alert-success">@success</div>
-}
-@if (TempData["Error"] is string error)
-{
-    <div class="alert alert-danger">@error</div>
-}
-@if (TempData["Info"] is string info)
-{
-    <div class="alert alert-info">@info</div>
-}
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Thông báo từ hệ thống và Admin</div>
-    <div class="table-responsive">
-        <table class="table table-sm table-striped mb-0">
-            <thead>
-            <tr>
-                <th>Thời gian</th>
-                <th>Tiêu đề</th>
-                <th>Nội dung</th>
-            </tr>
-            </thead>
-            <tbody>
-            @if (Model.Notifications.Count == 0)
-            {
-                <tr>
-                    <td colspan="3" class="text-muted">Chưa có thông báo nào.</td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var n in Model.Notifications)
+    .card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .card-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 20px;
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .stat-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        border: none;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-pending {
+        background-color: rgba(217, 119, 6, 0.15);
+        color: #d97706;
+    }
+
+    .badge-approved {
+        background-color: rgba(34, 197, 94, 0.15);
+        color: var(--success);
+    }
+
+    .badge-completed {
+        background-color: rgba(6, 182, 212, 0.15);
+        color: #06b6d4;
+    }
+
+    .badge-rejected {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: var(--error);
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        margin-bottom: 16px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert-success {
+        background-color: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: var(--success);
+    }
+
+    .alert-error {
+        background-color: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--error);
+    }
+
+    .alert-info {
+        background-color: rgba(59, 130, 246, 0.1);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: var(--accent);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: var(--bg-primary);
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    tr:hover {
+        background-color: var(--bg-primary);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 40px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+
+    .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 160px;
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 56px;
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .vehicle-info {
+        padding: 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vehicle-name {
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+        font-size: 15px;
+    }
+
+    .vehicle-brand {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .vehicle-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+    }
+
+    @@media (max-width: 768px) {
+        .vehicle-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            padding: 16px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+    }
+</style>
+
+<div class="container mt-5">
+    @{
+        var unpaidContracts = Model.PendingContracts
+            .Where(contract => contract.DueAmount > 0)
+            .OrderByDescending(contract => contract.ContractId)
+            .ToList();
+    }
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">✓ @success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-error">✕ @error</div>
+    }
+    @if (TempData["Info"] is string info)
+    {
+        <div class="alert alert-info">ℹ @info</div>
+    }
+
+    <!-- Overview Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Tổng quan</h2>
+        </div>
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-value">@Model.Contracts.Count</div>
+                <div class="stat-label">Tổng đặt xe</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@Model.PendingContracts.Count</div>
+                <div class="stat-label">Chờ xử lý</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@Model.Notifications.Count</div>
+                <div class="stat-label">Thông báo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">@Model.FavoriteVehicles.Count</div>
+                <div class="stat-label">Yêu thích</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Verification Status -->
+    <div class="card">
+        <div class="card-header">
+            <h2>📋 Tình trạng xác minh giấy tờ</h2>
+        </div>
+        @if (Model.VerificationStatus.IsVerified)
+        {
+            <div class="alert alert-success">✓ Bạn đã xác minh đầy đủ giấy tờ. Sẵn sàng đặt xe!</div>
+        }
+        else if (Model.VerificationStatus.IsRejected)
+        {
+            <div class="alert alert-error">✕ Giấy tờ của bạn bị từ chối. Vui lòng cập nhật và gửi lại.</div>
+        }
+        else if (Model.VerificationStatus.IsPending)
+        {
+            <div class="alert alert-info">⏳ Giấy tờ đang chờ xác minh. Admin sẽ kiểm tra trong vài ngày.</div>
+        }
+        else
+        {
+            <div class="alert alert-error">✕ Bạn chưa tải lên giấy tờ xác minh. Vui lòng cập nhật ngay.</div>
+        }
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <!-- CCCD -->
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Chứng minh nhân dân</h3>
+                @if (Model.VerificationStatus.HasCccd)
                 {
-                    <tr>
-                        <td>@n.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@n.Title</td>
-                        <td>@n.Message</td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Tìm kiếm xe theo từ khóa và tiện nghi</div>
-    <div class="card-body">
-        <form asp-action="Index" method="get" class="row g-3">
-            <div class="col-lg-4">
-                <label class="form-label">Từ khóa</label>
-                <input class="form-control" type="text" name="q" value="@Model.SearchKeyword" placeholder="VD: toyota, sedan, 7 chỗ" />
-            </div>
-            <div class="col-lg-8">
-                <label class="form-label d-block">Lọc theo tiện nghi</label>
-                <div class="row g-2">
-                    @foreach (var am in Model.AmenityOptions)
-                    {
-                        var isChecked = Model.SelectedAmenityCodes.Contains(am.Code);
-                        <div class="col-md-4 col-6">
-                            <label class="form-check">
-                                <input class="form-check-input" type="checkbox" name="amenities" value="@am.Code" checked="@isChecked" />
-                                <span class="form-check-label">@am.Name</span>
-                            </label>
-                        </div>
-                    }
-                </div>
-            </div>
-            <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Tìm và lọc</button>
-                <a asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">Cập nhật thông tin cá nhân</div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">Thay đổi họ tên/số điện thoại sẽ tạo yêu cầu cho Admin duyệt trước khi cập nhật.</p>
-                <form asp-action="UpdateProfile" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12">
-                        <label class="form-label">Họ tên</label>
-                        <input class="form-control" name="FullName" value="@Model.FullName" required />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Email</label>
-                        <input class="form-control" value="@Model.Email" disabled />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Số điện thoại</label>
-                        <input class="form-control" name="Phone" value="@Model.Phone" required />
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-outline-primary">Lưu thông tin</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-header fw-semibold">Upload giấy tở (CCCD/Bằng lái)</div>
-            <div class="card-body">
-                <form asp-action="SubmitDocument" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12">
-                        <label class="form-label">Loại giấy tở</label>
-                        <select name="DocType" class="form-select">
-                            <option value="CCCD">CCCD</option>
-                            <option value="DRIVER_LICENSES">DRIVER_LICENSES</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Link tệp (nếu có)</label>
-                        <input class="form-control" name="FileUrl" placeholder="https://..." />
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-outline-secondary">Gửi duyệt</button>
-                    </div>
-                </form>
-
-                <hr />
-
-                <h6>Gửi thông tin bằng lái (lưu trong drive_licenses)</h6>
-                <form asp-action="SubmitDriveLicense" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12">
-                        <label class="form-label">Số bằng lái</label>
-                        <input class="form-control" name="LicenseNumber" required />
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Cơ quan cấp</label>
-                        <input class="form-control" name="IssuedBy" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày cấp</label>
-                        <input type="date" class="form-control" name="IssuedAt" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày hết hạn</label>
-                        <input type="date" class="form-control" name="ExpireAt" required />
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-outline-primary">Gửi bằng lái</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Review xe sau khi hoàn tất hợp đồng</div>
-    <div class="card-body">
-        <form asp-action="SubmitReview" method="post" class="row g-3 align-items-end">
-            @Html.AntiForgeryToken()
-            <div class="col-lg-4">
-                <label class="form-label">Hợp đồng có thể review</label>
-                <select name="ContractId" class="form-select" required>
-                    <option value="">-- Chọn hợp đồng --</option>
-                    @foreach (var rc in Model.ReviewableContracts)
-                    {
-                        <option value="@rc.ContractId">#@rc.ContractId - @rc.VehicleName - @rc.EndDate:yyyy-MM-dd</option>
-                    }
-                </select>
-            </div>
-            <div class="col-lg-2">
-                <label class="form-label">Danh giá</label>
-                <select name="Rating" class="form-select" required>
-                    <option value="5">5 sao</option>
-                    <option value="4">4 sao</option>
-                    <option value="3">3 sao</option>
-                    <option value="2">2 sao</option>
-                    <option value="1">1 sao</option>
-                </select>
-            </div>
-            <div class="col-lg-4">
-                <label class="form-label">Nhận xét</label>
-                <input class="form-control" name="Comment" maxlength="1000" placeholder="Trải nghiệm của bạn về xe..." />
-            </div>
-            <div class="col-lg-2">
-                <button type="submit" class="btn btn-success w-100">Gửi review</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Preview chi phí</div>
-            <div class="card-body">
-                <form asp-action="Preview" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="CustomerId" value="0" />
-                    <input type="hidden" name="EmployeeId" value="0" />
-                    <div class="col-12">
-                        <label class="form-label">Chọn xe</label>
-                        <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chọn xe --</option>
-                            @foreach (var v in Model.Vehicles)
-                            {
-                                <option value="@v.VehicleId">@v.VehicleName - @v.BrandName - @v.PricePerDay.ToString("N0") VND/ngay</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày bắt đầu</label>
-                        <input type="date" name="StartDate" class="form-control" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày kết thúc</label>
-                        <input type="date" name="EndDate" class="form-control" required />
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-outline-dark">Tính trước chi phí</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Đặt thuê xe</div>
-            <div class="card-body">
-                <form asp-action="Rent" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="CustomerId" value="0" />
-                    <input type="hidden" name="EmployeeId" value="0" />
-                    <div class="col-12">
-                        <label class="form-label">Chọn xe</label>
-                        <select name="VehicleId" class="form-select" required>
-                            <option value="">-- Chọn xe --</option>
-                            @foreach (var v in Model.Vehicles)
-                            {
-                                <option value="@v.VehicleId">@v.VehicleName - @v.BrandName - @v.PricePerDay.ToString("N0") VND/ngay</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày bắt đầu</label>
-                        <input type="date" name="StartDate" class="form-control" required />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Ngày kết thúc</label>
-                        <input type="date" name="EndDate" class="form-control" required />
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">Đặt thuê</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Nhận tin với Admin</div>
-    <div class="card-body">
-        <form asp-action="SendMessage" method="post" class="row g-3">
-            @Html.AntiForgeryToken()
-            <div class="col-lg-10">
-                <input class="form-control" name="Content" maxlength="1000" placeholder="Cần hỗ trợ gì về xe, hợp đồng, thanh toán..." required />
-            </div>
-            <div class="col-lg-2">
-                <button type="submit" class="btn btn-outline-primary w-100">Gửi</button>
-            </div>
-        </form>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-sm table-striped mb-0">
-            <thead>
-            <tr>
-                <th>Thời gian</th>
-                <th>Tin nhắn</th>
-                <th>Phản hồi Admin</th>
-                <th>Trạng thái</th>
-            </tr>
-            </thead>
-            <tbody>
-            @if (Model.Messages.Count == 0)
-            {
-                <tr>
-                    <td colspan="4" class="text-muted">Bạn chưa gửi tin nhắn nào.</td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var m in Model.Messages)
-                {
-                    <tr>
-                        <td>@m.SentAt.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@m.Content</td>
-                        <td>
-                            @if (string.IsNullOrWhiteSpace(m.ReplyContent))
-                            {
-                                <span class="text-muted">Đang chờ trả lời</span>
-                            }
-                            else
-                            {
-                                @m.ReplyContent
-                            }
-                        </td>
-                        <td>@m.Status</td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Danh sách xe yêu thích</div>
-    <div class="table-responsive">
-        <table class="table table-striped mb-0">
-            <thead>
-            <tr>
-                <th>Xe</th>
-                <th>Hãng</th>
-                <th>Loại</th>
-                <th>Tiện nghi</th>
-                <th>Giá/ngày</th>
-            </tr>
-            </thead>
-            <tbody>
-            @if (Model.FavoriteVehicles.Count == 0)
-            {
-                <tr>
-                    <td colspan="5" class="text-muted">Bạn chưa có xe nào trong danh sách yêu thích.</td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var f in Model.FavoriteVehicles)
-                {
-                    <tr>
-                        <td>
-                            @if (!string.IsNullOrWhiteSpace(f.PrimaryImageUrl))
-                            {
-                                <img src="@f.PrimaryImageUrl" alt="@f.VehicleName" style="width:64px;height:44px;object-fit:cover;border-radius:6px;margin-right:8px;" />
-                            }
-                            <a href="@f.PrimaryImageUrl" target="_blank" rel="noopener">Xem CCCD</a>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Thanh toán hợp đồng của tôi</div>
-    <div class="card-body">
-        <form asp-action="Pay" method="post" class="row g-3 align-items-end">
-            @Html.AntiForgeryToken()
-            <div class="col-md-6">
-                <label class="form-label">Hợp đồng PENDING</label>
-                <select name="ContractId" class="form-select" required>
-                    <option value="">-- Chọn hợp đồng --</option>
-                    @foreach (var p in Model.PendingContracts)
-                    {
-                        <option value="@p.ContractId">#@p.ContractId - Tong: @p.TotalAmount.ToString("N0") - Da tra: @p.PaidAmount.ToString("N0") - Con: @p.DueAmount.ToString("N0")</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Số tiền trả</label>
-                <input type="number" step="1000" min="1" name="Amount" class="form-control" required />
-            </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-success w-100">Thanh toán</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Xe đang có (vw_vehicle_detail)</div>
-    <div class="table-responsive">
-        <table class="table table-striped mb-0">
-            <thead>
-            <tr>
-                <th>Ảnh</th>
-                <th>ID</th>
-                <th>Tên xe</th>
-                <th>Hãng</th>
-                <th>Loại</th>
-                <th>Tiện nghi</th>
-                <th>Giá/ngày</th>
-                <th>Yêu thích</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach (var v in Model.Vehicles)
-            {
-                <tr>
-                    <td>
-                        @if (!string.IsNullOrWhiteSpace(v.PrimaryImageUrl))
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        @if (Model.VerificationStatus.CccdStatus == "APPROVED")
                         {
-                            <img src="@v.PrimaryImageUrl" alt="@v.VehicleName" style="width:72px;height:48px;object-fit:cover;border-radius:6px;" />
+                            <span style="color: var(--success); font-size: 18px;">✓</span>
+                            <span style="color: var(--text-primary);">Đã xác minh</span>
+                        }
+                        else if (Model.VerificationStatus.CccdStatus == "REJECTED")
+                        {
+                            <span style="color: var(--error); font-size: 18px;">✕</span>
+                            <span style="color: var(--text-primary);">Bị từ chối</span>
                         }
                         else
                         {
-                            <span class="text-muted">Không có</span>
+                            <span style="color: var(--warning); font-size: 18px;">⏳</span>
+                            <span style="color: var(--text-primary);">Chờ xác minh</span>
                         }
-                    </td>
-                    <td>@v.VehicleId</td>
-                    <td>@v.VehicleName</td>
-                    <td>@v.BrandName</td>
-                    <td>@v.TypeName</td>
-                    <td>@(string.IsNullOrWhiteSpace(v.AmenitiesText) ? "-" : v.AmenitiesText)</td>
-                    <td>@v.PricePerDay.ToString("N0")</td>
-                    <td>
-                        <form asp-action="ToggleFavorite" method="post">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="vehicleId" value="@v.VehicleId" />
-                            <button type="submit" class="btn btn-sm @(v.IsFavorite ? "btn-danger" : "btn-outline-secondary")" title="Yêu thích">
-                                @(v.IsFavorite ? "Bỏ tím" : "Thêm")
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-</div>
+                    </div>
+                    <a href="/Customer/Profile" class="btn btn-secondary" style="font-size: 12px; padding: 8px 12px;">Cập nhật</a>
+                }
+                else
+                {
+                    <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">Chưa tải lên</p>
+                    <a href="/Customer/Profile" class="btn btn-primary" style="font-size: 12px; padding: 8px 12px;">Tải lên ngay</a>
+                }
+            </div>
 
-<div class="card shadow-sm">
-    <div class="card-header fw-semibold">Hợp đồng của tôi</div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Xe</th>
-                <th>Từ ngày</th>
-                <th>Đến ngày</th>
-                <th>Tổng tiền</th>
-                <th>Trạng thái</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach (var c in Model.Contracts)
-            {
-                <tr>
-                    <td>@c.ContractId</td>
-                    <td>@c.VehicleName</td>
-                    <td>@c.StartDate:yyyy-MM-dd</td>
-                    <td>@c.EndDate:yyyy-MM-dd</td>
-                    <td>@c.TotalAmount.ToString("N0")</td>
-                    <td>@c.Status</td>
-                </tr>
-            }
-            </tbody>
-        </table>
+            <!-- Driver License -->
+            <div style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background-color: var(--bg-primary);">
+                <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">Bằng lái xe</h3>
+                @if (Model.VerificationStatus.HasDriverLicense)
+                {
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        @if (Model.VerificationStatus.DriverLicenseStatus == "APPROVED")
+                        {
+                            <span style="color: var(--success); font-size: 18px;">✓</span>
+                            <span style="color: var(--text-primary);">Đã xác minh</span>
+                        }
+                        else if (Model.VerificationStatus.DriverLicenseStatus == "REJECTED")
+                        {
+                            <span style="color: var(--error); font-size: 18px;">✕</span>
+                            <span style="color: var(--text-primary);">Bị từ chối</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--warning); font-size: 18px;">⏳</span>
+                            <span style="color: var(--text-primary);">Chờ xác minh</span>
+                        }
+                    </div>
+                    <a href="/Customer/Profile" class="btn btn-secondary" style="font-size: 12px; padding: 8px 12px;">Cập nhật</a>
+                }
+                else
+                {
+                    <p style="color: var(--text-secondary); margin-bottom: 12px; font-size: 12px;">Chưa tải lên</p>
+                    <a href="/Customer/Profile" class="btn btn-primary" style="font-size: 12px; padding: 8px 12px;">Tải lên ngay</a>
+                }
+            </div>
+        </div>
     </div>
+
+    <!-- Recent Bookings -->
+    @if (Model.Contracts.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <h2>Đặt xe gần đây</h2>
+                <a href="/Customer/Index" class="btn btn-primary">Xem tất cả</a>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Xe</th>
+                            <th>Ngày bắt đầu</th>
+                            <th>Trạng thái</th>
+                            <th>Giá</th>
+                            <th>Thanh toán</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var contract in Model.Contracts.Take(5))
+                        {
+                            var unpaid = unpaidContracts.FirstOrDefault(item => item.ContractId == contract.ContractId);
+                            <tr>
+                                <td>@contract.VehicleName</td>
+                                <td>@contract.StartDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (contract.Status == "PENDING")
+                                    {
+                                        <span class="badge badge-pending">Chờ duyệt</span>
+                                    }
+                                    else if (contract.Status == "ACTIVE" || contract.Status == "APPROVED")
+                                    {
+                                        <span class="badge badge-approved">Được duyệt - Sẵn sàng thanh toán</span>
+                                    }
+                                    else if (contract.Status == "COMPLETED")
+                                    {
+                                        <span class="badge badge-completed">Hoàn thành</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-rejected">@contract.Status</span>
+                                    }
+                                </td>
+                                <td>@contract.TotalAmount.ToString("C0")</td>
+                                <td>
+                                    @if (unpaid is not null)
+                                    {
+                                        <span style="display:block; margin-bottom:8px; color: var(--warning); font-weight:600;">
+                                            Còn thiếu: @unpaid.DueAmount.ToString("C0")
+                                        </span>
+                                        <form asp-action="Pay" method="post" style="display:flex; gap:8px; align-items:center;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ContractId" value="@unpaid.ContractId" />
+                                            <input type="hidden" name="Amount" value="@unpaid.DueAmount" />
+                                            <button type="submit" class="btn btn-primary" style="padding:6px 10px; font-size:12px;">Thanh toán ngay</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span style="color: var(--text-secondary); font-size: 12px;">Đã thanh toán / Chưa cần thanh toán</span>
+                                    }
+                                </td>
+                                <td><a href="/Rental/Details/@contract.ContractId" class="btn btn-secondary">Chi tiết</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- Payment Section -->
+    <div class="card">
+        <div class="card-header">
+            <h2>💳 Thanh toán hợp đồng</h2>
+        </div>
+
+        @if (unpaidContracts.Any())
+        {
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã hợp đồng</th>
+                            <th>Tổng tiền</th>
+                            <th>Đã trả</th>
+                            <th>Còn thiếu</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pending in unpaidContracts.Take(10))
+                        {
+                            <tr>
+                                <td>#@pending.ContractId</td>
+                                <td>@pending.TotalAmount.ToString("C0")</td>
+                                <td>@pending.PaidAmount.ToString("C0")</td>
+                                <td style="color: var(--warning); font-weight: 700;">@pending.DueAmount.ToString("C0")</td>
+                                <td>
+                                    <form asp-action="Pay" method="post" style="display:inline-flex; gap:8px; align-items:center;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="ContractId" value="@pending.ContractId" />
+                                        <input type="hidden" name="Amount" value="@pending.DueAmount" />
+                                        <button type="submit" class="btn btn-primary">Thanh toán đủ</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state" style="padding: 28px 16px;">
+                <p>Hiện không có hợp đồng nào cần thanh toán.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Available Vehicles -->
+    <div class="card">
+        <div class="card-header">
+            <h2>🚗 Xe sẵn sàng thuê</h2>
+        </div>
+        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+            Đây là danh sách xe hệ thống đang mở cho khách đặt thuê.
+        </p>
+        @if (Model.Vehicles.Any())
+        {
+            <div class="vehicle-grid">
+                @foreach (var vehicle in Model.Vehicles.Take(12))
+                {
+                    <div class="vehicle-card" onclick="location.href='/Rental/Book?vehicleId=@vehicle.VehicleId'">
+                        <div class="vehicle-image">🚗</div>
+                        <div class="vehicle-info">
+                            <div class="vehicle-name">@vehicle.VehicleName</div>
+                            <div class="vehicle-brand">@vehicle.BrandName • @vehicle.TypeName</div>
+                            <div class="vehicle-price">@vehicle.PricePerDay.ToString("C0")/ngày</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">🚗</div>
+                <p>Không có xe nào</p>
+            </div>
+        }
+    </div>
+
+    <!-- Favorite Vehicles -->
+    @if (Model.FavoriteVehicles.Any())
+    {
+        <div class="card">
+            <div class="card-header">
+                <h2>❤️ Xe yêu thích</h2>
+            </div>
+            <div class="vehicle-grid">
+                @foreach (var vehicle in Model.FavoriteVehicles)
+                {
+                    <div class="vehicle-card" onclick="location.href='/Rental/Book?vehicleId=@vehicle.VehicleId'">
+                        <div class="vehicle-image">❤️</div>
+                        <div class="vehicle-info">
+                            <div class="vehicle-name">@vehicle.VehicleName</div>
+                            <div class="vehicle-brand">@vehicle.BrandName • @vehicle.TypeName</div>
+                            <div class="vehicle-price">@vehicle.PricePerDay.ToString("C0")/ngày</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>

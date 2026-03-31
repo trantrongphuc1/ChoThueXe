@@ -1,0 +1,434 @@
+@{
+    ViewData["Title"] = "Danh sách ưa thích";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .favorites-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .favorites-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .favorites-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .favorites-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        transform: translateY(-4px);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 180px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+        position: relative;
+    }
+
+    .favorite-icon {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 24px;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .favorite-icon:hover {
+        transform: scale(1.1);
+    }
+
+    .vehicle-info {
+        padding: 16px;
+    }
+
+    .vehicle-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-plate {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .vehicle-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .vehicle-price {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 12px;
+    }
+
+    .vehicle-rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        margin-bottom: 12px;
+    }
+
+    .vehicle-rating span {
+        color: var(--text-secondary);
+    }
+
+    .vehicle-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 8px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    .btn-primary {
+        display: inline-block;
+        padding: 10px 24px;
+        background-color: var(--accent);
+        color: white;
+        border-radius: 8px;
+        text-decoration: none;
+    }
+
+    @@media (max-width: 768px) {
+        .favorites-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .favorites-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .header-actions {
+            width: 100%;
+        }
+
+        .filter-btn {
+            flex: 1;
+        }
+    }
+</style>
+
+<div class="favorites-container">
+    <div class="favorites-header">
+        <h1>❤️ Danh sách ưa thích</h1>
+        <div class="header-actions">
+            <button class="filter-btn active" onclick="filterFavorites('all')">Tất cả (12)</button>
+            <button class="filter-btn" onclick="filterFavorites('sedans')">Sedan</button>
+            <button class="filter-btn" onclick="filterFavorites('suv')">SUV</button>
+            <button class="filter-btn" onclick="filterFavorites('luxury')">Cao cấp</button>
+        </div>
+    </div>
+
+    <div class="favorites-grid">
+        <!-- Vehicle Card 1 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🚗
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Toyota Camry 2024</div>
+                <div class="vehicle-plate">51 A-123</div>
+                <div class="vehicle-details">
+                    <span>🚗 Sedan</span>
+                    <span>👥 5 chỗ</span>
+                </div>
+                <div class="vehicle-price">2.500.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★★
+                    <span>(127)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Card 2 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🚙
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Honda CR-V 2024</div>
+                <div class="vehicle-plate">51 B-456</div>
+                <div class="vehicle-details">
+                    <span>🚙 SUV</span>
+                    <span>👥 7 chỗ</span>
+                </div>
+                <div class="vehicle-price">3.200.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★★
+                    <span>(95)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Card 3 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🏎️
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">BMW 3 Series 2023</div>
+                <div class="vehicle-plate">51 C-789</div>
+                <div class="vehicle-details">
+                    <span>🏎️ Sedan</span>
+                    <span>👥 5 chỗ</span>
+                </div>
+                <div class="vehicle-price">5.500.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★★
+                    <span>(58)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Card 4 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🚌
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Hyundai Starex 2023</div>
+                <div class="vehicle-plate">51 D-012</div>
+                <div class="vehicle-details">
+                    <span>🚌 Van</span>
+                    <span>👥 9 chỗ</span>
+                </div>
+                <div class="vehicle-price">4.000.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★☆
+                    <span>(42)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Card 5 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🚗
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Mazda 3 2024</div>
+                <div class="vehicle-plate">51 E-345</div>
+                <div class="vehicle-details">
+                    <span>🚗 Sedan</span>
+                    <span>👥 5 chỗ</span>
+                </div>
+                <div class="vehicle-price">2.200.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★★
+                    <span>(112)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Card 6 -->
+        <div class="vehicle-card">
+            <div class="vehicle-image">
+                🚙
+                <div class="favorite-icon" onclick="toggleFavorite(this)">❤️</div>
+            </div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Kia Sportage 2024</div>
+                <div class="vehicle-plate">51 F-678</div>
+                <div class="vehicle-details">
+                    <span>🚙 SUV</span>
+                    <span>👥 5 chỗ</span>
+                </div>
+                <div class="vehicle-price">3.500.000đ/ngày</div>
+                <div class="vehicle-rating">
+                    ★★★★★
+                    <span>(89)</span>
+                </div>
+                <div class="vehicle-actions">
+                    <button class="btn">Đặt ngay</button>
+                    <button class="btn btn-outline">Xem chi tiết</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFavorite(element) {
+        element.style.opacity = element.style.opacity === '0.5' ? '1' : '0.5';
+    }
+
+    function filterFavorites(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+</script>

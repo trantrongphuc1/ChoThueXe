@@ -1,0 +1,543 @@
+@using ChoThueXe.Models.Rental
+@model RentVehicleInputModel
+
+@{
+    ViewData["Title"] = "Đặt xe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #d29922;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.6;
+    }
+
+    .booking-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .booking-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .booking-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .booking-header p {
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    .booking-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .booking-form {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 12px 14px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    /* Sidebar */
+    .booking-summary {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .summary-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .vehicle-summary {
+        background-color: var(--bg-tertiary);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 120px;
+        background: linear-gradient(135deg, var(--accent), #1e40af);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        margin-bottom: 12px;
+    }
+
+    .vehicle-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .vehicle-price {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+        padding-top: 12px;
+        padding-bottom: 0;
+    }
+
+    .summary-row.total {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+        padding-top: 16px;
+        margin-top: 12px;
+        border-top: 2px solid var(--border);
+    }
+
+    .summary-row label {
+        color: var(--text-secondary);
+    }
+
+    .summary-row span {
+        color: var(--text-primary);
+    }
+
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn {
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    /* Validation */
+    .error-message {
+        color: var(--danger);
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .info-box {
+        background-color: rgba(59, 130, 246, 0.1);
+        border-left: 3px solid var(--accent);
+        padding: 12px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .info-box strong {
+        color: var(--text-primary);
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .booking-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .booking-summary {
+            position: static;
+            top: auto;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .booking-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="booking-container">
+    <div class="booking-header">
+        <h1>Đặt xe ngay</h1>
+        <p>Điền thông tin để hoàn tất đặt xe của bạn</p>
+    </div>
+
+    <form asp-action="Create" asp-controller="Rental" method="post" class="booking-form-wrapper">
+        <input asp-for="VehicleId" type="hidden" />
+        <div class="booking-grid">
+            <!-- Main Form -->
+            <div class="booking-form">
+                <!-- Vehicle Info -->
+                <div class="form-section">
+                    <div class="form-section-title">📍 Thông tin xe</div>
+                    <div class="info-box">
+                        <strong>ID Xe:</strong> #@Html.DisplayFor(model => model.VehicleId)
+                    </div>
+                </div>
+
+                <!-- Rental Dates -->
+                <div class="form-section">
+                    <div class="form-section-title">📅 Ngày thuê</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDate">Ngày bắt đầu</label>
+                            <input asp-for="StartDate" type="datetime-local" id="startDate" min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
+                            <span asp-validation-for="StartDate" class="error-message"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">Ngày kết thúc</label>
+                            <input asp-for="EndDate" type="datetime-local" id="endDate" min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" required />
+                            <span asp-validation-for="EndDate" class="error-message"></span>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        Tối thiểu 24 giờ thuê. Phí hủy phụ thuộc vào thời gian hủy.
+                    </div>
+                </div>
+
+                <!-- Driver Info -->
+                <div class="form-section">
+                    <div class="form-section-title">👤 Thông tin tài xế</div>
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="driverName">Tên tài xế</label>
+                            <input type="text" id="driverName" name="driverName" placeholder="Nhập tên tài xế" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="driverPhone">Số điện thoại</label>
+                            <input type="tel" id="driverPhone" name="driverPhone" placeholder="0123456789" pattern="[0-9]{10}" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="driverEmail">Email</label>
+                            <input type="email" id="driverEmail" name="driverEmail" placeholder="example@email.com" required />
+                        </div>
+                    </div>
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="licensePlate">Số giấy phép lái xe</label>
+                            <input type="text" id="licensePlate" name="licensePlate" placeholder="Nhập số giấy phép" required />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pickup Location -->
+                <div class="form-section">
+                    <div class="form-section-title">🚗 Địa điểm nhận xe</div>
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="pickupLocation">Chọn địa điểm nhận</label>
+                            <select name="pickupLocation" id="pickupLocation" required>
+                                <option value="">-- Chọn địa điểm --</option>
+                                <option value="hcm_center">TP HCM - Trung tâm</option>
+                                <option value="hcm_airport">TP HCM - Tân Sơn Nhất</option>
+                                <option value="hcm_dong">TP HCM - Quận Đông</option>
+                                <option value="hcm_west">TP HCM - Quận Tây</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        Nhân viên sẽ giao xe tại địa điểm bạn chọn
+                    </div>
+                </div>
+
+                <!-- Additional Services -->
+                <div class="form-section">
+                    <div class="form-section-title">🎁 Dịch vụ bổ sung</div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="insurance" name="AddInsurance" value="true" />
+                        <label for="insurance">Bảo hiểm bổ sung (+5%/ngày)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="gps" name="AddGPS" value="true" />
+                        <label for="gps">GPS định vị (+50.000đ/ngày)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="driver" name="IncludeDriver" value="true" />
+                        <label for="driver">Thuê thêm tài xế (+200.000đ/ngày)</label>
+                    </div>
+                </div>
+
+                <!-- Special Requests -->
+                <div class="form-section">
+                    <div class="form-section-title">💬 Yêu cầu đặc biệt</div>
+                    <div class="form-row full">
+                        <div class="form-group">
+                            <label for="notes">Ghi chú thêm</label>
+                            <textarea name="notes" id="notes" placeholder="Thêm bất kỳ yêu cầu đặc biệt nào..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="form-section">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="terms" name="AcceptTerms" value="true" required />
+                        <label for="terms">
+                            Tôi đã đọc và đồng ý với 
+                            <a href="#" style="color: var(--accent); text-decoration: none;">điều khoản sử dụng</a> 
+                            và 
+                            <a href="#" style="color: var(--accent); text-decoration: none;">chính sách bảo mật</a>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Summary -->
+            <div class="booking-summary">
+                <div class="summary-title">Tóm tắt đặt phòng</div>
+
+                <div class="vehicle-summary">
+                    <div class="vehicle-image">🚗</div>
+                    <div class="vehicle-name">Toyota Camry 2024</div>
+                    <div class="vehicle-price">2.500.000đ/ngày</div>
+                </div>
+
+                <div class="summary-row">
+                    <label>Ngày thuê:</label>
+                    <span id="daysCount">1</span>
+                </div>
+
+                <div class="summary-row">
+                    <label>Giá/ngày:</label>
+                    <span>2.500.000đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <label>Tiền cơ bản:</label>
+                    <span id="basePrice">2.500.000đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <label>Phí dịch vụ:</label>
+                    <span id="servicefee">0đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <label>Phí bảo hiểm:</label>
+                    <span id="insuranceFee">0đ</span>
+                </div>
+
+                <div class="summary-row total">
+                    <label>Tổng cộng:</label>
+                    <span id="totalPrice">2.500.000đ</span>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">
+                        ✓ Xác nhận đặt xe
+                    </button>
+                    <a href="/Rental/Details/@Model.VehicleId" class="btn btn-secondary">
+                        ← Quay lại
+                    </a>
+                </div>
+
+                <div class="info-box" style="margin-top: 20px; margin-bottom: 0;">
+                    <strong>Lưu ý:</strong> Thanh toán sẽ được thực hiện trên trang thanh toán tiếp theo
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Calculate rental days and price
+    function updateCalculation() {
+        const startDate = new Date(document.getElementById('startDate').value);
+        const endDate = new Date(document.getElementById('endDate').value);
+
+        if (startDate && endDate && startDate < endDate) {
+            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            const pricePerDay = 2500000;
+            let total = days * pricePerDay;
+
+            // Add services
+            if (document.getElementById('insurance').checked) {
+                total += days * (pricePerDay * 0.05);
+            }
+            if (document.getElementById('gps').checked) {
+                total += days * 50000;
+            }
+            if (document.getElementById('driver').checked) {
+                total += days * 200000;
+            }
+
+            document.getElementById('daysCount').textContent = days;
+            document.getElementById('basePrice').textContent = (days * pricePerDay).toLocaleString('vi-VN') + 'đ';
+            document.getElementById('totalPrice').textContent = total.toLocaleString('vi-VN') + 'đ';
+        }
+    }
+
+    document.getElementById('startDate').addEventListener('change', updateCalculation);
+    document.getElementById('endDate').addEventListener('change', updateCalculation);
+    document.getElementById('insurance').addEventListener('change', updateCalculation);
+    document.getElementById('gps').addEventListener('change', updateCalculation);
+    document.getElementById('driver').addEventListener('change', updateCalculation);
+</script>

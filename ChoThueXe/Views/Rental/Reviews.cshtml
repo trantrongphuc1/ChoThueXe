@@ -1,0 +1,647 @@
+@{
+    ViewData["Title"] = "Đánh giá xe - Toyota Camry 2024";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --warning: #fbbf24;
+        --success: #3fb950;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .reviews-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .reviews-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .reviews-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .reviews-header p {
+        color: var(--text-secondary);
+    }
+
+    .reviews-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 30px;
+    }
+
+    /* Sidebar Stats */
+    .review-stats {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .stats-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        letter-spacing: 0.05em;
+    }
+
+    .stats-overall {
+        text-align: center;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .stats-rating {
+        font-size: 48px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+
+    .stats-stars {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+
+    .stats-count {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .stats-breakdown {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .rating-label {
+        width: 40px;
+        text-align: right;
+        color: var(--text-secondary);
+    }
+
+    .rating-bar {
+        flex: 1;
+        height: 4px;
+        background-color: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .rating-fill {
+        height: 100%;
+        background-color: var(--warning);
+    }
+
+    .rating-count {
+        width: 30px;
+        text-align: right;
+        color: var(--text-secondary);
+    }
+
+    .btn-write-review {
+        width: 100%;
+        margin-top: 16px;
+        padding: 12px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-write-review:hover {
+        background-color: #2563eb;
+    }
+
+    /* Reviews List */
+    .reviews-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .review-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .reviewer-info {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .reviewer-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .reviewer-details h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+    }
+
+    .reviewer-date {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .review-rating {
+        font-size: 14px;
+        color: var(--warning);
+    }
+
+    .review-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .review-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 12px;
+    }
+
+    .review-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .tag {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .review-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+    }
+
+    .helpful-btn {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 12px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+    }
+
+    .helpful-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .review-filters {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    /* Review Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    .star-rating {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        font-size: 32px;
+    }
+
+    .star {
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+    }
+
+    .star:hover,
+    .star.active {
+        color: var(--warning);
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 10px 12px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: inherit;
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    @@media (max-width: 768px) {
+        .reviews-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .review-stats {
+            position: static;
+            top: auto;
+        }
+
+        .review-header {
+            flex-direction: column;
+        }
+
+        .modal-content {
+            margin: 20px;
+        }
+    }
+</style>
+
+<div class="reviews-container">
+    <div class="reviews-header">
+        <h1>⭐ Đánh giá - Toyota Camry 2024</h1>
+        <p>Xem những bình luận từ những khách hàng đã thuê xe này</p>
+    </div>
+
+    <div class="reviews-grid">
+        <!-- Sidebar Stats -->
+        <div class="review-stats">
+            <div class="stats-title">Đánh giá tổng thể</div>
+
+            <div class="stats-overall">
+                <div class="stats-rating">4.8</div>
+                <div class="stats-stars">★★★★★</div>
+                <div class="stats-count">Dựa trên 427 đánh giá</div>
+            </div>
+
+            <div class="stats-title" style="margin-top: 20px;">Phân bố xếp hạng</div>
+            <div class="stats-breakdown">
+                <div class="rating-row">
+                    <div class="rating-label">5★</div>
+                    <div class="rating-bar">
+                        <div class="rating-fill" style="width: 85%;"></div>
+                    </div>
+                    <div class="rating-count">362</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">4★</div>
+                    <div class="rating-bar">
+                        <div class="rating-fill" style="width: 12%;"></div>
+                    </div>
+                    <div class="rating-count">51</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">3★</div>
+                    <div class="rating-bar">
+                        <div class="rating-fill" style="width: 2%;"></div>
+                    </div>
+                    <div class="rating-count">8</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">2★</div>
+                    <div class="rating-bar">
+                        <div class="rating-fill" style="width: 1%;"></div>
+                    </div>
+                    <div class="rating-count">4</div>
+                </div>
+                <div class="rating-row">
+                    <div class="rating-label">1★</div>
+                    <div class="rating-bar">
+                        <div class="rating-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="rating-count">2</div>
+                </div>
+            </div>
+
+            <button class="btn-write-review" onclick="openReviewModal()">✍️ Viết đánh giá</button>
+        </div>
+
+        <!-- Reviews List -->
+        <div>
+            <div class="review-filters">
+                <button class="filter-btn active" onclick="filterReviews('all')">Tất cả (427)</button>
+                <button class="filter-btn" onclick="filterReviews('newest')">Mới nhất</button>
+                <button class="filter-btn" onclick="filterReviews('highest')">Cao nhất</button>
+                <button class="filter-btn" onclick="filterReviews('lowest')">Thấp nhất</button>
+            </div>
+
+            <div class="reviews-list">
+                <!-- Review 1 -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">👨</div>
+                            <div class="reviewer-details">
+                                <h3>Nguyễn Văn A</h3>
+                                <div class="reviewer-date">2 tuần trước</div>
+                            </div>
+                        </div>
+                        <div class="review-rating">★★★★★ 5.0</div>
+                    </div>
+
+                    <div class="review-title">Xe tuyệt vời, tài xế rất chuyên nghiệp!</div>
+                    <div class="review-text">
+                        Tôi thuê xe này cho chuyến đi lâu dài từ TP HCM đến Đà Lạt. Xe rất sạch sẽ, máy lạnh mạnh, và chủ xe rất thân thiện. Giá cũng hợp lý. Sẽ thuê lại lần nữa!
+                    </div>
+
+                    <div class="review-tags">
+                        <span class="tag">✓ Sạch sẽ</span>
+                        <span class="tag">✓ An toàn</span>
+                        <span class="tag">✓ Giá cả hợp lý</span>
+                    </div>
+
+                    <div class="review-footer">
+                        <span style="color: var(--text-secondary);">Có ích không?</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="helpful-btn">👍 Hữu ích (24)</button>
+                            <button class="helpful-btn">👎 Không</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review 2 -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">👩</div>
+                            <div class="reviewer-details">
+                                <h3>Trần Thị B</h3>
+                                <div class="reviewer-date">1 tháng trước</div>
+                            </div>
+                        </div>
+                        <div class="review-rating">★★★★☆ 4.0</div>
+                    </div>
+
+                    <div class="review-title">Tốt, nhưng một chút vấn đề nhỏ</div>
+                    <div class="review-text">
+                        Xe chạy rất êm, nội thất sạch sẽ. Tuy nhiên, máy điều hòa có hơi mục. Chủ xe hứa sẽ sửa trong lần tiếp theo. Nhìn chung vẫn là trải nghiệm tốt.
+                    </div>
+
+                    <div class="review-tags">
+                        <span class="tag">✓ Sạch sẽ</span>
+                        <span class="tag">⚠️ Máy lạnh</span>
+                    </div>
+
+                    <div class="review-footer">
+                        <span style="color: var(--text-secondary);">Có ích không?</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="helpful-btn">👍 Hữu ích (8)</button>
+                            <button class="helpful-btn">👎 Không</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review 3 -->
+                <div class="review-card">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <div class="reviewer-avatar">👨</div>
+                            <div class="reviewer-details">
+                                <h3>Phạm Văn C</h3>
+                                <div class="reviewer-date">2 tháng trước</div>
+                            </div>
+                        </div>
+                        <div class="review-rating">★★★★★ 5.0</div>
+                    </div>
+
+                    <div class="review-title">Chuyên môn và thân thiện!</div>
+                    <div class="review-text">
+                        Từ lúc đặt xe đến khi trả xe, mọi thứ đều suôn sẻ. Chủ xe tư vấn tuyến đường tốt, chỉ bạn cách sử dụng các tính năng của xe. Rất hài lòng!
+                    </div>
+
+                    <div class="review-tags">
+                        <span class="tag">✓ Dịch vụ tốt</span>
+                        <span class="tag">✓ Tư vấn chuyên sâu</span>
+                    </div>
+
+                    <div class="review-footer">
+                        <span style="color: var(--text-secondary);">Có ích không?</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="helpful-btn">👍 Hữu ích (15)</button>
+                            <button class="helpful-btn">👎 Không</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal" id="reviewModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeReviewModal()">✕</button>
+        <div class="modal-header">✍️ Viết đánh giá của bạn</div>
+
+        <form>
+            <div class="form-group">
+                <label>Đánh giá của bạn</label>
+                <div class="star-rating" id="starRating">
+                    <span class="star" onclick="setRating(1)">★</span>
+                    <span class="star" onclick="setRating(2)">★</span>
+                    <span class="star" onclick="setRating(3)">★</span>
+                    <span class="star" onclick="setRating(4)">★</span>
+                    <span class="star" onclick="setRating(5)">★</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Tiêu đề</label>
+                <input type="text" id="title" placeholder="Tóm tắt trải nghiệm của bạn" required />
+            </div>
+
+            <div class="form-group">
+                <label for="review">Nội dung</label>
+                <textarea id="review" placeholder="Chia sẻ chi tiết về trải nghiệm của bạn..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">📤 Gửi đánh giá</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReviewModal() {
+        document.getElementById('reviewModal').classList.add('show');
+    }
+
+    function closeReviewModal() {
+        document.getElementById('reviewModal').classList.remove('show');
+    }
+
+    function setRating(rating) {
+        const stars = document.querySelectorAll('#starRating .star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+    function filterReviews(filter) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+</script>

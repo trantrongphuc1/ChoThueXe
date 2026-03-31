@@ -1,0 +1,492 @@
+@using ChoThueXe.Models.Portal
+@model UpdateProfileInputModel
+
+@{
+    ViewData["Title"] = "Cài đặt tài khoản";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .settings-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .settings-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .settings-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .settings-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 30px;
+    }
+
+    /* Sidebar */
+    .settings-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .sidebar-item {
+        padding: 12px 16px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .sidebar-item:hover,
+    .sidebar-item.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    /* Content */
+    .settings-content {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .settings-section {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+        display: none;
+    }
+
+    .settings-section.active {
+        display: block;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 10px 12px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-row label {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .info-row span {
+        color: var(--text-primary);
+    }
+
+    .danger-zone {
+        background-color: rgba(248, 81, 73, 0.1);
+        border: 1px solid var(--danger);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .danger-zone h3 {
+        color: var(--danger);
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .danger-zone p {
+        color: var(--text-secondary);
+        font-size: 13px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+        margin-top: 20px;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-danger {
+        background-color: var(--danger);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #da3633;
+    }
+
+    .success-message {
+        background-color: rgba(63, 185, 80, 0.1);
+        border: 1px solid var(--success);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--success);
+        font-size: 13px;
+        margin-bottom: 16px;
+        display: none;
+    }
+
+    .success-message.show {
+        display: block;
+    }
+
+    @@media (max-width: 768px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-sidebar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            position: static;
+            top: auto;
+            gap: 12px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .settings-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="settings-container">
+    <div class="settings-header">
+        <h1>⚙️ Cài đặt tài khoản</h1>
+        <p>Quản lý thông tin cá nhân, bảo mật và tùy chọn</p>
+    </div>
+
+    <div class="settings-grid">
+        <!-- Sidebar Navigation -->
+        <div class="settings-sidebar">
+            <a class="sidebar-item active" onclick="switchTab('profile')">
+                👤 Hồ sơ
+            </a>
+            <a class="sidebar-item" onclick="switchTab('security')">
+                🔐 Bảo mật
+            </a>
+            <a class="sidebar-item" onclick="switchTab('preferences')">
+                🎨 Tùy chọn
+            </a>
+            <a class="sidebar-item" onclick="switchTab('notifications')">
+                🔔 Thông báo
+            </a>
+            <a class="sidebar-item" onclick="switchTab('privacy')">
+                🛡️ Quyền riêng tư
+            </a>
+        </div>
+
+        <!-- Content -->
+        <div class="settings-content">
+            <!-- Profile Section -->
+            <div class="settings-section active" id="profile">
+                <div class="section-title">👤 Thông tin hồ sơ</div>
+
+                <div class="success-message" id="profileSuccess">
+                    ✓ Hồ sơ đã được cập nhật thành công!
+                </div>
+
+                <form method="post" action="/Customer/Settings">
+                    <div class="form-group">
+                        <label for="fullName">Họ và tên</label>
+                        <input type="text" id="fullName" name="FullName" asp-for="FullName" placeholder="Nguyễn Văn A" />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" value="user@example.com" disabled />
+                            <small style="color: var(--text-secondary); margin-top: 4px;">Email không thể thay đổi</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="tel" id="phone" name="Phone" asp-for="Phone" placeholder="0901234567" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Tiểu sử</label>
+                        <textarea id="bio" placeholder="Viết gì đó về bạn..." style="resize: vertical; min-height: 100px;"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">💾 Lưu thay đổi</button>
+                </form>
+            </div>
+
+            <!-- Security Section -->
+            <div class="settings-section" id="security">
+                <div class="section-title">🔐 Bảo mật</div>
+
+                <div class="info-row">
+                    <label>Mật khẩu:</label>
+                    <span>
+                        Cập nhật lần cuối 3 tháng trước
+                        <a href="/Auth/ResetPassword" style="color: var(--accent); margin-left: 16px;">Đổi mật khẩu</a>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <label>Xác minh 2 bước:</label>
+                    <span>
+                        Chưa bật
+                        <button style="color: var(--accent); background: none; border: none; cursor: pointer; margin-left: 16px;">Bật</button>
+                    </span>
+                </div>
+
+                <div class="info-row">
+                    <label>Thiết bị đã kết nối:</label>
+                    <span>3 thiết bị</span>
+                </div>
+
+                <div class="danger-zone">
+                    <h3>⚠️ Khu vực nguy hiểm</h3>
+                    <p>Xóa tài khoản sẽ xóa vĩnh viễn tất cả dữ liệu của bạn. Hành động này không thể hoàn tác.</p>
+                    <button class="btn btn-danger" onclick="if(confirm('Bạn chắc chắn muốn xóa tài khoản?')) { alert('Tài khoản đã được yêu cầu xóa'); }">🗑️ Xóa tài khoản</button>
+                </div>
+            </div>
+
+            <!-- Preferences Section -->
+            <div class="settings-section" id="preferences">
+                <div class="section-title">🎨 Tùy chọn</div>
+
+                <div class="form-group">
+                    <label for="language">Ngôn ngữ</label>
+                    <select id="language">
+                        <option value="vi">Tiếng Việt</option>
+                        <option value="en">English</option>
+                        <option value="zh">中文</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="currency">Đơn vị tiền tệ</label>
+                    <select id="currency">
+                        <option value="vnd">Đồng Việt Nam (₫)</option>
+                        <option value="usd">USD ($)</option>
+                        <option value="eur">EUR (€)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="theme">Chế độ giao diện</label>
+                    <select id="theme">
+                        <option value="dark">Tối (Dark) - Mặc định</option>
+                        <option value="light">Sáng (Light)</option>
+                        <option value="auto">Tự động</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary">💾 Lưu tùy chọn</button>
+            </div>
+
+            <!-- Notifications Section -->
+            <div class="settings-section" id="notifications">
+                <div class="section-title">🔔 Cài đặt thông báo</div>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" checked />
+                    <span style="font-size: 13px; color: var(--text-primary);">Thông báo email về đơn hàng</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" checked />
+                    <span style="font-size: 13px; color: var(--text-primary);">Thông báo về khuyến mãi</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" checked />
+                    <span style="font-size: 13px; color: var(--text-primary);">Thông báo về bình luận</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" />
+                    <span style="font-size: 13px; color: var(--text-primary);">Tin tức hàng tuần</span>
+                </label>
+
+                <button class="btn btn-primary">💾 Lưu cài đặt</button>
+            </div>
+
+            <!-- Privacy Section -->
+            <div class="settings-section" id="privacy">
+                <div class="section-title">🛡️ Quyền riêng tư</div>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" checked />
+                    <span style="font-size: 13px; color: var(--text-primary);">Cho phép hiển thị hồ sơ công khai</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" checked />
+                    <span style="font-size: 13px; color: var(--text-primary);">Cho phép người khác liên hệ tôi</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" />
+                    <span style="font-size: 13px; color: var(--text-primary);">Cho phép chia sẻ dữ liệu với đối tác</span>
+                </label>
+
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 16px;">
+                    <input type="checkbox" />
+                    <span style="font-size: 13px; color: var(--text-primary);">Cho phép phân tích hành vi người dùng</span>
+                </label>
+
+                <button class="btn btn-primary">💾 Lưu cài đặt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        // Hide all sections
+        document.querySelectorAll('.settings-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Remove active from all buttons
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Show selected section
+        document.getElementById(tabName).classList.add('active');
+
+        // Mark button as active
+        event.target.classList.add('active');
+    }
+
+    // Show success message on form submit
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            // Uncomment below to enable actual form submission
+            // e.preventDefault();
+            // document.getElementById('profileSuccess').classList.add('show');
+            // setTimeout(() => {
+            //     document.getElementById('profileSuccess').classList.remove('show');
+            // }, 3000);
+        });
+    });
+</script>

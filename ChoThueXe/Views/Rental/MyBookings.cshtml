@@ -1,0 +1,443 @@
+@{
+    ViewData["Title"] = "Quản lý đặt xe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --warning: #fbbf24;
+        --danger: #f85149;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .bookings-container {
+        max-width: 1000px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .bookings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .bookings-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+    }
+
+    .status-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+    }
+
+    .status-tab {
+        padding: 8px 16px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .status-tab:hover,
+    .status-tab.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .bookings-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .booking-item {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 100px 1fr auto;
+        gap: 20px;
+        align-items: flex-start;
+        transition: all 0.2s ease;
+    }
+
+    .booking-item:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .vehicle-icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+    }
+
+    .booking-details {
+        flex: 1;
+    }
+
+    .booking-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .booking-id {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .booking-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        font-size: 13px;
+    }
+
+    .info-group label {
+        display: block;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .info-group span {
+        display: block;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .booking-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 100px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: var(--accent);
+    }
+
+    .status-completed {
+        background-color: rgba(63, 185, 80, 0.2);
+        color: var(--success);
+    }
+
+    .status-cancelled {
+        background-color: rgba(248, 81, 73, 0.2);
+        color: var(--danger);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .cta-btn {
+        display: inline-block;
+        padding: 10px 24px;
+        background-color: var(--accent);
+        color: white;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    @@media (max-width: 768px) {
+        .booking-item {
+            grid-template-columns: 1fr;
+        }
+
+        .bookings-header {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .booking-info {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .booking-actions {
+            flex-direction: row;
+        }
+    }
+</style>
+
+<div class="bookings-container">
+    <div class="bookings-header">
+        <h1>📅 Quản lý đặt xe</h1>
+        <span style="color: var(--text-secondary); font-size: 14px;">Tổng: 12 đơn</span>
+    </div>
+
+    <div class="status-tabs">
+        <button class="status-tab active" onclick="filterStatus('all')">Tất cả (12)</button>
+        <button class="status-tab" onclick="filterStatus('active')">Đang thuê (2)</button>
+        <button class="status-tab" onclick="filterStatus('completed')">Hoàn thành (9)</button>
+        <button class="status-tab" onclick="filterStatus('cancelled')">Đã hủy (1)</button>
+    </div>
+
+    <div class="bookings-list">
+        <!-- Active Booking 1 -->
+        <div class="booking-item">
+            <div class="vehicle-icon">🚗</div>
+            <div class="booking-details">
+                <div class="booking-title">Toyota Camry 2024</div>
+                <div class="booking-id">#ORD-2024-001523 <span class="status-badge status-active">Đang thuê</span></div>
+                <div class="booking-info">
+                    <div class="info-group">
+                        <label>Lấy xe:</label>
+                        <span>01/04/2026 - 10:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Trả xe:</label>
+                        <span>03/04/2026 - 10:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Địa điểm:</label>
+                        <span>TP. Hồ Chí Minh</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tổng tiền:</label>
+                        <span style="color: var(--accent);">7.400.000đ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="btn btn-primary">Chi tiết</button>
+                <button class="btn btn-outline">Hủy đơn</button>
+            </div>
+        </div>
+
+        <!-- Active Booking 2 -->
+        <div class="booking-item">
+            <div class="vehicle-icon">🚙</div>
+            <div class="booking-details">
+                <div class="booking-title">Honda CR-V 2023</div>
+                <div class="booking-id">#ORD-2024-001515 <span class="status-badge status-active">Đang thuê</span></div>
+                <div class="booking-info">
+                    <div class="info-group">
+                        <label>Lấy xe:</label>
+                        <span>25/03/2026 - 14:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Trả xe:</label>
+                        <span>28/03/2026 - 14:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Địa điểm:</label>
+                        <span>TP. Hồ Chí Minh</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tổng tiền:</label>
+                        <span style="color: var(--accent);">6.400.000đ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="btn btn-primary">Chi tiết</button>
+                <button class="btn btn-outline">Hủy đơn</button>
+            </div>
+        </div>
+
+        <!-- Completed Booking 1 -->
+        <div class="booking-item">
+            <div class="vehicle-icon">🚗</div>
+            <div class="booking-details">
+                <div class="booking-title">Mazda 3 2024</div>
+                <div class="booking-id">#ORD-2024-001498 <span class="status-badge status-completed">Hoàn thành</span></div>
+                <div class="booking-info">
+                    <div class="info-group">
+                        <label>Lấy xe:</label>
+                        <span>12/03/2026 - 09:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Trả xe:</label>
+                        <span>14/03/2026 - 09:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Địa điểm:</label>
+                        <span>TP. Hồ Chí Minh</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tổng tiền:</label>
+                        <span style="color: var(--accent);">4.400.000đ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="btn btn-primary">Hóa đơn</button>
+                <button class="btn btn-outline">Đánh giá</button>
+            </div>
+        </div>
+
+        <!-- Cancelled Booking -->
+        <div class="booking-item">
+            <div class="vehicle-icon">🏎️</div>
+            <div class="booking-details">
+                <div class="booking-title">BMW 3 Series 2023</div>
+                <div class="booking-id">#ORD-2024-001485 <span class="status-badge status-cancelled">Đã hủy</span></div>
+                <div class="booking-info">
+                    <div class="info-group">
+                        <label>Lý do hủy:</label>
+                        <span>Người dùng yêu cầu hủy</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Hủy lúc:</label>
+                        <span>05/03/2026 - 15:30</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Hoàn lại:</label>
+                        <span style="color: var(--success);">5.500.000đ</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Trạng thái:</label>
+                        <span>Đã hoàn tiền</span>
+                    </div>
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="btn btn-outline">Chi tiết</button>
+            </div>
+        </div>
+
+        <!-- Completed Booking 2 -->
+        <div class="booking-item">
+            <div class="vehicle-icon">🚌</div>
+            <div class="booking-details">
+                <div class="booking-title">Hyundai Starex 2023</div>
+                <div class="booking-id">#ORD-2024-001470 <span class="status-badge status-completed">Hoàn thành</span></div>
+                <div class="booking-info">
+                    <div class="info-group">
+                        <label>Lấy xe:</label>
+                        <span>25/02/2026 - 08:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Trả xe:</label>
+                        <span>28/02/2026 - 08:00</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Địa điểm:</label>
+                        <span>TP. Hồ Chí Minh</span>
+                    </div>
+                    <div class="info-group">
+                        <label>Tổng tiền:</label>
+                        <span style="color: var(--accent);">12.000.000đ</span>
+                    </div>
+                </div>
+            </div>
+            <div class="booking-actions">
+                <button class="btn btn-primary">Hóa đơn</button>
+                <button class="btn btn-outline">Đánh giá</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterStatus(status) {
+        document.querySelectorAll('.status-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        console.log('Filter by status:', status);
+    }
+</script>

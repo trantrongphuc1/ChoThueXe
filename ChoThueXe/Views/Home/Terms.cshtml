@@ -1,0 +1,321 @@
+@{
+    ViewData["Title"] = "Điều khoản và Điều kiện";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .terms-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .terms-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .terms-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .terms-header p {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .terms-content {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        line-height: 1.8;
+    }
+
+    .terms-section {
+        margin-bottom: 32px;
+    }
+
+    .terms-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .terms-section h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .terms-section h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-top: 20px;
+        margin-bottom: 8px;
+    }
+
+    .terms-section p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .terms-section ul,
+    .terms-section ol {
+        margin-left: 20px;
+        margin-bottom: 12px;
+    }
+
+    .terms-section li {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .highlight {
+        background-color: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid var(--accent);
+        padding: 12px;
+        margin: 16px 0;
+        border-radius: 4px;
+    }
+
+    .table-content {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+    }
+
+    .table-content th,
+    .table-content td {
+        border: 1px solid var(--border);
+        padding: 12px;
+        text-align: left;
+        font-size: 13px;
+    }
+
+    .table-content th {
+        background-color: var(--bg-tertiary);
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .table-content td {
+        color: var(--text-secondary);
+    }
+
+    .last-updated {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    @@media (max-width: 768px) {
+        .terms-container {
+            padding: 0 16px;
+        }
+
+        .terms-content {
+            padding: 24px;
+        }
+
+        .terms-header h1 {
+            font-size: 28px;
+        }
+
+        .terms-section h2 {
+            font-size: 18px;
+        }
+    }
+</style>
+
+<div class="terms-container">
+    <div class="terms-header">
+        <h1>📋 Điều khoản và Điều kiện</h1>
+        <p>Vui lòng đọc kỹ trước khi sử dụng dịch vụ của chúng tôi</p>
+    </div>
+
+    <div class="terms-content">
+        <div class="terms-section">
+            <h2>1. ĐIỀU KHOẢN CHUNG</h2>
+            <p>Bằng cách truy cập và sử dụng nền tảng ChoThueXe, bạn đồng ý tuân theo các điều khoản này. Nếu bạn không đồng ý với bất kỳ phần nào, vui lòng không sử dụng nền tảng của chúng tôi.</p>
+            <p>Chúng tôi có quyền sửa đổi các điều khoản này bất cứ lúc nào. Việc tiếp tục sử dụng nền tảng sau khi sửa đổi có nghĩa là bạn chấp nhận các điều khoản mới.</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>2. TÀI KHOẢN NGƯỜI DÙNG</h2>
+            <h3>2.1 Đăng ký tài khoản</h3>
+            <ul>
+                <li>Bạn phải ít nhất 18 tuổi để đăng ký tài khoản</li>
+                <li>Thông tin đăng ký phải chính xác, đầy đủ và cập nhật</li>
+                <li>Bạn chịu trách nhiệm bảo vệ mật khẩu của mình</li>
+                <li>Bạn chịu trách nhiệm cho tất cả hoạt động trên tài khoản của bạn</li>
+            </ul>
+
+            <h3>2.2 Quyền và trách nhiệm</h3>
+            <ul>
+                <li>Bạn cam kết không sử dụng nền tảng cho bất kỳ mục đích bất hợp pháp nào</li>
+                <li>Bạn không được phép tạo nhiều tài khoản để lạm dụng khuyến mãi</li>
+                <li>Bạn đồng ý không tải lên nội dung vi phạm bản quyền</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h2>3. THUÊ XE</h2>
+            <h3>3.1 Các yêu cầu để thuê xe</h3>
+            <p>Để thuê xe, bạn phải cung cấp:</p>
+            <ul>
+                <li>CMND/Hộ chiếu còn giá trị</li>
+                <li>Bằng lái xe quốc tế hoặc bằng lái Việt Nam có bảo hiểm bắt buộc</li>
+                <li>Phương tiện thanh toán hợp lệ</li>
+            </ul>
+
+            <h3>3.2 Điều kiện thuê</h3>
+            <ul>
+                <li>Tuổi tối thiểu: 18 tuổi (25 tuổi cho xe cao cấp)</li>
+                <li>Giấy phép lái xe phải còn giá trị</li>
+                <li>Không được sử dụng chất gây nghiện khi lái xe</li>
+            </ul>
+
+            <div class="highlight">
+                <strong>Lưu ý quan trọng:</strong> Người lái xe phải tuân thủ tất cả luật giao thông. Bất kỳ vi phạm nào sẽ được chuyển cho cơ quan chức năng.
+            </div>
+        </div>
+
+        <div class="terms-section">
+            <h2>4. THANH TOÁN</h2>
+            <h3>4.1 Giá cước</h3>
+            <ul>
+                <li>Giá được hiển thị rõ ràng trước khi bạn xác nhận đơn hàng</li>
+                <li>Giá có thể thay đổi tùy theo loại xe và thời gian thuê</li>
+                <li>Giá không bao gồm các chi phí bổ sung (xăng, phí phạt)</li>
+            </ul>
+
+            <h3>4.2 Phương thức thanh toán</h3>
+            <ul>
+                <li>Thẻ tín dụng/Ghi nợ</li>
+                <li>Mobile payments (Momo, Zalopay)</li>
+                <li>Chuyển khoản ngân hàng</li>
+            </ul>
+
+            <h3>4.3 Hoàn tiền</h3>
+            <p>Hoàn tiền sẽ được xử lý trong vòng 3-5 ngày làm việc sau khi yêu cầu được phê duyệt.</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>5. CHÍNH SÁCH HỦY ĐỀN</h2>
+            <table class="table-content">
+                <thead>
+                    <tr>
+                        <th>Thời gian hủy</th>
+                        <th>Phí hủy</th>
+                        <th>Hoàn lại</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Trước 24h lấy xe</td>
+                        <td>0%</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>12-24 giờ trước</td>
+                        <td>10%</td>
+                        <td>90%</td>
+                    </tr>
+                    <tr>
+                        <td>6-12 giờ trước</td>
+                        <td>25%</td>
+                        <td>75%</td>
+                    </tr>
+                    <tr>
+                        <td>Dưới 6 giờ</td>
+                        <td>50%</td>
+                        <td>50%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="terms-section">
+            <h2>6. TRÁCH NHIỆM CHO HÀNG</h2>
+            <h3>6.1 Xe được cung cấp</h3>
+            <ul>
+                <li>Xe sẽ được kiểm tra trước khi giao</li>
+                <li>Bạn phải kiểm tra xe trước khi rời khỏi điểm lấy</li>
+                <li>Bất kỳ hư hỏng hiện có phải được ghi lại</li>
+            </ul>
+
+            <h3>6.2 Trách nhiệm của khách hàng</h3>
+            <ul>
+                <li>Bạn chịu trách nhiệm bảo vệ xe khỏi hư hỏng</li>
+                <li>Bạn phải trả xe đúng giờ và điểm đã quy định</li>
+                <li>Bạn phải trả xe sạch sẽ với mức xăng tương tự khi lấy</li>
+                <li>Bạn phải thanh toán các chi phí sửa chữa từ hư hỏng do bạn gây ra</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h2>7. BẢO HIỂM</h2>
+            <p>Tất cả xe đều có bảo hiểm bắt buộc (TNDS). Bạn có thể mua bảo hiểm thêm (Toàn diện) để được bảo vệ tốt hơn.</p>
+            <p>Bảo hiểm không bao gồm: Tư tế vô ý, hư hỏng do bạo lực, hư hỏng do chìm hoặc cháy.</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>8. TRÁCH NHIỆM PHÁP LÝ</h2>
+            <ul>
+                <li>Chúng tôi không chịu trách nhiệm cho các tổn thất không trực tiếp phát sinh từ sử dụng nền tảng</li>
+                <li>Chúng tôi không chịu trách nhiệm cho bất kỳ hành vi sai trái của các chủ xe</li>
+                <li>Trách nhiệm tối đa của chúng tôi không vượt quá giá thuê xe</li>
+            </ul>
+        </div>
+
+        <div class="terms-section">
+            <h2>9. CHÍNH SÁCH BẢO MẬT</h2>
+            <p>Thông tin cá nhân của bạn sẽ được bảo vệ theo chính sách bảo mật của chúng tôi. Chúng tôi cam kết không chia sẻ thông tin của bạn với bên thứ ba mà không có sự đồng ý của bạn.</p>
+        </div>
+
+        <div class="terms-section">
+            <h2>10. LIÊN HỆ</h2>
+            <p>Nếu bạn có bất kỳ câu hỏi nào về các điều khoản này, vui lòng liên hệ:</p>
+            <ul>
+                <li>📧 Email: legal@chothueXe.com</li>
+                <li>📱 Điện thoại: 1900-0000</li>
+                <li>🏢 Địa chỉ: 123 Nguyễn Huệ, Q1, TP HCM</li>
+            </ul>
+        </div>
+
+        <div class="last-updated">
+            <p>Cập nhật lần cuối: 01/04/2024 | Phiên bản: 1.0</p>
+        </div>
+    </div>
+</div>

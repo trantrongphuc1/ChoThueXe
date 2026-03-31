@@ -1,8 +1,395 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<style>
+    /* Hero Section */
+    .hero {
+        background: linear-gradient(135deg, #0f1117 0%, #1c2333 50%, #161b27 100%);
+        padding: 120px 32px;
+        text-align: center;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .hero-content h1 {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-content p {
+        font-size: 20px;
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    /* Features */
+    .features {
+        padding: 80px 32px;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .feature-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 32px;
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .feature-card:hover {
+        border-color: var(--accent);
+        background-color: var(--bg-tertiary);
+        transform: translateY(-4px);
+    }
+
+    .feature-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .feature-card p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 64px 32px;
+        text-align: center;
+        margin: 80px 32px 80px 32px;
+        max-width: 1400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .cta-section h2 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .cta-section p {
+        color: var(--text-secondary);
+        font-size: 16px;
+        margin-bottom: 32px;
+    }
+
+    /* Recent Vehicles */
+    .recent-vehicles {
+        padding: 80px 32px;
+        background-color: var(--bg-primary);
+    }
+
+    .section-title {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 48px;
+        text-align: center;
+        font-family: "Inter", sans-serif;
+    }
+
+    .vehicles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-4px);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 64px;
+    }
+
+    .vehicle-info {
+        padding: 20px;
+    }
+
+    .vehicle-name {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .vehicle-details {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .vehicle-price {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 16px;
+    }
+
+    .vehicle-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .vehicle-actions a {
+        flex: 1;
+        padding: 10px 16px;
+        text-align: center;
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .vehicle-actions .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .vehicle-actions .btn-primary:hover {
+        background-color: #2563eb;
+    }
+
+    .vehicle-actions .btn-secondary {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .vehicle-actions .btn-secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .hero {
+            padding: 60px 16px;
+        }
+
+        .hero-content h1 {
+            font-size: 32px;
+        }
+
+        .hero-content p {
+            font-size: 16px;
+        }
+
+        .features {
+            padding: 40px 16px;
+        }
+
+        .cta-section {
+            margin: 40px 16px;
+            padding: 40px 16px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 32px;
+        }
+
+        .vehicles-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Thuê xe hạng sang, giá phải chăng</h1>
+        <p>Tìm và đặt xe ô tô tốt nhất cho chuyến đi của bạn. Dễ dàng, nhanh chóng, an toàn.</p>
+        
+        <div class="hero-buttons">
+            <a href="/Vehicle" class="btn btn-primary" style="font-size: 16px; padding: 12px 28px;">Tìm xe ngay</a>
+            <a href="#features" class="btn btn-secondary" style="font-size: 16px; padding: 12px 28px;">Tìm hiểu thêm</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="features">
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">🚗</div>
+            <h3>Hàng ngàn xe</h3>
+            <p>Lựa chọn từ hàng ngàn xe từ các chủ đáng tin cậy</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">💳</div>
+            <h3>Giá tốt</h3>
+            <p>Giá cạnh tranh với những xe chất lượng cao</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>An toàn</h3>
+            <p>Bảo hiểm toàn diện và hỗ trợ 24/7</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3>Nhanh chóng</h3>
+            <p>Đặt xe trong vòng vài phút</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">🏆</div>
+            <h3>Đáng tin</h3>
+            <p>Hệ thống xác minh chủ xe và khách hàng</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>Tiện lợi</h3>
+            <p>Ứng dụng di động cho quản lý đặt xe</p>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Vehicles -->
+<section class="recent-vehicles">
+    <h2 class="section-title">Xe phổ biến</h2>
+    
+    <div class="vehicles-grid">
+        <div class="vehicle-card">
+            <div class="vehicle-image">🚗</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Toyota Camry 2023</div>
+                <div class="vehicle-details">Hạng: Sedan • 4 chỗ • Tự động</div>
+                <div class="vehicle-price">500,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/1" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/1" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="vehicle-card">
+            <div class="vehicle-image">🚙</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Honda CR-V 2022</div>
+                <div class="vehicle-details">Hạng: SUV • 5 chỗ • Tự động</div>
+                <div class="vehicle-price">600,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/2" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/2" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="vehicle-card">
+            <div class="vehicle-image">🚕</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Hyundai Elantra 2023</div>
+                <div class="vehicle-details">Hạng: Sedan • 4 chỗ • Tự động</div>
+                <div class="vehicle-price">400,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/3" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/3" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="vehicle-card">
+            <div class="vehicle-image">🚐</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Ford Transit 2021</div>
+                <div class="vehicle-details">Hạng: Van • 12 chỗ • Tự động</div>
+                <div class="vehicle-price">1,200,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/4" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/4" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="vehicle-card">
+            <div class="vehicle-image">🏎️</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">BMW 320i 2023</div>
+                <div class="vehicle-details">Hạng: Luxury • 4 chỗ • Tự động</div>
+                <div class="vehicle-price">1,500,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/5" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/5" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="vehicle-card">
+            <div class="vehicle-image">⚡</div>
+            <div class="vehicle-info">
+                <div class="vehicle-name">Tesla Model 3 2023</div>
+                <div class="vehicle-details">Hạng: Electric • 4 chỗ • Tự động</div>
+                <div class="vehicle-price">800,000 ₫/ngày</div>
+                <div class="vehicle-actions">
+                    <a href="/Vehicle/6" class="btn-secondary">Xem chi tiết</a>
+                    <a href="/Rental/Book/6" class="btn-primary">Đặt ngay</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <h2>Bạn là chủ xe?</h2>
+    <p>Chia sẻ xe của bạn và kiếm thu nhập thêm</p>
+    <a href="/Auth/Register?role=employee" class="btn btn-primary" style="font-size: 16px; padding: 12px 28px;">Đăng ký chủ xe</a>
+</section>

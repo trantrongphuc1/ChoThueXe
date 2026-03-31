@@ -1,0 +1,386 @@
+@{
+    ViewData["Title"] = "Khuyến mãi và ưu đãi";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .promo-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .promo-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .promo-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .promo-header p {
+        font-size: 16px;
+        color: var(--text-secondary);
+    }
+
+    .promo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .promo-card {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border: 2px solid var(--accent);
+        border-radius: var(--radius);
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .promo-card::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 100px;
+        height: 100px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 50%;
+    }
+
+    .promo-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background-color: var(--warning);
+        color: var(--bg-primary);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .promo-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .promo-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .promo-discount {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--warning);
+        margin-bottom: 12px;
+    }
+
+    .promo-details {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+    }
+
+    .promo-code {
+        background-color: var(--bg-secondary);
+        border: 1px dashed var(--accent);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-family: monospace;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .copy-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--accent);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .promo-btn {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .promo-btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .expired {
+        opacity: 0.5;
+    }
+
+    .expired .promo-btn {
+        background-color: var(--text-secondary);
+        cursor: not-allowed;
+    }
+
+    .filter-section {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        padding: 8px 16px;
+        background-color: transparent;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+    }
+
+    .info-box {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-top: 40px;
+    }
+
+    .info-box h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .info-box p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    @@media (max-width: 768px) {
+        .promo-header h1 {
+            font-size: 24px;
+        }
+
+        .promo-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-section {
+            flex-direction: column;
+        }
+
+        .filter-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="promo-container">
+    <div class="promo-header">
+        <h1>🎉 Khuyến mãi và ưu đãi</h1>
+        <p>Những ưu đãi hấp dẫn dành cho bạn ngay hôm nay</p>
+    </div>
+
+    <div class="filter-section">
+        <button class="filter-btn active" onclick="filterPromo('all')">Tất cả</button>
+        <button class="filter-btn" onclick="filterPromo('new')">Mới nhất</button>
+        <button class="filter-btn" onclick="filterPromo('expiring')">Sắp hết hạn</button>
+        <button class="filter-btn" onclick="filterPromo('student')">Học sinh</button>
+    </div>
+
+    <div class="promo-grid">
+        <!-- Promo 1: 20% Discount -->
+        <div class="promo-card">
+            <span class="promo-badge">Mới</span>
+            <div class="promo-title">🎊 Giảm 20% cho lần đầu</div>
+            <div class="promo-description">Dành cho tất cả khách hàng mới. Giảm tối đa 500.000đ</div>
+            <div class="promo-discount">-20%</div>
+            <div class="promo-details">
+                ✓ Áp dụng cho booking trước 30/04/2026<br>
+                ✓ Tối thiểu 2 ngày thuê
+            </div>
+            <div class="promo-code">
+                <span>WELCOME20</span>
+                <button class="copy-btn" onclick="copyCode('WELCOME20')">Sao chép</button>
+            </div>
+            <button class="promo-btn">Sử dụng ngay</button>
+        </div>
+
+        <!-- Promo 2: Weekend Special -->
+        <div class="promo-card">
+            <span class="promo-badge">Phổ biến</span>
+            <div class="promo-title">🚗 Ưu đãi cuối tuần</div>
+            <div class="promo-description">Giảm 15% cho thuê xe từ Thứ 6 đến Chủ nhật</div>
+            <div class="promo-discount">-15%</div>
+            <div class="promo-details">
+                ✓ Áp dụng cuối tuần bất kỳ<br>
+                ✓ Tối đa 3 ngày
+            </div>
+            <div class="promo-code">
+                <span>WEEKEND15</span>
+                <button class="copy-btn" onclick="copyCode('WEEKEND15')">Sao chép</button>
+            </div>
+            <button class="promo-btn">Sử dụng ngay</button>
+        </div>
+
+        <!-- Promo 3: Monthly Special -->
+        <div class="promo-card">
+            <span class="promo-badge">Hot</span>
+            <div class="promo-title">📅 Thuê theo tháng tiết kiệm</div>
+            <div class="promo-description">Giảm 25% cho hợp đồng thuê tháng</div>
+            <div class="promo-discount">-25%</div>
+            <div class="promo-details">
+                ✓ Tối thiểu 30 ngày thuê<br>
+                ✓ Tất cả các loại xe
+            </div>
+            <div class="promo-code">
+                <span>MONTHLY25</span>
+                <button class="copy-btn" onclick="copyCode('MONTHLY25')">Sao chép</button>
+            </div>
+            <button class="promo-btn">Sử dụng ngay</button>
+        </div>
+
+        <!-- Promo 4: Student Discount -->
+        <div class="promo-card">
+            <span class="promo-badge">Sinh viên</span>
+            <div class="promo-title">🎓 Ưu đãi học sinh sinh viên</div>
+            <div class="promo-description">Giảm 18% cho học sinh, sinh viên toàn thời gian</div>
+            <div class="promo-discount">-18%</div>
+            <div class="promo-details">
+                ✓ Cần xác minh thẻ sinh viên<br>
+                ✓ Mỗi tháng 5 lần miễn phí
+            </div>
+            <div class="promo-code">
+                <span>STUDENT18</span>
+                <button class="copy-btn" onclick="copyCode('STUDENT18')">Sao chép</button>
+            </div>
+            <button class="promo-btn">Xác minh tài khoản</button>
+        </div>
+
+        <!-- Promo 5: Group Booking -->
+        <div class="promo-card">
+            <span class="promo-badge">Nhóm</span>
+            <div class="promo-title">👥 Ưu đãi đặt xe theo nhóm</div>
+            <div class="promo-description">Giảm 12% khi đặt 2+ xe cùng lúc</div>
+            <div class="promo-discount">-12%</div>
+            <div class="promo-details">
+                ✓ Áp dụng cho 2 hoặc nhiều xe<br>
+                ✓ Cùng thời gian thuê
+            </div>
+            <div class="promo-code">
+                <span>GROUP12</span>
+                <button class="copy-btn" onclick="copyCode('GROUP12')">Sao chép</button>
+            </div>
+            <button class="promo-btn">Sử dụng ngay</button>
+        </div>
+
+        <!-- Promo 6: Loyalty (Expired) -->
+        <div class="promo-card expired">
+            <span class="promo-badge" style="background-color: var(--text-secondary);">Hết hạn</span>
+            <div class="promo-title">💎 Chương trình thành viên VIP</div>
+            <div class="promo-description">Giảm 30% cho thành viên VIP</div>
+            <div class="promo-discount">-30%</div>
+            <div class="promo-details">
+                ✓ Hết hạn: 28/02/2026<br>
+                ✗ Không thể sử dụng
+            </div>
+            <div class="promo-code">
+                <span>VIP30</span>
+                <button class="copy-btn" disabled>Sao chép</button>
+            </div>
+            <button class="promo-btn" disabled>Hết hạn</button>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="info-box">
+        <h3>💡 Cách sử dụng mã khuyến mãi</h3>
+        <p>
+            1. Sao chép mã khuyến mãi bên trên<br>
+            2. Truy cập trang đặt xe và chọn xe muốn thuê<br>
+            3. Nhập mã khuyến mãi tại bước thanh toán<br>
+            4. Giá sẽ được giảm tự động<br>
+            5. Hoàn tất thanh toán
+        </p>
+    </div>
+</div>
+
+<script>
+    function filterPromo(category) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        console.log('Filtering by:', category);
+    }
+
+    function copyCode(code) {
+        navigator.clipboard.writeText(code);
+        alert('Đã sao chép mã: ' + code);
+    }
+</script>

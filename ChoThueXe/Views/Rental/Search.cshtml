@@ -1,0 +1,478 @@
+@using ChoThueXe.Models.Rental
+@{
+    ViewData["Title"] = "Danh sách xe - ChoThueXe";
+}
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 40px;
+        border-radius: var(--radius);
+    }
+
+    .page-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        font-family: "Inter", sans-serif;
+    }
+
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .filters {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: "DM Sans", sans-serif;
+        transition: var(--transition);
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-search {
+        padding: 10px 24px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        align-self: flex-end;
+    }
+
+    .btn-search:hover {
+        background-color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .results-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 4px;
+    }
+
+    .results-count {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .sort-options {
+        display: flex;
+        gap: 8px;
+    }
+
+    .sort-btn {
+        padding: 6px 12px;
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .sort-btn.active {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    .sort-btn:hover {
+        border-color: var(--accent);
+    }
+
+    .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vehicle-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
+    }
+
+    .vehicle-image {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .vehicle-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        backdrop-filter: blur(4px);
+    }
+
+    .vehicle-info {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vehicle-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .vehicle-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .detail-icon {
+        font-size: 16px;
+    }
+
+    .vehicle-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+    }
+
+    .feature-badge {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: var(--accent);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .vehicle-footer {
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .vehicle-price {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .price-amount {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--accent);
+        font-family: "Inter", sans-serif;
+    }
+
+    .price-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: var(--radius-sm);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+        font-size: 24px;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 40px;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .pagination-btn.active {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    .pagination-btn:hover {
+        border-color: var(--accent);
+    }
+
+    @@media (max-width: 1024px) {
+        .vehicle-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 24px;
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-search {
+            align-self: stretch;
+        }
+
+        .vehicle-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="page-header">
+        <h1>Danh sách xe cho thuê</h1>
+        <p>Chọn xe yêu thích và đặt ngay</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <form method="get" asp-action="Search">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="location">Địa điểm</label>
+                    <input type="text" id="location" name="location" placeholder="Nhập địa điểm..." value="">
+                </div>
+                <div class="filter-group">
+                    <label for="startDate">Ngày bắt đầu</label>
+                    <input type="date" id="startDate" name="startDate">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">Ngày kết thúc</label>
+                    <input type="date" id="endDate" name="endDate">
+                </div>
+                <div class="filter-group">
+                    <label for="maxPrice">Giá tối đa</label>
+                    <select id="maxPrice" name="maxPrice">
+                        <option value="">Tất cả</option>
+                        <option value="500000">Dưới 500K</option>
+                        <option value="1000000">Dưới 1M</option>
+                        <option value="2000000">Dưới 2M</option>
+                        <option value="5000000">Dưới 5M</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 16px; text-align: right;">
+                <button type="submit" class="btn-search">Tìm kiếm</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Info -->
+    <div class="results-info">
+        <span class="results-count">Đang hiển thị 0 xe</span>
+        <div class="sort-options">
+            <button class="sort-btn active" onclick="sortVehicles('recent')">Mới nhất</button>
+            <button class="sort-btn" onclick="sortVehicles('price-low')">Giá thấp</button>
+            <button class="sort-btn" onclick="sortVehicles('price-high')">Giá cao</button>
+            <button class="sort-btn" onclick="sortVehicles('rating')">Đánh giá</button>
+        </div>
+    </div>
+
+    <!-- Vehicles Grid -->
+    <div class="vehicle-grid">
+        <!-- Sample Vehicle Cards - Will be replaced with actual data -->
+        @for (int i = 1; i <= 12; i++)
+        {
+            <div class="vehicle-card">
+                <div class="vehicle-image">
+                    🚗
+                    <span class="vehicle-badge">Bản demo @i</span>
+                </div>
+                <div class="vehicle-info">
+                    <div class="vehicle-name">Xe Mẫu @i</div>
+                    <div class="vehicle-details">
+                        <div class="detail-item">
+                            <span class="detail-icon">⭐</span>
+                            <span>4.5 (10)</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">👥</span>
+                            <span>5 chỗ</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">🚗</span>
+                            <span>Tự động</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-icon">⛽</span>
+                            <span>Xăng</span>
+                        </div>
+                    </div>
+                    <div class="vehicle-features">
+                        <span class="feature-badge">WiFi</span>
+                        <span class="feature-badge">Máy lạnh</span>
+                        <span class="feature-badge">DVD</span>
+                    </div>
+                    <div class="vehicle-footer">
+                        <div class="vehicle-price">
+                            <div class="price-amount">500K</div>
+                            <div class="price-label">/ngày</div>
+                        </div>
+                        <a href="/Rental/Book" class="btn btn-primary">Đặt ngay</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Empty State (if no vehicles) -->
+    <div class="empty-state" style="display: none;">
+        <div class="empty-state-icon">🔍</div>
+        <h2>Không tìm thấy xe</h2>
+        <p>Thử thay đổi bộ lọc tìm kiếm của bạn</p>
+        <a href="/" class="btn btn-primary">Quay lại trang chủ</a>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <button class="pagination-btn" disabled>← Trước</button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">Sau →</button>
+    </div>
+</div>
+
+<script>
+    function sortVehicles(sort) {
+        document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        console.log('Sorted by:', sort);
+    }
+</script>

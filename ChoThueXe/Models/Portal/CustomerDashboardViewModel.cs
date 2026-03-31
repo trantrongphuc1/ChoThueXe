@@ -19,4 +19,5 @@ public class CustomerDashboardViewModel
     public IReadOnlyList<ReviewableContractViewModel> ReviewableContracts { get; init; } = [];
     public IReadOnlyList<ContractFullViewModel> Contracts { get; init; } = [];
     public IReadOnlyList<PendingContractViewModel> PendingContracts { get; init; } = [];
+    public CustomerVerificationStatusViewModel VerificationStatus { get; init; } = new();
 }

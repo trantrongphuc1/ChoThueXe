@@ -1,0 +1,385 @@
+@using ChoThueXe.Models.Rental
+@model ContractFullViewModel
+@{
+    ViewData["Title"] = "Chi tiết hợp đồng | ChoThueXe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 8px;
+        --radius-sm: 4px;
+        --transition: all 0.3s ease;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+        line-height: 1.6;
+    }
+
+    main {
+        padding: 24px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .back-btn {
+        padding: 8px 16px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .back-btn:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background-color: rgba(251, 191, 36, 0.1);
+        color: var(--warning);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .status-approved {
+        background-color: rgba(63, 185, 80, 0.1);
+        color: var(--success);
+        border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+
+    .status-completed {
+        background-color: rgba(58, 134, 255, 0.1);
+        color: var(--accent);
+        border: 1px solid rgba(58, 134, 255, 0.3);
+    }
+
+    .status-cancelled {
+        background-color: rgba(248, 81, 73, 0.1);
+        color: var(--danger);
+        border: 1px solid rgba(248, 81, 73, 0.3);
+    }
+
+    .section {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+    }
+
+    .section-title::before {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 16px;
+        background-color: var(--accent);
+        border-radius: 2px;
+        margin-right: 8px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .info-value {
+        font-size: 14px;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .divider {
+        height: 1px;
+        background-color: var(--border);
+        margin: 16px 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--border);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state p {
+        font-size: 14px;
+    }
+
+    @@media (max-width: 768px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<main>
+    @if (!string.IsNullOrEmpty(ViewData["Error"]?.ToString()))
+    {
+        <div style="background-color: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.3); color: var(--danger); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+            @ViewData["Error"]
+        </div>
+    }
+
+    <div class="header">
+        <div>
+            <h1>Chi tiết hợp đồng</h1>
+            @if (Model != null)
+            {
+                <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
+                    Mã HĐ: <strong>#@Model.ContractId</strong>
+                </p>
+            }
+        </div>
+        <a href="@Url.Action("Index", "Customer")" class="back-btn">← Quay lại</a>
+    </div>
+
+    @if (Model == null)
+    {
+        <div class="section">
+            <div class="empty-state">
+                <p>Không tìm thấy hợp đồng.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Thông tin chính -->
+        <div class="section">
+            <div class="section-title">Thông tin hợp đồng</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Trạng thái</span>
+                    <span>
+                        @{
+                            var statusClass = Model.Status?.ToUpperInvariant() switch
+                            {
+                                "PENDING" => "status-pending",
+                                "APPROVED" => "status-approved",
+                                "COMPLETED" => "status-completed",
+                                "CANCELLED" => "status-cancelled",
+                                _ => "status-pending"
+                            };
+                            var statusText = Model.Status?.ToUpperInvariant() switch
+                            {
+                                "PENDING" => "Chờ duyệt",
+                                "APPROVED" => "Đã duyệt",
+                                "COMPLETED" => "Hoàn thành",
+                                "CANCELLED" => "Đã hủy",
+                                _ => Model.Status
+                            };
+                        }
+                        <span class="status-badge @statusClass">@statusText</span>
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ngày tạo</span>
+                    <span class="info-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Tổng tiền</span>
+                    <span class="info-value" style="color: var(--success); font-size: 16px;">@Model.TotalAmount.ToString("N0") VND</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Số ngày thuê</span>
+                    <span class="info-value">@((Model.EndDate - Model.StartDate).Days) ngày</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin xe -->
+        <div class="section">
+            <div class="section-title">Thông tin xe</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Tên xe</span>
+                    <span class="info-value">@Model.VehicleName</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Hãng xe</span>
+                    <span class="info-value">@Model.BrandName</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Loại xe</span>
+                    <span class="info-value">@Model.TypeName</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Giá/ngày</span>
+                    <span class="info-value">@Model.PricePerDay.ToString("N0") VND</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin thời gian thuê -->
+        <div class="section">
+            <div class="section-title">Thời gian thuê</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Ngày bắt đầu</span>
+                    <span class="info-value">@Model.StartDate.ToString("dd/MM/yyyy")</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ngày kết thúc</span>
+                    <span class="info-value">@Model.EndDate.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin khách hàng -->
+        <div class="section">
+            <div class="section-title">Thông tin khách hàng</div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Tên khách hàng</span>
+                    <span class="info-value">@Model.CustomerName</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">@Model.CustomerEmail</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin nhân viên -->
+        @if (!string.IsNullOrEmpty(Model.EmployeeName))
+        {
+            <div class="section">
+                <div class="section-title">Thông tin nhân viên</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Tên nhân viên</span>
+                        <span class="info-value">@Model.EmployeeName</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">@Model.EmployeeEmail</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Nút hành động -->
+        <div class="action-buttons">
+            <a href="@Url.Action("Index", "Customer")" class="btn btn-primary">← Quay lại dashboard</a>
+        </div>
+    }
+</main>

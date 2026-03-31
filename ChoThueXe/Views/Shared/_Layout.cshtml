@@ -1,91 +1,370 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - ChoThueXe</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ChoThueXe.styles.css" asp-append-version="true" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0f1117;
+            --bg-secondary: #161b27;
+            --bg-tertiary: #1c2333;
+            --accent: #3b82f6;
+            --accent-light: #dbeafe;
+            --text-primary: #e2e8f0;
+            --text-secondary: #64748b;
+            --text-muted: #475569;
+            --success: #22c55e;
+            --success-light: #dcfce7;
+            --warning: #eab308;
+            --warning-light: #fef3c7;
+            --error: #ef4444;
+            --error-light: #fee2e2;
+            --info: #06b6d4;
+            --info-light: #cffafe;
+            --border: #2d333b;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: "Inter", sans-serif;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), #0ea5e9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .logo:hover {
+            color: var(--text-primary);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .header-nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .header-nav-link:hover,
+        .header-nav-link.active {
+            color: var(--accent);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 40px 32px;
+            margin-top: 80px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .footer-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            font-family: "Inter", sans-serif;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 8px;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-section a:hover {
+            color: var(--accent);
+        }
+
+        .footer-divider {
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 32px;
+        }
+
+        /* Main Content */
+        main {
+            min-height: calc(100vh - 70px);
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .header {
+                padding: 0 16px;
+            }
+
+            .container {
+                padding: 0 16px;
+            }
+
+            .header-nav {
+                display: none;
+            }
+
+            .footer {
+                padding: 24px 16px;
+            }
+
+            .footer-content {
+                gap: 24px;
+                margin-bottom: 24px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">ChoThueXe</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Customer" asp-action="Index">Khách Hàng</a>
-                            </li>
-                            @if (User.IsInRole("EMPLOYEE"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Employee" asp-action="Index">Nhân Viên</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("ADMIN"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-controller="Admin" asp-action="Index">Admin</a>
-                                </li>
-                            }
-                        }
-                    </ul>
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            var profileController = User.IsInRole("ADMIN") ? "Admin" : User.IsInRole("EMPLOYEE") ? "Employee" : "Customer";
-                            <li class="nav-item d-flex align-items-center me-2 text-muted">
-                                <a class="profile-avatar-link" asp-controller="@profileController" asp-action="Index" title="Trang cá nhân">
-                                    @((User.Identity?.Name ?? "U").Trim()[0].ToString().ToUpperInvariant())
-                                </a>
-                            </li>
-                            <li class="nav-item d-flex align-items-center me-2 text-muted">
-                                @User.Identity?.Name
-                            </li>
-                            <li class="nav-item">
-                                <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Đăng xuất</button>
-                                </form>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Login">Đăng nhập</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Auth" asp-action="Register">Đăng ký</a>
-                            </li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <div class="logo-icon">🚗</div>
+            <span>ChoThueXe</span>
+        </a>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - ChoThueXe - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        <nav class="header-nav">
+            <li><a href="/" class="header-nav-link">Trang chủ</a></li>
+            <li><a href="/Vehicle" class="header-nav-link">Danh sách xe</a></li>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole("ADMIN"))
+                {
+                    <li><a href="/Admin" class="header-nav-link">Dashboard Admin</a></li>
+                }
+                @if (User.IsInRole("EMPLOYEE"))
+                {
+                    <li><a href="/Employee" class="header-nav-link">Dashboard Chủ xe</a></li>
+                }
+                @if (!User.IsInRole("ADMIN") && !User.IsInRole("EMPLOYEE"))
+                {
+                    <li><a href="/Customer" class="header-nav-link">Dashboard Khách</a></li>
+                }
+            }
+            <li><a href="/Contact" class="header-nav-link">Liên hệ</a></li>
+        </nav>
+
+        <div class="header-actions">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <span style="color: var(--text-secondary);">@User.Identity?.Name</span>
+                <form action="/Auth/Logout" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-secondary" style="padding: 8px 12px; font-size: 13px; border: none; background: none; cursor: pointer;">Đăng xuất</button>
+                </form>
+            }
+            else
+            {
+                <a href="/Auth/Login" class="btn btn-secondary">Đăng nhập</a>
+                <a href="/Auth/Register" class="btn btn-primary">Đăng ký</a>
+            }
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Về ChoThueXe</h3>
+                <ul>
+                    <li><a href="/Home/About">Giới thiệu</a></li>
+                    <li><a href="/">Tại sao chọn chúng tôi</a></li>
+                    <li><a href="/Home/Terms">Điều khoản sử dụng</a></li>
+                    <li><a href="/Home/Privacy">Chính sách bảo mật</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Cho khách hàng</h3>
+                <ul>
+                    <li><a href="/Rental/Search">Danh sách xe</a></li>
+                    <li><a href="/Rental/Book">Hướng dẫn thuê xe</a></li>
+                    <li><a href="/Home/FAQ">Các câu hỏi thường gặp</a></li>
+                    <li><a href="/Home/Contact">Liên hệ hỗ trợ</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Cho chủ xe</h3>
+                <ul>
+                    <li><a href="/Auth/Register">Đăng ký chủ xe</a></li>
+                    <li><a href="/Employee">Hướng dẫn quản lý</a></li>
+                    <li><a href="/Employee/Vehicles">Quản lý xe</a></li>
+                    <li><a href="/Home/Contact">Liên hệ đối tác</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h3>Kết nối</h3>
+                <ul>
+                    <li><a href="#">Facebook</a></li>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Twitter</a></li>
+                    <li><a href="#">LinkedIn</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-divider">
+            <div class="footer-copyright">
+                © 2026 ChoThueXe. Tất cả các quyền được bảo lưu.
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <span style="color: var(--text-secondary);">Made with ❤️</span>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

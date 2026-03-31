@@ -1,0 +1,169 @@
+@{
+    ViewData["Title"] = "Lỗi máy chủ";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --danger: #f85149;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .error-container {
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+    }
+
+    .error-icon {
+        font-size: 120px;
+        margin-bottom: 24px;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .error-code {
+        font-size: 72px;
+        font-weight: 700;
+        color: var(--danger);
+        margin-bottom: 8px;
+        font-family: "Inter", monospace;
+    }
+
+    .error-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .error-description {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+        line-height: 1.6;
+    }
+
+    .error-info {
+        background-color: var(--bg-secondary);
+        border-left: 3px solid var(--danger);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .error-info p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-secondary);
+        border-color: var(--accent);
+    }
+
+    @@media (max-width: 480px) {
+        .error-icon {
+            font-size: 80px;
+        }
+
+        .error-code {
+            font-size: 48px;
+        }
+
+        .error-title {
+            font-size: 24px;
+        }
+
+        .error-actions {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <div class="error-code">500</div>
+    <h1 class="error-title">Lỗi máy chủ</h1>
+    <p class="error-description">
+        Rất tiếc, máy chủ gặp lỗi bất ngờ. Vui lòng thử lại sau.
+    </p>
+
+    <div class="error-info">
+        <p>
+            <strong>Chúng tôi đang xử lý sự cố này.</strong><br/>
+            Đội kỹ thuật của chúng tôi đã được thông báo và sẽ xử lý sự cố này trong thời gian sớm nhất.
+        </p>
+    </div>
+
+    <div class="error-actions">
+        <a href="/" class="btn btn-primary">🏠 Trang chủ</a>
+        <a href="mailto:support@chothueXe.com" class="btn btn-secondary">📧 Liên hệ hỗ trợ</a>
+    </div>
+</div>

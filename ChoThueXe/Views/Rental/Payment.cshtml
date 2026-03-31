@@ -1,0 +1,452 @@
+@using ChoThueXe.Models.Rental
+@model PaymentInputModel
+
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .payment-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .payment-header {
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .payment-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .payment-header p {
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    .payment-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 30px;
+    }
+
+    .payment-form {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+    }
+
+    .form-section {
+        margin-bottom: 30px;
+    }
+
+    .form-section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 12px 14px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .form-row.full {
+        grid-template-columns: 1fr;
+    }
+
+    .security-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+    }
+
+    .security-info::before {
+        content: "🔒";
+        font-size: 16px;
+    }
+
+    /* Sidebar */
+    .payment-summary {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .summary-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        font-size: 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+
+    .summary-item label {
+        color: var(--text-secondary);
+    }
+
+    .summary-item span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .summary-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        margin-top: 12px;
+        border-top: 2px solid var(--border);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .vehicle-card {
+        background-color: var(--bg-tertiary);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .vehicle-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    .vehicle-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-detail {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .btn {
+        width: 100%;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-top: 20px;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+        margin-top: 8px;
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    .trust-badges {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .trust-badge {
+        text-align: center;
+    }
+
+    .trust-badge-icon {
+        font-size: 24px;
+        margin-bottom: 4px;
+    }
+
+    @@media (max-width: 768px) {
+        .payment-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .payment-summary {
+            position: static;
+            top: auto;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .payment-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="payment-container">
+    <div class="payment-header">
+        <h1>💳 Thanh toán</h1>
+        <p>Hoàn tất thanh toán để xác nhận đặt xe của bạn</p>
+    </div>
+
+    <form method="post" class="payment-grid">
+        <!-- Main Form -->
+        <div class="payment-form">
+            <!-- Cardholder Info -->
+            <div class="form-section">
+                <div class="form-section-title">👤 Thông tin chủ thẻ</div>
+                <div class="form-group">
+                    <label for="cardholderName">Tên chủ thẻ</label>
+                    <input type="text" id="cardholderName" name="cardholderName" placeholder="Nguyễn Văn A" required />
+                </div>
+                <div class="form-group">
+                    <label for="email">Email xác nhận</label>
+                    <input type="email" id="email" name="email" placeholder="example@email.com" required />
+                </div>
+            </div>
+
+            <!-- Card Information -->
+            <div class="form-section">
+                <div class="form-section-title">💳 Thông tin thẻ</div>
+                <div class="form-group">
+                    <label for="cardNumber">Số thẻ</label>
+                    <input type="text" id="cardNumber" name="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" required />
+                    <div class="security-info">Thẻ của bạn được bảo vệ bởi SSL encryption</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="expiryDate">Ngày hết hạn</label>
+                        <input type="text" id="expiryDate" name="expiryDate" placeholder="MM/YY" maxlength="5" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="4" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billing Address -->
+            <div class="form-section">
+                <div class="form-section-title">📍 Địa chỉ thanh toán</div>
+                <div class="form-group">
+                    <label for="address">Địa chỉ</label>
+                    <input type="text" id="address" name="address" placeholder="Nhập địa chỉ" required />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">Thành phố</label>
+                        <input type="text" id="city" name="city" placeholder="TP HCM" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="zipCode">Mã bưu điện</label>
+                        <input type="text" id="zipCode" name="zipCode" placeholder="00000" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="form-section">
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" required />
+                    <span style="font-size: 13px; color: var(--text-secondary);">
+                        Tôi đồng ý với <a href="#" style="color: var(--accent); text-decoration: none;">điều khoản thanh toán</a>
+                    </span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                ✓ Xác nhận thanh toán
+            </button>
+            <a href="/Rental/Book" class="btn btn-secondary">
+                ← Quay lại
+            </a>
+        </div>
+
+        <!-- Sidebar Summary -->
+        <div class="payment-summary">
+            <div class="summary-title">📋 Chi tiết đơn</div>
+
+            <div class="vehicle-card">
+                <div class="vehicle-icon">🚗</div>
+                <div class="vehicle-name">Toyota Camry 2024</div>
+                <div class="vehicle-detail">Biển số: 51 A-123</div>
+                <div class="vehicle-detail" style="margin-top: 8px;">01/04 - 03/04/2026</div>
+            </div>
+
+            <div class="summary-item">
+                <label>Ngày thuê:</label>
+                <span>3 ngày</span>
+            </div>
+
+            <div class="summary-item">
+                <label>Giá/ngày:</label>
+                <span>2.500.000đ</span>
+            </div>
+
+            <div class="summary-item">
+                <label>Tiền cơ bản:</label>
+                <span>7.500.000đ</span>
+            </div>
+
+            <div class="summary-item">
+                <label>Phí dịch vụ:</label>
+                <span>150.000đ</span>
+            </div>
+
+            <div class="summary-item">
+                <label>Giảm giá:</label>
+                <span style="color: var(--success);">-250.000đ</span>
+            </div>
+
+            <div class="summary-total">
+                <label>Tổng cộng:</label>
+                <span>7.400.000đ</span>
+            </div>
+
+            <div class="trust-badges">
+                <div class="trust-badge">
+                    <div class="trust-badge-icon">🔒</div>
+                    <div>An toàn</div>
+                </div>
+                <div class="trust-badge">
+                    <div class="trust-badge-icon">✓</div>
+                    <div>Xác minh</div>
+                </div>
+                <div class="trust-badge">
+                    <div class="trust-badge-icon">💯</div>
+                    <div>Tin cậy</div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Format card number
+    document.getElementById('cardNumber').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\s/g, '');
+        let formattedValue = '';
+        for (let i = 0; i < value.length; i++) {
+            if (i > 0 && i % 4 === 0) formattedValue += ' ';
+            formattedValue += value[i];
+        }
+        e.target.value = formattedValue;
+    });
+
+    // Format expiry date
+    document.getElementById('expiryDate').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+            value = value.substring(0, 2) + '/' + value.substring(2, 4);
+        }
+        e.target.value = value;
+    });
+
+    // Format CVV
+    document.getElementById('cvv').addEventListener('input', function(e) {
+        e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+    });
+</script>

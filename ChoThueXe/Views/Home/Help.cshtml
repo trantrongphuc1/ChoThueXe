@@ -1,0 +1,369 @@
+@{
+    ViewData["Title"] = "Trung tâm hỗ trợ";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --info: #0ea5e9;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .help-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .hero-banner {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: 16px;
+        padding: 60px 40px;
+        text-align: center;
+        margin: 40px 0;
+    }
+
+    .hero-banner h1 {
+        font-size: 42px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .hero-banner p {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+    }
+
+    .search-box {
+        max-width: 600px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 14px 40px 14px 16px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text-primary);
+        font-size: 14px;
+    }
+
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        color: var(--text-secondary);
+    }
+
+    .topics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin: 60px 0;
+    }
+
+    .topic-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .topic-card:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+        transform: translateY(-4px);
+    }
+
+    .topic-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .topic-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .topic-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .section-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 30px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 60px;
+    }
+
+    .article-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s ease;
+    }
+
+    .article-card:hover {
+        border-color: var(--accent);
+        background-color: rgba(59, 130, 246, 0.05);
+    }
+
+    .article-icon {
+        font-size: 28px;
+        margin-bottom: 12px;
+    }
+
+    .article-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .article-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .article-link {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .cta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 60px;
+    }
+
+    .cta-box {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .cta-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+    }
+
+    .cta-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .cta-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    @@media (max-width: 768px) {
+        .topics-grid,
+        .articles-grid,
+        .cta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hero-banner {
+            padding: 40px 20px;
+        }
+
+        .hero-banner h1 {
+            font-size: 28px;
+        }
+
+        .section-title {
+            font-size: 22px;
+        }
+    }
+</style>
+
+<div class="help-container">
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+        <h1>🆘 Trung tâm hỗ trợ</h1>
+        <p>Chúng tôi ở đây để giúp bạn. Tìm câu trả lời hoặc liên hệ với chúng tôi.</p>
+
+        <div class="search-box">
+            <input type="text" placeholder="Tìm kiếm câu hỏi hoặc chủ đề..." />
+            <span class="search-icon">🔍</span>
+        </div>
+    </div>
+
+    <!-- Quick Topics -->
+    <div class="topics-grid">
+        <div class="topic-card" onclick="alert('Đi tới phần Đặt xe')">
+            <div class="topic-icon">📍</div>
+            <div class="topic-title">Đặt xe</div>
+            <div class="topic-desc">Làm thế nào để đặt xe, thay đổi hoặc hủy đơn hàng</div>
+        </div>
+
+        <div class="topic-card" onclick="alert('Đi tới phần Thanh toán')">
+            <div class="topic-icon">💳</div>
+            <div class="topic-title">Thanh toán</div>
+            <div class="topic-desc">Phương thức thanh toán, hoàn tiền, hóa đơn</div>
+        </div>
+
+        <div class="topic-card" onclick="alert('Đi tới phần Bảo hiểm')">
+            <div class="topic-icon">🛡️</div>
+            <div class="topic-title">Bảo hiểm & An toàn</div>
+            <div class="topic-desc">Chi tiết bảo hiểm, an toàn giao thông</div>
+        </div>
+
+        <div class="topic-card" onclick="alert('Đi tới phần Tài khoản')">
+            <div class="topic-icon">👤</div>
+            <div class="topic-title">Tài khoản</div>
+            <div class="topic-desc">Đăng ký, đăng nhập, xác minh tài khoản</div>
+        </div>
+
+        <div class="topic-card" onclick="alert('Đi tới phần Xe')">
+            <div class="topic-icon">🚗</div>
+            <div class="topic-title">Về xe</div>
+            <div class="topic-desc">Mô tả xe, tình trạng, địa điểm nhận trả</div>
+        </div>
+
+        <div class="topic-card" onclick="alert('Đi tới phần Liên hệ')">
+            <div class="topic-icon">📞</div>
+            <div class="topic-title">Liên hệ hỗ trợ</div>
+            <div class="topic-desc">Gọi, chat, hoặc gửi email cho chúng tôi</div>
+        </div>
+    </div>
+
+    <!-- Popular Articles -->
+    <h2 class="section-title">📚 Bài viết phổ biến</h2>
+    <div class="articles-grid">
+        <div class="article-card">
+            <div class="article-icon">📝</div>
+            <div class="article-title">Hướng dẫn từng bước: Cách đặt xe</div>
+            <div class="article-desc">Học cách sử dụng nền tảng ChoThueXe để đặt xe của bạn trong vài phút.</div>
+            <a href="#" class="article-link">Đọc thêm →</a>
+        </div>
+
+        <div class="article-card">
+            <div class="article-icon">💰</div>
+            <div class="article-title">Hiểu rõ về giá cước</div>
+            <div class="article-desc">Tìm hiểu về cách chúng tôi tính giá, phí ẩn, và cách tiết kiệm tiền.</div>
+            <a href="#" class="article-link">Đọc thêm →</a>
+        </div>
+
+        <div class="article-card">
+            <div class="article-icon">🔐</div>
+            <div class="article-title">Bảo vệ tài khoản của bạn</div>
+            <div class="article-desc">Mẹo bảo mật và cách bảo vệ thông tin cá nhân của bạn trên ChoThueXe.</div>
+            <a href="#" class="article-link">Đọc thêm →</a>
+        </div>
+
+        <div class="article-card">
+            <div class="article-icon">🚗</div>
+            <div class="article-title">Kiểm tra xe trước khi nhận</div>
+            <div class="article-desc">Danh sách kiểm tra toàn diện để đảm bảo tình trạng xe trước khi rời khỏi điểm lấy.</div>
+            <a href="#" class="article-link">Đọc thêm →</a>
+        </div>
+    </div>
+
+    <!-- Support Options -->
+    <h2 class="section-title">🤝 Liên hệ hỗ trợ</h2>
+    <div class="cta-grid">
+        <div class="cta-box">
+            <div class="cta-icon">💬</div>
+            <div class="cta-title">Chat trực tiếp</div>
+            <div class="cta-desc">Trò chuyện với đội hỗ trợ trong thời gian hành chính</div>
+            <a href="/Home/Contact" class="btn">Bắt đầu chat</a>
+        </div>
+
+        <div class="cta-box">
+            <div class="cta-icon">📞</div>
+            <div class="cta-title">Gọi điện thoại</div>
+            <div class="cta-desc">Gọi cho chúng tôi 24/7 để được hỗ trợ ngay lập tức</div>
+            <a href="tel:1900000" class="btn">Gọi 1900-0000</a>
+        </div>
+
+        <div class="cta-box">
+            <div class="cta-icon">📧</div>
+            <div class="cta-title">Gửi email</div>
+            <div class="cta-desc">Gửi email chi tiết, chúng tôi sẽ phản hồi trong vòng 24h</div>
+            <a href="mailto:support@chothueXe.com" class="btn">Gửi email</a>
+        </div>
+
+        <div class="cta-box">
+            <div class="cta-icon">❓</div>
+            <div class="cta-title">FAQ</div>
+            <div class="cta-desc">Xem câu hỏi thường gặp và tìm câu trả lời nhanh chóng</div>
+            <a href="/Home/FAQ" class="btn">Xem FAQ</a>
+        </div>
+    </div>
+</div>

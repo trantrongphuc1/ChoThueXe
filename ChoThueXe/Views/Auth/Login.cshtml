@@ -1,50 +1,307 @@
-@model ChoThueXe.Models.Auth.LoginInputModel
+@using ChoThueXe.Models.Auth
+@model LoginInputModel
+
 @{
-    ViewData["Title"] = "Đăng nhập";
+    ViewData["Title"] = "Đăng nhập - ChoThueXe";
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">Đăng nhập hệ thống cho thuê xe</div>
-            <div class="card-body">
-                @if (ViewData["Error"] is string error)
-                {
-                    <div class="alert alert-danger">@error</div>
-                }
-                @if (TempData["Success"] is string success)
-                {
-                    <div class="alert alert-success">@success</div>
-                }
+<style>
+    .auth-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 70px);
+        padding: 24px;
+    }
 
-                <form asp-action="Login" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12">
-                        <label asp-for="Email" class="form-label"></label>
-                        <input asp-for="Email" class="form-control" autocomplete="username email" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    <div class="col-12">
-                        <label asp-for="Password" class="form-label"></label>
-                        <input asp-for="Password" type="password" class="form-control" autocomplete="current-password" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
-                    </div>
-                </form>
+    .auth-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
 
-                <div class="mt-3 small text-muted">
-                    Tài khoản mẫu: user1@mail.com / 123456 (ADMIN), user3@mail.com / 123456 (EMPLOYEE), user11@mail.com / 123456 (CUSTOMER)
-                </div>
-                <div class="mt-2">
-                    <a asp-action="Register">Chưa có tài khoản? Đăng ký ngay</a>
-                </div>
+    .auth-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .auth-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .auth-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: "DM Sans", sans-serif;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: var(--text-muted);
+    }
+
+    .form-error {
+        display: none;
+        color: var(--error);
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .form-control.error {
+        border-color: var(--error);
+    }
+
+    .form-control.error ~ .form-error {
+        display: block;
+    }
+
+    .form-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        font-size: 13px;
+    }
+
+    .form-footer a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .form-footer a:hover {
+        color: var(--accent-light);
+        text-decoration: underline;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: var(--radius-sm);
+        background-color: var(--accent);
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-bottom: 16px;
+    }
+
+    .btn-login:hover {
+        background-color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        margin: 24px 0;
+        gap: 12px;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background-color: var(--border);
+    }
+
+    .auth-signup {
+        text-align: center;
+        margin-top: 24px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .auth-signup a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .auth-signup a:hover {
+        color: var(--accent-light);
+    }
+
+    .validation-summary {
+        background-color: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--error);
+        border-radius: var(--radius-sm);
+        padding: 12px;
+        margin-bottom: 20px;
+        color: var(--error);
+        font-size: 13px;
+    }
+
+    .validation-summary ul {
+        list-style: none;
+        margin: 0;
+    }
+
+    .validation-summary li {
+        margin: 4px 0;
+    }
+
+    .password-toggle {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: var(--transition);
+        font-size: 16px;
+    }
+
+    .password-toggle-btn:hover {
+        color: var(--accent);
+    }
+
+    @@media (max-width: 480px) {
+        .auth-card {
+            padding: 24px;
+        }
+
+        .auth-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Đăng nhập</h1>
+            <p>Nhập thông tin để truy cập tài khoản</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="validation-summary">
+                <ul>
+                    @foreach (var modelState in ViewData.ModelState.Values)
+                    {
+                        @foreach (var error in modelState.Errors)
+                        {
+                            <li>@error.ErrorMessage</li>
+                        }
+                    }
+                </ul>
             </div>
+        }
+
+        <form method="post" asp-action="Login">
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" 
+                       id="email" 
+                       name="Email" 
+                       class="form-control" 
+                       placeholder="your.email@example.com"
+                       value="@Model.Email"
+                       required>
+                <span asp-validation-for="Email" class="form-error" style="display: block;"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <div class="password-toggle">
+                    <input type="password" 
+                           id="password" 
+                           name="Password" 
+                           class="form-control" 
+                           placeholder="••••••••"
+                           required>
+                    <button type="button" 
+                            class="password-toggle-btn" 
+                            onclick="togglePassword('password')"
+                            tabindex="-1">
+                        👁️
+                    </button>
+                </div>
+                <span asp-validation-for="Password" class="form-error" style="display: block;"></span>
+            </div>
+
+            <div class="form-footer">
+                <a href="/Auth/ForgotPassword">Quên mật khẩu?</a>
+            </div>
+
+            <button type="submit" class="btn-login">Đăng nhập</button>
+        </form>
+
+        <div class="auth-divider">hoặc</div>
+
+        <div class="auth-signup">
+            Chưa có tài khoản?
+            <a href="/Auth/Register">Đăng ký ngay</a>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}
+<script>
+    function togglePassword(fieldId) {
+        const field = document.getElementById(fieldId);
+        const btn = event.target;
+        if (field.type === 'password') {
+            field.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            field.type = 'password';
+            btn.textContent = '👁️';
+        }
+    }
+</script>

@@ -1,0 +1,407 @@
+@{
+    ViewData["Title"] = "Liên hệ - ChoThueXe";
+}
+
+<style>
+    .page-header {
+        background: linear-gradient(135deg, var(--accent), #0ea5e9);
+        color: white;
+        padding: 40px 0;
+        margin-bottom: 40px;
+        border-radius: var(--radius);
+        text-align: center;
+    }
+
+    .page-header h1 {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        font-family: "Inter", sans-serif;
+    }
+
+    .page-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+
+    .contact-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 40px;
+    }
+
+    .contact-info {
+        display: grid;
+        gap: 20px;
+    }
+
+    .info-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+    }
+
+    .info-icon {
+        font-size: 32px;
+        flex-shrink: 0;
+    }
+
+    .info-content h3 {
+        margin: 0 0 4px 0;
+        color: var(--text-primary);
+        font-weight: 600;
+        font-family: "Inter", sans-serif;
+    }
+
+    .info-content p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+
+    .info-content a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .info-content a:hover {
+        text-decoration: underline;
+    }
+
+    .contact-form {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-weight: 500;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: "DM Sans", sans-serif;
+        transition: var(--transition);
+        resize: vertical;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control::placeholder {
+        color: var(--text-muted);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .btn-submit:hover {
+        background-color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .faq {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-top: 40px;
+    }
+
+    .faq h2 {
+        font-size: 24px;
+        color: var(--text-primary);
+        margin-bottom: 24px;
+        font-family: "Inter", sans-serif;
+    }
+
+    .faq-item {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 16px;
+        margin-bottom: 16px;
+    }
+
+    .faq-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    .faq-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .faq-question:hover {
+        color: var(--accent);
+    }
+
+    .faq-toggle {
+        font-size: 20px;
+        color: var(--accent);
+        transition: var(--transition);
+    }
+
+    .faq-item.open .faq-toggle {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+        display: none;
+        margin-top: 12px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .faq-item.open .faq-answer {
+        display: block;
+    }
+
+    .social-links {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+    }
+
+    .social-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        text-decoration: none;
+        color: var(--text-secondary);
+        transition: var(--transition);
+        font-size: 18px;
+    }
+
+    .social-link:hover {
+        background-color: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    @@media (max-width: 1024px) {
+        .contact-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .page-header h1 {
+            font-size: 24px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .faq-question {
+            font-size: 13px;
+        }
+    }
+</style>
+
+<div class="container" style="padding: 24px 0;">
+    <div class="page-header">
+        <h1>Liên hệ với chúng tôi</h1>
+        <p>Chúng tôi sẵn sàng giúp bạn 24/7</p>
+    </div>
+
+    <div class="contact-grid">
+        <!-- Contact Info -->
+        <div class="contact-info">
+            <div class="info-card">
+                <div class="info-icon">📍</div>
+                <div class="info-content">
+                    <h3>Địa chỉ</h3>
+                    <p>123 Đường Lê Lợi, Q.1, TP.HCM, Việt Nam</p>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-icon">📞</div>
+                <div class="info-content">
+                    <h3>Điện thoại</h3>
+                    <p><a href="tel:+84902001001">+84 (90) 200-1001</a></p>
+                    <p><a href="tel:+84912001001">+84 (91) 200-1001</a></p>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-icon">✉️</div>
+                <div class="info-content">
+                    <h3>Email</h3>
+                    <p><a href="mailto:support@chothueXe.com">support@chothueXe.com</a></p>
+                    <p><a href="mailto:info@chothueXe.com">info@chothueXe.com</a></p>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <div class="info-icon">⏰</div>
+                <div class="info-content">
+                    <h3>Giờ hoạt động</h3>
+                    <p>Thứ Hai - Thứ Sáu: 8:00 - 18:00</p>
+                    <p>Thứ Bảy - Chủ Nhật: 8:00 - 17:00</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="contact-form">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: var(--text-primary); font-family: 'Inter', sans-serif;">Gửi tin nhắn cho chúng tôi</h3>
+            <form method="post" asp-action="SendMessage">
+                @Html.AntiForgeryToken()
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Họ tên *</label>
+                        <input type="text" id="name" name="name" class="form-control" placeholder="Nguyễn Văn A" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email *</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Điện thoại</label>
+                    <input type="tel" id="phone" name="phone" class="form-control" placeholder="0987654321">
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Tiêu đề *</label>
+                    <input type="text" id="subject" name="subject" class="form-control" placeholder="Vấn đề cần hỗ trợ" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="message">Tin nhắn *</label>
+                    <textarea id="message" name="message" class="form-control" rows="5" placeholder="Mô tả chi tiết vấn đề..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Gửi tin nhắn</button>
+            </form>
+
+            <div class="social-links">
+                <h4 style="margin: 0; color: var(--text-secondary); font-size: 13px; flex: 1;">Kết nối với chúng tôi:</h4>
+                <a href="#" class="social-link">f</a>
+                <a href="#" class="social-link">𝕏</a>
+                <a href="#" class="social-link">in</a>
+                <a href="#" class="social-link">📷</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="faq">
+        <h2>Các câu hỏi thường gặp</h2>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Tôi có thể đặt xe bao lâu trước?</span>
+                <span class="faq-toggle">v</span>
+            </div>
+            <div class="faq-answer">
+                Bạn có thể đặt xe từ 7 ngày trước đến ngay cùng ngày. Để có thêm lựa chọn, chúng tôi khuyên bạn nên đặt trước ít nhất 3-5 ngày.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Giá có bao gồm bảo hiểm không?</span>
+                <span class="faq-toggle">v</span>
+            </div>
+            <div class="faq-answer">
+                Giá không bao gồm bảo hiểm. Bảo hiểm là tùy chọn và được tính riêng. Chúng tôi khuyên bạn nên mua bảo hiểm để bảo vệ bản thân.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Tôi cần những giấy tờ gì?</span>
+                <span class="faq-toggle">v</span>
+            </div>
+            <div class="faq-answer">
+                Bạn cần CMND/Passport, Bằng lái xe còn hiệu lực và một thẻ tín dụng để giữ chỗ. Với khách nước ngoài, bằng lái quốc tế được yêu cầu.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Làm thế nào để huỷ đặt xe?</span>
+                <span class="faq-toggle">v</span>
+            </div>
+            <div class="faq-answer">
+                Bạn có thể huỷ trực tuyến qua tài khoản. Phí huỷ phụ thuộc vào thời gian: 50% nếu huỷ trước 48 giờ, 100% nếu huỷ trước 24 giờ.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Xe có sẵn GPS/bản đồ không?</span>
+                <span class="faq-toggle">v</span>
+            </div>
+            <div class="faq-answer">
+                Có, hầu hết xe của chúng tôi đều trang bị hệ thống GPS và bản đồ điện tử. Chúng tôi cũng sẽ cung cấp bản đồ giấy nếu cần.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFaq(element) {
+        element.parentElement.classList.toggle('open');
+    }
+</script>

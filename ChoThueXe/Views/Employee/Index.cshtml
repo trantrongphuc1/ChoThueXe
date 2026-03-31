@@ -1,82 +1,247 @@
-@model ChoThueXe.Models.Portal.EmployeeDashboardViewModel
+
+
+@using ChoThueXe.Models.Portal
+@model EmployeeDashboardViewModel
 @{
-    ViewData["Title"] = "Nhân viên - Tạo hợp đồng";
+    ViewData["Title"] = "Dashboard nhân viên";
+    var focus = Context.Request.Query["focus"].ToString();
+    var totalCustomers = Model.Customers.Count;
+    var verifiedCustomers = Model.Customers.Count(c => c.IsVerified);
+    var pendingContracts = Model.PendingContracts.Count;
+    var availableVehicles = Model.Vehicles.Count(v => string.Equals(v.Status, "AVAILABLE", StringComparison.OrdinalIgnoreCase));
 }
 
-<h2 class="mb-3">Nhân viên: Tạo hợp đồng draft</h2>
+<style>
+    .employee-wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+    .page-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .page-head h1 { margin:0; font-size:28px; }
+    .action-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .btn { border:1px solid var(--border); background:var(--bg-tertiary); color:var(--text-primary); border-radius:8px; padding:8px 12px; text-decoration:none; cursor:pointer; }
+    .btn:hover { border-color: var(--accent); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color:#fff; }
+    .btn-success { background:#15803d; border-color:#15803d; color:#fff; }
+    .alert { border-radius:8px; padding:10px 12px; margin-bottom:12px; border:1px solid transparent; }
+    .alert-success { background: var(--success-light); border-color: var(--success); color:#14532d; }
+    .alert-danger { background: var(--error-light); border-color: var(--error); color:#7f1d1d; }
+    .stats { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:14px; }
+    .stat { border:1px solid var(--border); border-radius:10px; background:var(--bg-secondary); padding:10px 12px; }
+    .stat .label { color:var(--text-secondary); font-size:12px; }
+    .stat .value { font-size:22px; font-weight:700; }
+    .panel { border:1px solid var(--border); border-radius:12px; background:var(--bg-secondary); margin-bottom:14px; overflow:hidden; }
+    .panel-head { padding:12px 14px; border-bottom:1px solid var(--border); font-weight:600; }
+    .panel-body { padding:12px 14px; }
+    .empty { color: var(--text-secondary); }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border-bottom:1px solid var(--border); padding:8px; text-align:left; vertical-align:top; }
+    th { color: var(--text-secondary); font-size:12px; text-transform:uppercase; }
+    .badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+    .badge-success { background:rgba(22,163,74,.15); color:#15803d; }
+    .badge-warn { background:rgba(245,158,11,.15); color:#b45309; }
+    .badge-muted { background:rgba(100,116,139,.16); color:#475569; }
+    .form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+    .form-control, select { width:100%; border:1px solid var(--border); background:var(--bg-tertiary); color:var(--text-primary); border-radius:8px; padding:8px 10px; }
+</style>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Mục lục nhanh</div>
-    <div class="card-body d-flex gap-2 flex-wrap">
-        <a href="#tao-hop-dong" class="btn btn-outline-primary btn-sm">Tạo hợp đồng</a>
-        <a href="#danh-sach-khach" class="btn btn-outline-secondary btn-sm">Danh sách khách hàng</a>
-        <a asp-controller="Customer" asp-action="Index" class="btn btn-outline-dark btn-sm">Trang khách hàng</a>
+<div class="employee-wrap">
+    <div class="page-head">
+        <h1>Dashboard nhân viên</h1>
+        <div class="action-row">
+            <a class="btn" asp-controller="Home" asp-action="Index">Về trang chủ</a>
+            <a class="btn" asp-action="Customers">Danh sách khách</a>
+            <a class="btn" asp-action="Vehicles">Danh sách xe</a>
+            <a class="btn btn-primary" href="#draft">Tạo hợp đồng nháp</a>
+        </div>
     </div>
-</div>
 
-@if (TempData["Success"] is string success)
-{
-    <div class="alert alert-success">@success</div>
-}
-@if (TempData["Error"] is string error)
-{
-    <div class="alert alert-danger">@error</div>
-}
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger">@error</div>
+    }
 
-<div id="tao-hop-dong" class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Tạo hợp đồng (sp_create_contract)</div>
-    <div class="card-body">
-        <form asp-action="CreateDraft" method="post" class="row g-3">
-            @Html.AntiForgeryToken()
-            <div class="col-md-8">
-                <label class="form-label">Chọn khách hàng</label>
-                <select class="form-select" name="CustomerId" required>
-                    <option value="">-- Chọn khách hàng --</option>
-                    @foreach (var c in Model.Customers)
-                    {
-                        <option value="@c.UserId">@c.UserId - @c.FullName (@(c.IsVerified ? "Verified" : "Chưa verified"))</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Tạo hợp đồng</button>
-            </div>
-        </form>
+    <div class="stats">
+        <div class="stat"><div class="label">Khách hàng</div><div class="value">@totalCustomers</div></div>
+        <div class="stat"><div class="label">Khách đã xác minh</div><div class="value">@verifiedCustomers</div></div>
+        <div class="stat"><div class="label">Hợp đồng chờ duyệt</div><div class="value">@pendingContracts</div></div>
+        <div class="stat"><div class="label">Xe sẵn sàng</div><div class="value">@availableVehicles</div></div>
     </div>
-</div>
 
-<div id="danh-sach-khach" class="card shadow-sm">
-    <div class="card-header fw-semibold">Danh sách khách hàng</div>
-    <div class="table-responsive">
-        <table class="table table-striped mb-0">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Trạng thái xác minh</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach (var c in Model.Customers)
+    <div id="contracts" class="panel">
+        <div class="panel-head">1) Duyệt hợp đồng chờ xử lý</div>
+        <div class="panel-body">
+            @if (!Model.PendingContracts.Any())
             {
-                <tr>
-                    <td>@c.UserId</td>
-                    <td>@c.FullName</td>
-                    <td>@c.Email</td>
-                    <td>
-                        @if (c.IsVerified)
-                        {
-                            <span class="badge text-bg-success">APPROVED</span>
-                        }
-                        else
-                        {
-                            <span class="badge text-bg-warning">PENDING</span>
-                        }
-                    </td>
-                </tr>
+                <div class="empty">Không có hợp đồng nào ở trạng thái PENDING.</div>
             }
-            </tbody>
-        </table>
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>HĐ</th>
+                        <th>Khách hàng</th>
+                        <th>Tổng tiền</th>
+                        <th>Đã thanh toán</th>
+                        <th>Còn lại</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var c in Model.PendingContracts.OrderByDescending(x => x.ContractId))
+                    {
+                        <tr>
+                            <td>#@c.ContractId</td>
+                            <td>@c.CustomerName</td>
+                            <td>@c.TotalAmount.ToString("N0") đ</td>
+                            <td>@c.PaidAmount.ToString("N0") đ</td>
+                            <td>@c.DueAmount.ToString("N0") đ</td>
+                            <td><span class="badge badge-warn">@c.Status</span></td>
+                            <td>
+                                <form asp-action="ApproveContract" method="post" style="display:inline-block; margin-right:6px;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="contractId" value="@c.ContractId" />
+                                    <button class="btn btn-success" type="submit" onclick="return confirm('Duyệt hợp đồng này?');">Duyệt</button>
+                                </form>
+                                <a class="btn" asp-action="Details" asp-route-contractId="@c.ContractId">Chi tiết</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div id="draft" class="panel">
+        <div class="panel-head">2) Tạo hợp đồng nháp</div>
+        <div class="panel-body">
+            <form asp-action="CreateDraft" method="post">
+                @Html.AntiForgeryToken()
+                <div class="form-grid">
+                    <div>
+                        <label>Chọn khách hàng</label>
+                        <select name="customerId" required>
+                            <option value="">-- Chọn khách hàng --</option>
+                            @foreach (var customer in Model.Customers.OrderBy(x => x.FullName))
+                            {
+                                <option value="@customer.UserId">@customer.UserId - @customer.FullName (@(customer.IsVerified ? "Verified" : "Pending"))</option>
+                            }
+                        </select>
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                        <button type="submit" class="btn btn-primary">Tạo hợp đồng</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="vehicles" class="panel">
+        <div class="panel-head">3) Danh sách xe</div>
+        <div class="panel-body">
+            @if (!Model.Vehicles.Any())
+            {
+                <div class="empty">Chưa có xe nào hiển thị trong hệ thống.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên xe</th>
+                        <th>Hãng/Loại</th>
+                        <th>Giá/ngày</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var v in Model.Vehicles.OrderByDescending(x => x.VehicleId).Take(50))
+                    {
+                        <tr>
+                            <td>#@v.VehicleId</td>
+                            <td>@v.VehicleName</td>
+                            <td>@v.BrandName / @v.TypeName</td>
+                            <td>@v.PricePerDay.ToString("N0") đ</td>
+                            <td>
+                                @if (string.Equals(v.Status, "AVAILABLE", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-success">AVAILABLE</span>
+                                }
+                                else if (string.Equals(v.Status, "MAINTENANCE", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge badge-warn">MAINTENANCE</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-muted">@v.Status</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <div class="empty" style="margin-top:8px;">Đang hiển thị tối đa 50 xe mới nhất.</div>
+            }
+        </div>
+    </div>
+
+    <div id="customers" class="panel">
+        <div class="panel-head">4) Danh sách khách hàng</div>
+        <div class="panel-body">
+            @if (!Model.Customers.Any())
+            {
+                <div class="empty">Chưa có khách hàng.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>Xác minh</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var c in Model.Customers.OrderBy(x => x.FullName).Take(100))
+                    {
+                        <tr>
+                            <td>@c.UserId</td>
+                            <td>@c.FullName</td>
+                            <td>@c.Email</td>
+                            <td>
+                                @if (c.IsVerified)
+                                {
+                                    <span class="badge badge-success">VERIFIED</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-warn">PENDING</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </div>
     </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(focus))
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const section = document.getElementById('@focus');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    </script>
+}

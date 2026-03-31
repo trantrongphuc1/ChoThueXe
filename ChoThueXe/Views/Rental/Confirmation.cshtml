@@ -1,0 +1,407 @@
+@{
+    ViewData["Title"] = "Xác nhận đặt xe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --success-dark: #238636;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .confirmation-container {
+        max-width: 600px;
+        margin: 60px auto;
+        padding: 0 20px;
+    }
+
+    .success-card {
+        background-color: var(--bg-secondary);
+        border: 2px solid var(--success);
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .success-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        animation: scaleIn 0.6s ease-out;
+    }
+
+    @@keyframes scaleIn {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .success-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 12px;
+    }
+
+    .success-subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+    }
+
+    .order-number {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 30px;
+        font-family: "Courier New", monospace;
+    }
+
+    .order-number-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    .order-number-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .info-section {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+        text-align: left;
+    }
+
+    .info-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        letter-spacing: 0.05em;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-row label {
+        color: var(--text-secondary);
+    }
+
+    .info-row span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .vehicle-info {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+
+    .vehicle-icon {
+        font-size: 40px;
+    }
+
+    .vehicle-details {
+        text-align: left;
+        flex: 1;
+    }
+
+    .vehicle-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .vehicle-detail {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin: 2px 0;
+    }
+
+    .amount-display {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 0;
+        border-top: 2px solid var(--border);
+        margin-top: 12px;
+    }
+
+    .amount-label {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .amount-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--success);
+    }
+
+    .next-steps {
+        background-color: rgba(59, 184, 166, 0.1);
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .next-steps-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .next-steps-list {
+        list-style: none;
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+
+    .next-steps-list li {
+        margin: 6px 0;
+        padding-left: 24px;
+        position: relative;
+    }
+
+    .next-steps-list li::before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: var(--accent);
+        font-weight: bold;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    .contact-support {
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .contact-support a {
+        color: var(--accent);
+        text-decoration: none;
+    }
+
+    @@media (max-width: 480px) {
+        .confirmation-container {
+            margin: 40px auto;
+        }
+
+        .success-card {
+            padding: 24px;
+        }
+
+        .success-title {
+            font-size: 22px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="confirmation-container">
+    <div class="success-card">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Đặt xe thành công!</div>
+        <div class="success-subtitle">Đơn hàng của bạn đã được xác nhận</div>
+
+        <div class="order-number">
+            <div class="order-number-label">Mã đơn hàng</div>
+            <div class="order-number-value">ORD-2024-001523</div>
+        </div>
+
+        <!-- Vehicle Info -->
+        <div class="info-section">
+            <div class="info-title">📍 Thông tin xe</div>
+            <div class="vehicle-info">
+                <div class="vehicle-icon">🚗</div>
+                <div class="vehicle-details">
+                    <div class="vehicle-name">Toyota Camry 2024</div>
+                    <div class="vehicle-detail">Biển số: 51 A-123</div>
+                    <div class="vehicle-detail">Màu: Bạc</div>
+                    <div class="vehicle-detail">Tình trạng: Sẵn sàng thuê</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rental Details -->
+        <div class="info-section">
+            <div class="info-title">📅 Chi tiết thuê xe</div>
+            <div class="info-row">
+                <label>Ngày lấy xe:</label>
+                <span>01/04/2026 - 10:00</span>
+            </div>
+            <div class="info-row">
+                <label>Ngày trả xe:</label>
+                <span>03/04/2026 - 10:00</span>
+            </div>
+            <div class="info-row">
+                <label>Thời hạn thuê:</label>
+                <span>3 ngày</span>
+            </div>
+            <div class="info-row">
+                <label>Địa điểm lấy:</label>
+                <span>123 Nguyễn Huệ, Q1, TP HCM</span>
+            </div>
+        </div>
+
+        <!-- Payment Summary -->
+        <div class="info-section">
+            <div class="info-title">💰 Tóm tắt thanh toán</div>
+            <div class="info-row">
+                <label>Giá cơ bản (3 ngày):</label>
+                <span>7.500.000đ</span>
+            </div>
+            <div class="info-row">
+                <label>Phí dịch vụ:</label>
+                <span>150.000đ</span>
+            </div>
+            <div class="info-row">
+                <label>Mã giảm giá:</label>
+                <span style="color: var(--success);">-250.000đ</span>
+            </div>
+            <div class="amount-display">
+                <div class="amount-label">Tổng thanh toán:</div>
+                <div class="amount-value">7.400.000đ</div>
+            </div>
+        </div>
+
+        <!-- Driver Info -->
+        <div class="info-section">
+            <div class="info-title">👤 Thông tin người lái</div>
+            <div class="info-row">
+                <label>Tên:</label>
+                <span>Nguyễn Văn A</span>
+            </div>
+            <div class="info-row">
+                <label>Số điện thoại:</label>
+                <span>0901234567</span>
+            </div>
+            <div class="info-row">
+                <label>Email:</label>
+                <span>nguyenvana@email.com</span>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="next-steps">
+            <div class="next-steps-title">Bước tiếp theo:</div>
+            <ul class="next-steps-list">
+                <li>Bạn sẽ nhận email xác nhận trong vòng 5 phút</li>
+                <li>Hãy đến điểm lấy xe 15 phút trước giờ quy định</li>
+                <li>Mang theo CMND/Hộ chiếu và bằng lái xe</li>
+                <li>Kiểm tra tình trạng xe trước khi rời khỏi điểm lấy</li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="/Rental/Dashboard" class="btn btn-primary">
+                📋 Xem đơn hàng
+            </a>
+            <a href="/Home/Index" class="btn btn-secondary">
+                🏠 Về trang chủ
+            </a>
+        </div>
+
+        <!-- Contact Support -->
+        <div class="contact-support">
+            Có câu hỏi? <a href="/Home/Contact">Liên hệ hỗ trợ</a> hoặc gọi <strong>1900-0000</strong>
+        </div>
+    </div>
+</div>

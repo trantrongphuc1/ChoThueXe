@@ -32,6 +32,7 @@ public interface IRentalRepository
     Task<IReadOnlyList<TopRentedVehicleViewModel>> GetTopRentedVehiclesAsync();
 
     Task<bool> IsUserVerifiedAsync(int userId);
+    Task<CustomerVerificationStatusViewModel> GetCustomerVerificationStatusAsync(int userId);
     Task<decimal> CalculateRentalCostAsync(decimal pricePerDay, DateTime startDate, DateTime endDate);
 
     Task UpdateUserProfileAsync(int userId, string fullName, string phone);
@@ -49,11 +50,15 @@ public interface IRentalRepository
     Task AddVehicleReviewAsync(int customerId, VehicleReviewInputModel input);
 
     Task CreateContractDraftAsync(int customerId, int employeeId);
+    Task ApproveContractAsync(int contractId);
     Task RentVehicleAsync(RentVehicleInputModel input);
     Task MakePaymentAsync(PaymentInputModel input);
 
     Task<IReadOnlyList<DriveLicenseViewModel>> GetDriveLicensesAsync(int userId);
     Task SubmitDriveLicenseAsync(int userId, string licenseNumber, DateTime issuedAt, DateTime expireAt, string issuedBy);
+
+    Task<ContractFullViewModel?> GetContractByIdAsync(int contractId);
+    Task UpdateVehicleAsync(CreateVehicleInputModel input);
 
     Task LogActivityAsync(int? userId, string action, string details);
 }

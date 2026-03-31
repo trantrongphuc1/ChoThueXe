@@ -1,0 +1,479 @@
+@{
+    ViewData["Title"] = "Hồ sơ người dùng";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --danger: #f85149;
+        --warning: #fbbf24;
+        --radius: 12px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .profile-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.1) 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
+        margin: 0 auto 16px;
+        border: 3px solid var(--accent);
+    }
+
+    .profile-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .profile-role {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .profile-badges {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .badge {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: var(--accent);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .profile-join-date {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+    }
+
+    .stat-item {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .profile-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .info-card {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+    }
+
+    .card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+    }
+
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+
+    .info-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .reviews-section {
+        grid-column: 1 / -1;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+    }
+
+    .review-card {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .review-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .review-vehicle {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .review-rating {
+        color: var(--warning);
+    }
+
+    .review-date {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .review-text {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-top: 8px;
+    }
+
+    .contact-section {
+        background: linear-gradient(135deg, rgba(63, 185, 80, 0.1) 0%, rgba(63, 185, 80, 0.05) 100%);
+        border: 1px solid var(--success);
+        border-radius: var(--radius);
+        padding: 20px;
+        text-align: center;
+        grid-column: 1 / -1;
+        margin-top: 24px;
+    }
+
+    .contact-section h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .contact-section p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+        background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    @@media (max-width: 768px) {
+        .profile-header {
+            padding: 24px;
+        }
+
+        .profile-name {
+            font-size: 20px;
+        }
+
+        .profile-content {
+            grid-template-columns: 1fr;
+        }
+
+        .reviews-section {
+            grid-column: 1;
+        }
+
+        .contact-section {
+            grid-column: 1;
+        }
+    }
+</style>
+
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-name">Nguyễn Văn A</div>
+        <div class="profile-role">Khách hàng VIP</div>
+        <div class="profile-badges">
+            <div class="badge">✓ Xác minh</div>
+            <div class="badge">⭐ 4.9/5</div>
+            <div class="badge">🏆 Thành viên 2 năm</div>
+        </div>
+        <div class="profile-join-date">Gia nhập từ 15/03/2024</div>
+
+        <div class="profile-stats">
+            <div class="stat-item">
+                <div class="stat-value">42</div>
+                <div class="stat-label">Chuyến đi</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">4.9</div>
+                <div class="stat-label">Đánh giá</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">125</div>
+                <div class="stat-label">Km lái</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">38</div>
+                <div class="stat-label">5⭐ Reviews</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="profile-content">
+        <!-- Personal Info -->
+        <div class="info-card">
+            <h3 class="card-title">👤 Thông tin cá nhân</h3>
+            <div class="info-item">
+                <span class="info-label">Tên</span>
+                <span class="info-value">Nguyễn Văn A</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value">nguyenvana@email.com</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Điện thoại</span>
+                <span class="info-value">+84 0912 345 678</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Địa chỉ</span>
+                <span class="info-value">TP. Hồ Chí Minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Trạng thái</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+        </div>
+
+        <!-- Rental Stats -->
+        <div class="info-card">
+            <h3 class="card-title">📊 Thống kê thuê xe</h3>
+            <div class="info-item">
+                <span class="info-label">Tổng chuyến đi</span>
+                <span class="info-value">42 lần</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Tổng chi phí</span>
+                <span class="info-value">85.500.000đ</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Quãng đường</span>
+                <span class="info-value">1,250 km</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Thời gian lái</span>
+                <span class="info-value">125 giờ</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Tỷ lệ hoàn thành</span>
+                <span class="info-value" style="color: var(--success);">100%</span>
+            </div>
+        </div>
+
+        <!-- Verification -->
+        <div class="info-card">
+            <h3 class="card-title">✓ Xác minh</h3>
+            <div class="info-item">
+                <span class="info-label">Căn cước công dân</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Bằng lái xe</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Số điện thoại</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Khuôn mặt (Selfie)</span>
+                <span class="info-value" style="color: var(--success);">✓ Xác minh</span>
+            </div>
+        </div>
+
+        <!-- Preferences -->
+        <div class="info-card">
+            <h3 class="card-title">⚙️ Sở thích</h3>
+            <div class="info-item">
+                <span class="info-label">Loại xe ưa thích</span>
+                <span class="info-value">Sedan</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Phạm vi</span>
+                <span class="info-value">TP. Hồ Chí Minh</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Giá tối đa</span>
+                <span class="info-value">3.000.000đ/ngày</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Lý tưởng</span>
+                <span class="info-value">Xe mới, tự động</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Thông báo</span>
+                <span class="info-value" style="color: var(--accent);">✓ Bật</span>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="reviews-section">
+            <h3 class="card-title">⭐ Đánh giá từ chủ xe</h3>
+
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-vehicle">Toyota Camry 2024</span>
+                    <span class="review-rating">⭐⭐⭐⭐⭐</span>
+                </div>
+                <div class="review-date">15 ngày trước</div>
+                <div class="review-text">
+                    "Khách hàng rất tốt, chăm sóc xe cẩn thận. Thuê xe đúng giờ, trả xe sạch sẽ. Sẽ cho thuê lại lần sau."
+                </div>
+            </div>
+
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-vehicle">Honda CR-V 2023</span>
+                    <span class="review-rating">⭐⭐⭐⭐⭐</span>
+                </div>
+                <div class="review-date">1 tháng trước</div>
+                <div class="review-text">
+                    "Rất hài lòng với khách này. Chuyên nghiệp và tin tưởng được. Khuyên cáo cho những người khác."
+                </div>
+            </div>
+
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-vehicle">Mazda 3 2024</span>
+                    <span class="review-rating">⭐⭐⭐⭐⭐</span>
+                </div>
+                <div class="review-date">2 tháng trước</div>
+                <div class="review-text">
+                    "Một trong những khách tốt nhất. Xe được trả lại trong tình trạng hoàn hảo. Rất đáng tin cây."
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="contact-section">
+            <h3>🎯 Bạn muốn thuê xe từ người này?</h3>
+            <p>Liên hệ để biết thêm thông tin và nhận ưu đãi đặc biệt</p>
+            <a href="/Rental/Search" class="btn">🔍 Tìm xe của họ</a>
+            <a href="/Home/Contact" class="btn btn-outline" style="margin-left: 8px;">💬 Liên hệ</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    console.log('User profile page loaded');
+</script>
