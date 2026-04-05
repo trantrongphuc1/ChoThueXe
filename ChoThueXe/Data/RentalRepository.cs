@@ -667,88 +667,25 @@ public class RentalRepository : IRentalRepository
                 c.status
             from contracts c
             join users u on u.user_id = c.customer_id
-                        where upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'ACTIVE', 'IN_PROGRESS')
+                        where upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'ACTIVE', 'IN_PROGRESS', 'REQUESTED', 'WAITING_APPROVAL')
               and c.customer_id = :p_customer_id
             order by c.contract_id desc";
 
+                const string fallbackSql = @"
+                        select
+                                c.contract_id,
+                                c.customer_id,
+                                u.full_name,
+                                nvl(c.total_amount, 0) as total_amount,
+                                0 as paid_amount,
+                                nvl(c.status, 'PENDING') as status
+                        from contracts c
+                        join users u on u.user_id = c.customer_id
+                        where c.customer_id = :p_customer_id
+                            and upper(nvl(c.status, 'PENDING')) not in ('PAID', 'COMPLETED', 'DONE', 'FINISHED', 'CANCELLED', 'REJECTED')
+                        order by c.contract_id desc";
+
         var result = new List<PendingContractViewModel>();
-
-        await using var connection = new OracleConnection(_connectionString);
-        await connection.OpenAsync();
-
-        await using var command = new OracleCommand(sql, connection);
-        command.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
-        await using var reader = await command.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            result.Add(new PendingContractViewModel
-            {
-                ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
-                CustomerId = Convert.ToInt32(reader["CUSTOMER_ID"]),
-                CustomerName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
-                PaidAmount = Convert.ToDecimal(reader["PAID_AMOUNT"]),
-                Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
-            });
-        }
-
-        return result;
-    }
-
-    public async Task<IReadOnlyList<ContractFullViewModel>> GetContractsByCustomerAsync(int customerId)
-    {
-        const string sql = @"
-            with cdx as (
-                select
-                    cd.contract_id,
-                    min(cd.vehicle_id) as vehicle_id,
-                    min(cd.start_date) as start_date,
-                    max(cd.end_date) as end_date
-                from contract_details cd
-                group by cd.contract_id
-            )
-            select
-                c.contract_id,
-                u.full_name,
-                nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(cdx.start_date, nvl(c.contract_date, sysdate)) as start_date,
-                nvl(cdx.end_date, nvl(cdx.start_date, nvl(c.contract_date, sysdate))) as end_date,
-                nvl(c.total_amount, 0) as total_amount,
-                nvl(c.status, 'PENDING') as status
-            from contracts c
-            join users u on c.customer_id = u.user_id
-            left join cdx on cdx.contract_id = c.contract_id
-            left join vehicles v on v.vehicle_id = nvl(c.vehicle_id, cdx.vehicle_id)
-            where c.customer_id = :p_customer_id
-            order by c.contract_id desc";
-
-        const string fallbackSql = @"
-            with cdx as (
-                select
-                    cd.contract_id,
-                    min(cd.vehicle_id) as vehicle_id,
-                    min(cd.start_date) as start_date,
-                    max(cd.end_date) as end_date
-                from contract_details cd
-                group by cd.contract_id
-            )
-            select
-                c.contract_id,
-                u.full_name,
-                nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(cdx.start_date, nvl(c.contract_date, sysdate)) as start_date,
-                nvl(cdx.end_date, nvl(cdx.start_date, nvl(c.contract_date, sysdate))) as end_date,
-                nvl(c.total_amount, 0) as total_amount,
-                nvl(c.status, 'PENDING') as status
-            from contracts c
-            join users u on c.customer_id = u.user_id
-            left join cdx on cdx.contract_id = c.contract_id
-            left join vehicles v on v.vehicle_id = nvl(c.vehicle_id, cdx.vehicle_id)
-            where c.customer_id = :p_customer_id
-            order by c.contract_id desc";
-
-        var result = new List<ContractFullViewModel>();
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
@@ -761,23 +698,93 @@ public class RentalRepository : IRentalRepository
 
             while (await reader.ReadAsync())
             {
-                result.Add(new ContractFullViewModel
+                result.Add(new PendingContractViewModel
                 {
                     ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
-                    FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
-                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                    StartDate = Convert.ToDateTime(reader["START_DATE"]),
-                    EndDate = Convert.ToDateTime(reader["END_DATE"]),
+                    CustomerId = Convert.ToInt32(reader["CUSTOMER_ID"]),
+                    CustomerName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
                     TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
+                    PaidAmount = Convert.ToDecimal(reader["PAID_AMOUNT"]),
                     Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
                 });
             }
         }
-        catch (OracleException ex) when (ex.Number == 904)
+        catch (OracleException ex) when (IsMissingObjectError(ex))
         {
             await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
             fallbackCommand.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
             await using var reader = await fallbackCommand.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                result.Add(new PendingContractViewModel
+                {
+                    ContractId = Convert.ToInt32(reader["CONTRACT_ID"]),
+                    CustomerId = Convert.ToInt32(reader["CUSTOMER_ID"]),
+                    CustomerName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
+                    TotalAmount = Convert.ToDecimal(reader["TOTAL_AMOUNT"]),
+                    PaidAmount = Convert.ToDecimal(reader["PAID_AMOUNT"]),
+                    Status = Convert.ToString(reader["STATUS"]) ?? string.Empty
+                });
+            }
+        }
+
+        return result;
+    }
+
+    public async Task<IReadOnlyList<ContractFullViewModel>> GetContractsByCustomerAsync(int customerId)
+    {
+        var result = new List<ContractFullViewModel>();
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var contractColumns = await GetTableColumnsAsync(connection, "contracts");
+        var hasVehicleColumn = contractColumns.Contains("VEHICLE_ID");
+        var hasStartDateColumn = contractColumns.Contains("START_DATE");
+        var hasEndDateColumn = contractColumns.Contains("END_DATE");
+        var hasContractDateColumn = contractColumns.Contains("CONTRACT_DATE");
+        var hasCreatedAtColumn = contractColumns.Contains("CREATED_AT");
+
+        var vehicleExpr = hasVehicleColumn ? "nvl(c.vehicle_id, cdx.vehicle_id)" : "cdx.vehicle_id";
+        var contractDateExpr = hasContractDateColumn ? "c.contract_date" : (hasCreatedAtColumn ? "c.created_at" : "sysdate");
+        var startDateExpr = hasStartDateColumn
+            ? $"nvl(c.start_date, nvl(cdx.start_date, {contractDateExpr}))"
+            : $"nvl(cdx.start_date, {contractDateExpr})";
+        var endDateExpr = hasEndDateColumn
+            ? $"nvl(c.end_date, nvl(cdx.end_date, {startDateExpr}))"
+            : $"nvl(cdx.end_date, {startDateExpr})";
+
+        var sql = $@"
+            with cdx as (
+                select
+                    cd.contract_id,
+                    min(cd.vehicle_id) as vehicle_id,
+                    min(cd.start_date) as start_date,
+                    max(cd.end_date) as end_date
+                from contract_details cd
+                group by cd.contract_id
+            )
+            select
+                c.contract_id,
+                u.full_name,
+                nvl(v.vehicle_name, 'N/A') as vehicle_name,
+                {startDateExpr} as start_date,
+                {endDateExpr} as end_date,
+                nvl(c.total_amount, 0) as total_amount,
+                nvl(c.status, 'PENDING') as status
+            from contracts c
+            join users u on c.customer_id = u.user_id
+            left join cdx on cdx.contract_id = c.contract_id
+            left join vehicles v on v.vehicle_id = {vehicleExpr}
+            where c.customer_id = :p_customer_id
+            order by c.contract_id desc";
+
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_customer_id", OracleDbType.Int32, customerId, ParameterDirection.Input);
+            await using var reader = await command.ExecuteReaderAsync();
 
             while (await reader.ReadAsync())
             {
