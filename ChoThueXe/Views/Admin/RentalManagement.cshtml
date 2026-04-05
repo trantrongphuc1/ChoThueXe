@@ -96,6 +96,7 @@
                         <th>Thời gian thuê</th>
                         <th>Tổng tiền</th>
                         <th>Trạng thái</th>
+                        <th>Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -108,6 +109,9 @@
                             <td>@c.StartDate.ToString("dd/MM/yyyy") - @c.EndDate.ToString("dd/MM/yyyy")</td>
                             <td>@c.TotalAmount.ToString("N0") VND</td>
                             <td>@c.Status</td>
+                            <td>
+                                <a class="btn" asp-action="ContractDetails" asp-route-contractId="@c.ContractId">Chi tiết</a>
+                            </td>
                         </tr>
                     }
                     </tbody>

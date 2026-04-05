@@ -1,0 +1,53 @@
+@using ChoThueXe.Models.Rental
+@model ContractFullViewModel
+@{
+    ViewData["Title"] = "Chi tiết hợp đồng";
+}
+
+<style>
+    .admin-wrap { max-width: 1080px; margin: 24px auto; padding: 0 16px; }
+    .panel { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-secondary); margin-bottom: 16px; overflow: hidden; }
+    .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 20px; }
+    .panel-body { padding: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .item { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-tertiary); padding: 10px; }
+    .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+    .value { color: var(--text-primary); font-weight: 700; font-size: 16px; margin-top: 4px; }
+    .btn { border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 7px 10px; text-decoration: none; }
+    .summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .summary-box { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg-secondary); }
+    .summary-box .label { color: var(--text-secondary); font-size: 12px; }
+    .summary-box .value { font-size: 20px; font-weight: 700; }
+</style>
+
+<div class="admin-wrap">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;">
+        <h1 style="margin:0; font-size:28px;">Chi tiết hợp đồng #@Model.ContractId</h1>
+        <a class="btn" asp-action="RentalManagement">← Quay lại quản lý đơn thuê</a>
+    </div>
+
+    <div class="summary">
+        <div class="summary-box"><div class="label">Trạng thái</div><div class="value">@Model.Status</div></div>
+        <div class="summary-box"><div class="label">Tổng tiền</div><div class="value">@Model.TotalAmount.ToString("N0") VND</div></div>
+        <div class="summary-box"><div class="label">Đã thanh toán</div><div class="value">@Model.PaidAmount.ToString("N0") VND</div></div>
+        <div class="summary-box"><div class="label">Còn thiếu</div><div class="value">@Math.Max(0m, Model.DueAmount).ToString("N0") VND</div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">Thông tin hợp đồng</div>
+        <div class="panel-body">
+            <div class="grid">
+                <div class="item"><div class="label">Khách hàng</div><div class="value">@Model.CustomerName</div></div>
+                <div class="item"><div class="label">Email khách</div><div class="value">@Model.CustomerEmail</div></div>
+                <div class="item"><div class="label">Nhân viên</div><div class="value">@(string.IsNullOrWhiteSpace(Model.EmployeeName) ? "N/A" : Model.EmployeeName)</div></div>
+                <div class="item"><div class="label">Email nhân viên</div><div class="value">@(string.IsNullOrWhiteSpace(Model.EmployeeEmail) ? "N/A" : Model.EmployeeEmail)</div></div>
+                <div class="item"><div class="label">Xe</div><div class="value">@Model.VehicleName</div></div>
+                <div class="item"><div class="label">Hãng / Loại</div><div class="value">@Model.BrandName / @Model.TypeName</div></div>
+                <div class="item"><div class="label">Ngày bắt đầu</div><div class="value">@Model.StartDate.ToString("dd/MM/yyyy")</div></div>
+                <div class="item"><div class="label">Ngày kết thúc</div><div class="value">@Model.EndDate.ToString("dd/MM/yyyy")</div></div>
+                <div class="item"><div class="label">Giá / ngày</div><div class="value">@Model.PricePerDay.ToString("N0") VND</div></div>
+                <div class="item"><div class="label">Ngày tạo hợp đồng</div><div class="value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div></div>
+            </div>
+        </div>
+    </div>
+</div>

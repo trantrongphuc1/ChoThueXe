@@ -488,6 +488,37 @@
             <div class="card-header">
                 <h2>Tài liệu xác thực</h2>
             </div>
+            <div class="info-section" style="margin-bottom: 16px;">
+                <label>Trạng thái xác minh hiện tại</label>
+                @if (verificationStatus.IsVerified)
+                {
+                    <span>✅ Đã xác minh đầy đủ CCCD và bằng lái.</span>
+                }
+                else if (verificationStatus.IsPending)
+                {
+                    <span>🕒 Hồ sơ đang chờ admin duyệt.</span>
+                }
+                else if (verificationStatus.IsRejected)
+                {
+                    <span>❌ Có giấy tờ bị từ chối, vui lòng cập nhật lại.</span>
+                }
+                else
+                {
+                    <span>⚠️ Chưa xác minh đầy đủ giấy tờ.</span>
+                }
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-bottom:18px;">
+                <div class="info-section" style="margin-bottom:0;">
+                    <label>CCCD</label>
+                    <span>@(string.IsNullOrWhiteSpace(verificationStatus.CccdStatus) ? "CHƯA CÓ" : verificationStatus.CccdStatus.ToUpperInvariant())</span>
+                </div>
+                <div class="info-section" style="margin-bottom:0;">
+                    <label>Bằng lái</label>
+                    <span>@(string.IsNullOrWhiteSpace(verificationStatus.DriverLicenseStatus) ? "CHƯA CÓ" : verificationStatus.DriverLicenseStatus.ToUpperInvariant())</span>
+                </div>
+            </div>
+
             <div class="info-section">
                 <label>Hướng dẫn</label>
                 <span>Tải file ảnh/PDF giấy tờ trước, sau đó bấm gửi tài liệu để Admin duyệt.</span>

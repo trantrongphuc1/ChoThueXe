@@ -125,6 +125,23 @@ public class CustomerController : Controller
                 // Keep page alive even if this query fails in partially migrated schemas.
             }
 
+            if (contracts.Count == 0 && pendingContracts.Count > 0)
+            {
+                contracts = pendingContracts
+                    .Select(x => new ContractFullViewModel
+                    {
+                        ContractId = x.ContractId,
+                        FullName = x.CustomerName,
+                        VehicleName = "N/A",
+                        StartDate = DateTime.Today,
+                        EndDate = DateTime.Today,
+                        TotalAmount = x.TotalAmount,
+                        PaidAmount = x.PaidAmount,
+                        Status = x.Status
+                    })
+                    .ToList();
+            }
+
             return View(new CustomerDashboardViewModel
             {
                 UserId = userId,

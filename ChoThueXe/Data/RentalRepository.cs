@@ -361,17 +361,27 @@ public class RentalRepository : IRentalRepository
             order by contract_id desc";
 
         const string fallbackSql = @"
+            with cdx as (
+                select
+                    cd.contract_id,
+                    min(cd.vehicle_id) as vehicle_id,
+                    min(cd.start_date) as start_date,
+                    max(cd.end_date) as end_date
+                from contract_details cd
+                group by cd.contract_id
+            )
             select
                 c.contract_id,
                 u.full_name,
                 nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(c.start_date, c.created_at) as start_date,
-                nvl(c.end_date, c.created_at) as end_date,
+                nvl(cdx.start_date, nvl(c.contract_date, sysdate)) as start_date,
+                nvl(cdx.end_date, nvl(cdx.start_date, nvl(c.contract_date, sysdate))) as end_date,
                 nvl(c.total_amount, 0) as total_amount,
                 nvl(c.status, 'PENDING') as status
             from contracts c
             left join users u on u.user_id = c.customer_id
-            left join vehicles v on v.vehicle_id = c.vehicle_id
+            left join cdx on cdx.contract_id = c.contract_id
+            left join vehicles v on v.vehicle_id = nvl(c.vehicle_id, cdx.vehicle_id)
             order by c.contract_id desc";
 
         const string legacyFallbackSql = @"
@@ -689,32 +699,52 @@ public class RentalRepository : IRentalRepository
     public async Task<IReadOnlyList<ContractFullViewModel>> GetContractsByCustomerAsync(int customerId)
     {
         const string sql = @"
+            with cdx as (
+                select
+                    cd.contract_id,
+                    min(cd.vehicle_id) as vehicle_id,
+                    min(cd.start_date) as start_date,
+                    max(cd.end_date) as end_date
+                from contract_details cd
+                group by cd.contract_id
+            )
             select
                 c.contract_id,
                 u.full_name,
                 nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(c.start_date, nvl(c.contract_date, c.created_at)) as start_date,
-                nvl(c.end_date, nvl(c.start_date, nvl(c.contract_date, c.created_at))) as end_date,
+                nvl(cdx.start_date, nvl(c.contract_date, sysdate)) as start_date,
+                nvl(cdx.end_date, nvl(cdx.start_date, nvl(c.contract_date, sysdate))) as end_date,
                 nvl(c.total_amount, 0) as total_amount,
                 nvl(c.status, 'PENDING') as status
             from contracts c
             join users u on c.customer_id = u.user_id
-            left join vehicles v on v.vehicle_id = c.vehicle_id
+            left join cdx on cdx.contract_id = c.contract_id
+            left join vehicles v on v.vehicle_id = nvl(c.vehicle_id, cdx.vehicle_id)
             where c.customer_id = :p_customer_id
             order by c.contract_id desc";
 
         const string fallbackSql = @"
+            with cdx as (
+                select
+                    cd.contract_id,
+                    min(cd.vehicle_id) as vehicle_id,
+                    min(cd.start_date) as start_date,
+                    max(cd.end_date) as end_date
+                from contract_details cd
+                group by cd.contract_id
+            )
             select
                 c.contract_id,
                 u.full_name,
                 nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(c.contract_date, c.created_at) as start_date,
-                nvl(c.contract_date, c.created_at) as end_date,
+                nvl(cdx.start_date, nvl(c.contract_date, sysdate)) as start_date,
+                nvl(cdx.end_date, nvl(cdx.start_date, nvl(c.contract_date, sysdate))) as end_date,
                 nvl(c.total_amount, 0) as total_amount,
                 nvl(c.status, 'PENDING') as status
             from contracts c
             join users u on c.customer_id = u.user_id
-            left join vehicles v on v.vehicle_id = c.vehicle_id
+            left join cdx on cdx.contract_id = c.contract_id
+            left join vehicles v on v.vehicle_id = nvl(c.vehicle_id, cdx.vehicle_id)
             where c.customer_id = :p_customer_id
             order by c.contract_id desc";
 
@@ -1706,11 +1736,15 @@ public class RentalRepository : IRentalRepository
         const string sql = @"
             select
                 nvl(max(case when upper(d.doc_type) = 'CCCD' then 1 else 0 end), 0) as has_cccd,
-                max(case when upper(d.doc_type) = 'CCCD' then d.status end) as cccd_status,
-                max(case when upper(d.doc_type) = 'CCCD' then d.document_id end) as cccd_document_id,
+                max(case when upper(d.doc_type) = 'CCCD' then d.status end)
+                    keep (dense_rank last order by nvl(d.created_at, date '1970-01-01'), d.document_id) as cccd_status,
+                max(case when upper(d.doc_type) = 'CCCD' then d.document_id end)
+                    keep (dense_rank last order by nvl(d.created_at, date '1970-01-01'), d.document_id) as cccd_document_id,
                 nvl(max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then 1 else 0 end), 0) as has_driver_license,
-                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.status end) as driver_license_status,
-                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.document_id end) as driver_license_document_id
+                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.status end)
+                    keep (dense_rank last order by nvl(d.created_at, date '1970-01-01'), d.document_id) as driver_license_status,
+                max(case when upper(d.doc_type) in ('DRIVER_LICENSE', 'DRIVER_LICENSES') then d.document_id end)
+                    keep (dense_rank last order by nvl(d.created_at, date '1970-01-01'), d.document_id) as driver_license_document_id
             from user_documents d
             where d.user_id = :p_user_id
             group by d.user_id";
@@ -2478,25 +2512,144 @@ public class RentalRepository : IRentalRepository
     {
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
-
-        await using var command = new OracleCommand("sp_rent_vehicle", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-
-        command.Parameters.Add("p_customer_id", OracleDbType.Int32, input.CustomerId, ParameterDirection.Input);
-        command.Parameters.Add("p_employee_id", OracleDbType.Int32, input.EmployeeId, ParameterDirection.Input);
-        command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
-        command.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate, ParameterDirection.Input);
-        command.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate, ParameterDirection.Input);
-
+        var spExecuted = false;
         try
         {
+            await using var command = new OracleCommand("sp_rent_vehicle", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            command.Parameters.Add("p_customer_id", OracleDbType.Int32, input.CustomerId, ParameterDirection.Input);
+            command.Parameters.Add("p_employee_id", OracleDbType.Int32, input.EmployeeId, ParameterDirection.Input);
+            command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            command.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate, ParameterDirection.Input);
+            command.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate, ParameterDirection.Input);
+
             await command.ExecuteNonQueryAsync();
+            spExecuted = true;
         }
         catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
         {
-            throw new InvalidOperationException("Khong the tao chi tiet thue xe vi stored procedure chua san sang tren DB.");
+            // Continue with fallback insert below.
+        }
+
+        await EnsureRentalContractExistsAsync(connection, input, !spExecuted);
+    }
+
+    private async Task EnsureRentalContractExistsAsync(OracleConnection connection, RentVehicleInputModel input, bool forceCreate)
+    {
+        const string findSql = @"
+            select c.contract_id
+            from contracts c
+            join contract_details cd on cd.contract_id = c.contract_id
+            where c.customer_id = :p_customer_id
+              and cd.vehicle_id = :p_vehicle_id
+              and trunc(cd.start_date) = trunc(:p_start_date)
+              and trunc(cd.end_date) = trunc(:p_end_date)
+            order by c.contract_id desc
+            fetch first 1 row only";
+
+        if (!forceCreate)
+        {
+            await using var findCommand = new OracleCommand(findSql, connection);
+            findCommand.Parameters.Add("p_customer_id", OracleDbType.Int32, input.CustomerId, ParameterDirection.Input);
+            findCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            findCommand.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate, ParameterDirection.Input);
+            findCommand.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate, ParameterDirection.Input);
+            var existingContract = await findCommand.ExecuteScalarAsync();
+            if (existingContract is not null && existingContract != DBNull.Value)
+            {
+                return;
+            }
+        }
+
+        var contractId = await GetNextIdNonTransactionalAsync(connection, "contracts", "contract_id");
+        var contractDetailId = await GetNextIdNonTransactionalAsync(connection, "contract_details", "contract_detail_id");
+
+        decimal pricePerDay = 0m;
+        const string priceSql = @"
+            select nvl(price_per_day, 0)
+            from vehicles
+            where vehicle_id = :p_vehicle_id";
+
+        await using (var priceCommand = new OracleCommand(priceSql, connection))
+        {
+            priceCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            var rawPrice = await priceCommand.ExecuteScalarAsync();
+            if (rawPrice is not null && rawPrice != DBNull.Value)
+            {
+                pricePerDay = Convert.ToDecimal(rawPrice);
+            }
+        }
+
+        var totalDays = Math.Max(1, (input.EndDate.Date - input.StartDate.Date).Days);
+        var amount = pricePerDay * totalDays;
+
+        try
+        {
+            const string insertContractSql = @"
+                insert into contracts (contract_id, customer_id, employee_id, contract_date, status, total_amount, vehicle_id)
+                values (:p_contract_id, :p_customer_id, :p_employee_id, trunc(sysdate), 'PENDING', :p_total_amount, :p_vehicle_id)";
+
+            await using var insertContract = new OracleCommand(insertContractSql, connection);
+            insertContract.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            insertContract.Parameters.Add("p_customer_id", OracleDbType.Int32, input.CustomerId, ParameterDirection.Input);
+            insertContract.Parameters.Add("p_employee_id", OracleDbType.Int32, input.EmployeeId, ParameterDirection.Input);
+            insertContract.Parameters.Add("p_total_amount", OracleDbType.Decimal, amount, ParameterDirection.Input);
+            insertContract.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            await insertContract.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (ex.Number == 904)
+        {
+            const string insertContractFallbackSql = @"
+                insert into contracts (contract_id, customer_id, employee_id, contract_date, status, total_amount)
+                values (:p_contract_id, :p_customer_id, :p_employee_id, trunc(sysdate), 'PENDING', :p_total_amount)";
+
+            await using var insertContractFallback = new OracleCommand(insertContractFallbackSql, connection);
+            insertContractFallback.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            insertContractFallback.Parameters.Add("p_customer_id", OracleDbType.Int32, input.CustomerId, ParameterDirection.Input);
+            insertContractFallback.Parameters.Add("p_employee_id", OracleDbType.Int32, input.EmployeeId, ParameterDirection.Input);
+            insertContractFallback.Parameters.Add("p_total_amount", OracleDbType.Decimal, amount, ParameterDirection.Input);
+            await insertContractFallback.ExecuteNonQueryAsync();
+        }
+
+        try
+        {
+            const string insertDetailSql = @"
+                insert into contract_details (
+                    contract_detail_id, contract_id, vehicle_id, start_date, end_date, price_per_day, total_days, amount
+                ) values (
+                    :p_contract_detail_id, :p_contract_id, :p_vehicle_id, :p_start_date, :p_end_date, :p_price_per_day, :p_total_days, :p_amount
+                )";
+
+            await using var insertDetail = new OracleCommand(insertDetailSql, connection);
+            insertDetail.Parameters.Add("p_contract_detail_id", OracleDbType.Int32, contractDetailId, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate.Date, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate.Date, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_price_per_day", OracleDbType.Decimal, pricePerDay, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_total_days", OracleDbType.Int32, totalDays, ParameterDirection.Input);
+            insertDetail.Parameters.Add("p_amount", OracleDbType.Decimal, amount, ParameterDirection.Input);
+            await insertDetail.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (ex.Number == 904)
+        {
+            const string insertDetailFallbackSql = @"
+                insert into contract_details (
+                    contract_detail_id, contract_id, vehicle_id, start_date, end_date
+                ) values (
+                    :p_contract_detail_id, :p_contract_id, :p_vehicle_id, :p_start_date, :p_end_date
+                )";
+
+            await using var insertDetailFallback = new OracleCommand(insertDetailFallbackSql, connection);
+            insertDetailFallback.Parameters.Add("p_contract_detail_id", OracleDbType.Int32, contractDetailId, ParameterDirection.Input);
+            insertDetailFallback.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            insertDetailFallback.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+            insertDetailFallback.Parameters.Add("p_start_date", OracleDbType.Date, input.StartDate.Date, ParameterDirection.Input);
+            insertDetailFallback.Parameters.Add("p_end_date", OracleDbType.Date, input.EndDate.Date, ParameterDirection.Input);
+            await insertDetailFallback.ExecuteNonQueryAsync();
         }
     }
 

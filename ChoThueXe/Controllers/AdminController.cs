@@ -205,6 +205,33 @@ public class AdminController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> ContractDetails(int contractId)
+    {
+        if (contractId <= 0)
+        {
+            TempData["Error"] = "Hop dong khong hop le.";
+            return RedirectToAction(nameof(RentalManagement));
+        }
+
+        try
+        {
+            var contract = await _rentalRepository.GetContractByIdAsync(contractId);
+            if (contract is null)
+            {
+                TempData["Error"] = "Khong tim thay hop dong.";
+                return RedirectToAction(nameof(RentalManagement));
+            }
+
+            return View(contract);
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = BuildOracleErrorMessage("lay chi tiet hop dong", ex);
+            return RedirectToAction(nameof(RentalManagement));
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> RevenueReport()
     {
         try

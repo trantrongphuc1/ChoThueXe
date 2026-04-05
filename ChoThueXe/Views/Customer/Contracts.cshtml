@@ -5,6 +5,7 @@
         .Where(contract => contract.DueAmount > 0)
         .OrderByDescending(contract => contract.ContractId)
         .ToList();
+    var totalContracts = Model.Contracts.Count > 0 ? Model.Contracts.Count : Model.PendingContracts.Count;
 }
 
 <style>
@@ -145,7 +146,7 @@
     <div class="summary">
         <div class="summary-box">
             <div class="label">Tổng hợp đồng</div>
-            <div class="value">@Model.Contracts.Count</div>
+            <div class="value">@totalContracts</div>
         </div>
         <div class="summary-box">
             <div class="label">Cần thanh toán</div>
@@ -250,12 +251,15 @@
                                     <td>@pending.PaidAmount.ToString("N0") VND</td>
                                     <td style="color: var(--warning); font-weight: 700;">@pending.DueAmount.ToString("N0") VND</td>
                                     <td>
-                                        <form asp-action="Pay" method="post" style="display:inline-flex; gap:8px; align-items:center;">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="ContractId" value="@pending.ContractId" />
-                                            <input type="hidden" name="Amount" value="@pending.DueAmount" />
-                                            <button type="submit" class="btn btn-primary">Đã thanh toán</button>
-                                        </form>
+                                        <div style="display:inline-flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                            <a asp-controller="Rental" asp-action="Details" asp-route-contractId="@pending.ContractId" class="btn">Chi tiết</a>
+                                            <form asp-action="Pay" method="post" style="display:inline-flex; gap:8px; align-items:center;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="ContractId" value="@pending.ContractId" />
+                                                <input type="hidden" name="Amount" value="@pending.DueAmount" />
+                                                <button type="submit" class="btn btn-primary">Đã thanh toán</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             }
