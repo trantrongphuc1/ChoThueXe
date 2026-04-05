@@ -181,23 +181,28 @@
                         <tbody>
                             @foreach (var contract in Model.Contracts.OrderByDescending(x => x.ContractId).Take(20))
                             {
+                                var normalizedStatus = (contract.Status ?? string.Empty).Trim().ToUpperInvariant();
                                 <tr>
                                     <td>#@contract.ContractId</td>
                                     <td>@contract.VehicleName</td>
                                     <td>@contract.StartDate.ToString("dd/MM/yyyy") - @contract.EndDate.ToString("dd/MM/yyyy")</td>
                                     <td>@contract.TotalAmount.ToString("N0") VND</td>
                                     <td>
-                                        @if (contract.Status == "PENDING")
+                                        @if (normalizedStatus == "PENDING")
                                         {
                                             <span class="badge badge-pending">Chờ duyệt</span>
                                         }
-                                        else if (contract.Status == "ACTIVE" || contract.Status == "APPROVED")
+                                        else if (normalizedStatus is "ACTIVE" or "APPROVED")
                                         {
                                             <span class="badge badge-approved">Đã duyệt</span>
                                         }
-                                        else if (contract.Status == "COMPLETED")
+                                        else if (normalizedStatus is "COMPLETED" or "DONE" or "FINISHED")
                                         {
                                             <span class="badge badge-completed">Hoàn thành</span>
+                                        }
+                                        else if (normalizedStatus == "PAID")
+                                        {
+                                            <span class="badge badge-completed">Đã thanh toán</span>
                                         }
                                         else
                                         {
@@ -249,7 +254,6 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="ContractId" value="@pending.ContractId" />
                                             <input type="hidden" name="Amount" value="@pending.DueAmount" />
-                                            <input type="hidden" name="redirectContractId" value="@pending.ContractId" />
                                             <button type="submit" class="btn btn-primary">Đã thanh toán</button>
                                         </form>
                                     </td>

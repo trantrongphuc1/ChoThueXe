@@ -2804,26 +2804,87 @@ public class RentalRepository : IRentalRepository
 
     public async Task<ContractFullViewModel?> GetContractByIdAsync(int contractId)
     {
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
         try
         {
-            await using var connection = new OracleConnection(_connectionString);
-            await connection.OpenAsync();
+            var contractColumns = await GetTableColumnsAsync(connection, "contracts");
+            if (contractColumns.Count == 0)
+            {
+                return null;
+            }
 
-            var sql = """
-                select c.contract_id, c.customer_id, c.employee_id, c.vehicle_id,
-                       c.start_date, c.end_date, c.total_amount, c.status, c.created_at,
-                       u.full_name as customer_name, u.email as customer_email,
-                       e.full_name as employee_name, e.email as employee_email,
-                      v.vehicle_name, v.price_per_day, b.brand_name, t.type_name,
-                      nvl((select sum(p.amount) from payments p where p.contract_id = c.contract_id), 0) as paid_amount
+            var detailColumns = await GetTableColumnsAsync(connection, "contract_details");
+            var paymentColumns = await GetTableColumnsAsync(connection, "payments");
+
+            var cCustomerId = contractColumns.Contains("CUSTOMER_ID") ? "c.customer_id" : "0";
+            var cEmployeeId = contractColumns.Contains("EMPLOYEE_ID") ? "c.employee_id" : "0";
+            var cVehicleId = contractColumns.Contains("VEHICLE_ID") ? "c.vehicle_id" : "null";
+            var cStartDate = contractColumns.Contains("START_DATE") ? "c.start_date" : "null";
+            var cEndDate = contractColumns.Contains("END_DATE") ? "c.end_date" : "null";
+            var cContractDate = contractColumns.Contains("CONTRACT_DATE") ? "c.contract_date" : "null";
+            var cCreatedAt = contractColumns.Contains("CREATED_AT") ? "c.created_at" : "null";
+            var cTotalAmount = contractColumns.Contains("TOTAL_AMOUNT") ? "nvl(c.total_amount, 0)" : "0";
+            var cStatus = contractColumns.Contains("STATUS") ? "nvl(c.status, 'PENDING')" : "'PENDING'";
+
+            var canJoinDetails = detailColumns.Contains("CONTRACT_ID")
+                                 && detailColumns.Contains("VEHICLE_ID")
+                                 && detailColumns.Contains("START_DATE")
+                                 && detailColumns.Contains("END_DATE");
+
+            var detailsJoin = canJoinDetails
+                ? @"left join (
+                        select
+                            cd.contract_id,
+                            min(cd.vehicle_id) as vehicle_id,
+                            min(cd.start_date) as start_date,
+                            max(cd.end_date) as end_date
+                        from contract_details cd
+                        group by cd.contract_id
+                    ) cdx on cdx.contract_id = c.contract_id"
+                : string.Empty;
+
+            var detailVehicle = canJoinDetails ? "cdx.vehicle_id" : "null";
+            var detailStartDate = canJoinDetails ? "cdx.start_date" : "null";
+            var detailEndDate = canJoinDetails ? "cdx.end_date" : "null";
+
+            var effectiveVehicle = $"nvl({cVehicleId}, {detailVehicle})";
+            var effectiveStartDate = $"nvl({cStartDate}, nvl({detailStartDate}, nvl({cContractDate}, nvl({cCreatedAt}, sysdate))))";
+            var effectiveEndDate = $"nvl({cEndDate}, nvl({detailEndDate}, {effectiveStartDate}))";
+            var effectiveCreatedAt = $"nvl({cCreatedAt}, nvl({cContractDate}, sysdate))";
+            var paidAmount = paymentColumns.Contains("CONTRACT_ID") && paymentColumns.Contains("AMOUNT")
+                ? "nvl((select sum(p.amount) from payments p where p.contract_id = c.contract_id), 0)"
+                : "0";
+
+            var sql = $@"
+                select
+                    c.contract_id,
+                    {cCustomerId} as customer_id,
+                    {cEmployeeId} as employee_id,
+                    {effectiveVehicle} as vehicle_id,
+                    {effectiveStartDate} as start_date,
+                    {effectiveEndDate} as end_date,
+                    {cTotalAmount} as total_amount,
+                    {cStatus} as status,
+                    {effectiveCreatedAt} as created_at,
+                    nvl(u.full_name, '') as customer_name,
+                    nvl(u.email, '') as customer_email,
+                    nvl(e.full_name, '') as employee_name,
+                    nvl(e.email, '') as employee_email,
+                    nvl(v.vehicle_name, '') as vehicle_name,
+                    nvl(v.price_per_day, 0) as price_per_day,
+                    nvl(b.brand_name, '') as brand_name,
+                    nvl(t.type_name, '') as type_name,
+                    {paidAmount} as paid_amount
                 from contracts c
-                left join users u on c.customer_id = u.user_id
-                left join users e on c.employee_id = e.user_id
-                left join vehicles v on c.vehicle_id = v.vehicle_id
-                left join brands b on v.brand_id = b.brand_id
-                left join vehicle_types t on v.type_id = t.type_id
-                where c.contract_id = :contract_id
-                """;
+                {detailsJoin}
+                left join users u on u.user_id = {cCustomerId}
+                left join users e on e.user_id = {cEmployeeId}
+                left join vehicles v on v.vehicle_id = {effectiveVehicle}
+                left join brands b on b.brand_id = v.brand_id
+                left join vehicle_types t on t.type_id = v.type_id
+                where c.contract_id = :contract_id";
 
             await using var command = new OracleCommand(sql, connection);
             command.Parameters.Add("contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
@@ -2837,23 +2898,23 @@ public class RentalRepository : IRentalRepository
             return new ContractFullViewModel
             {
                 ContractId = reader.GetInt32(0),
-                CustomerId = reader.IsDBNull(1) ? 0 : reader.GetInt32(1),
-                EmployeeId = reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
-                VehicleId = reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
-                StartDate = reader.GetDateTime(4),
-                EndDate = reader.GetDateTime(5),
-                TotalAmount = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
-                Status = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
-                CreatedAt = reader.GetDateTime(8),
-                CustomerName = reader.IsDBNull(9) ? string.Empty : reader.GetString(9),
-                CustomerEmail = reader.IsDBNull(10) ? string.Empty : reader.GetString(10),
-                EmployeeName = reader.IsDBNull(11) ? string.Empty : reader.GetString(11),
-                EmployeeEmail = reader.IsDBNull(12) ? string.Empty : reader.GetString(12),
-                VehicleName = reader.IsDBNull(13) ? string.Empty : reader.GetString(13),
-                PricePerDay = reader.IsDBNull(14) ? 0 : reader.GetDecimal(14),
-                BrandName = reader.IsDBNull(15) ? string.Empty : reader.GetString(15),
-                TypeName = reader.IsDBNull(16) ? string.Empty : reader.GetString(16),
-                PaidAmount = reader.IsDBNull(17) ? 0 : reader.GetDecimal(17)
+                CustomerId = reader.IsDBNull(1) ? 0 : Convert.ToInt32(reader[1]),
+                EmployeeId = reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader[2]),
+                VehicleId = reader.IsDBNull(3) ? 0 : Convert.ToInt32(reader[3]),
+                StartDate = reader.IsDBNull(4) ? DateTime.Today : reader.GetDateTime(4),
+                EndDate = reader.IsDBNull(5) ? (reader.IsDBNull(4) ? DateTime.Today : reader.GetDateTime(4)) : reader.GetDateTime(5),
+                TotalAmount = reader.IsDBNull(6) ? 0 : Convert.ToDecimal(reader[6]),
+                Status = reader.IsDBNull(7) ? string.Empty : Convert.ToString(reader[7]) ?? string.Empty,
+                CreatedAt = reader.IsDBNull(8) ? DateTime.Today : reader.GetDateTime(8),
+                CustomerName = reader.IsDBNull(9) ? string.Empty : Convert.ToString(reader[9]) ?? string.Empty,
+                CustomerEmail = reader.IsDBNull(10) ? string.Empty : Convert.ToString(reader[10]) ?? string.Empty,
+                EmployeeName = reader.IsDBNull(11) ? string.Empty : Convert.ToString(reader[11]) ?? string.Empty,
+                EmployeeEmail = reader.IsDBNull(12) ? string.Empty : Convert.ToString(reader[12]) ?? string.Empty,
+                VehicleName = reader.IsDBNull(13) ? string.Empty : Convert.ToString(reader[13]) ?? string.Empty,
+                PricePerDay = reader.IsDBNull(14) ? 0 : Convert.ToDecimal(reader[14]),
+                BrandName = reader.IsDBNull(15) ? string.Empty : Convert.ToString(reader[15]) ?? string.Empty,
+                TypeName = reader.IsDBNull(16) ? string.Empty : Convert.ToString(reader[16]) ?? string.Empty,
+                PaidAmount = reader.IsDBNull(17) ? 0 : Convert.ToDecimal(reader[17])
             };
         }
         catch (OracleException)

@@ -29,7 +29,7 @@ public class RentalController : Controller
         if (contractId <= 0)
         {
             TempData["Error"] = "Hop dong khong hop le.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Contracts", "Customer");
         }
 
         try
@@ -38,14 +38,14 @@ public class RentalController : Controller
             if (contract is null)
             {
                 TempData["Error"] = "Khong tim thay hop dong.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Contracts", "Customer");
             }
 
             var userId = User.GetUserId();
             if (contract.CustomerId != userId)
             {
                 TempData["Error"] = "Ban khong co quyen xem hop dong nay.";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Contracts", "Customer");
             }
 
             return View(contract);
@@ -53,7 +53,7 @@ public class RentalController : Controller
         catch (OracleException ex)
         {
             TempData["Error"] = BuildOracleErrorMessage("lay chi tiet hop dong", ex);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Contracts", "Customer");
         }
     }
 
