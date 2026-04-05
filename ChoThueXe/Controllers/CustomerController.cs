@@ -93,7 +93,7 @@ public class CustomerController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UploadDocumentFile(IFormFile file)
+    public async Task<IActionResult> UploadDocumentFile(IFormFile file, string? category)
     {
         if (file is null || file.Length <= 0)
         {
@@ -126,7 +126,17 @@ public class CustomerController : Controller
         var uploadFolder = Path.Combine(webRootPath, "uploads", "documents");
         Directory.CreateDirectory(uploadFolder);
 
-        var safeFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var normalizedCategory = string.IsNullOrWhiteSpace(category)
+            ? "document"
+            : category.Trim().ToLowerInvariant().Replace(" ", "-").Replace("_", "-");
+
+        if (normalizedCategory is not ("document" or "driver-license"))
+        {
+            normalizedCategory = "document";
+        }
+
+        var userId = User.GetUserId();
+        var safeFileName = $"u{userId}_{normalizedCategory}{extension.ToLowerInvariant()}";
         var filePath = Path.Combine(uploadFolder, safeFileName);
 
         await using (var stream = System.IO.File.Create(filePath))
@@ -208,10 +218,16 @@ public class CustomerController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitDocument(SubmitDocumentInputModel input)
     {
-        if (!ModelState.IsValid)
+        if (string.IsNullOrWhiteSpace(input.DocType))
         {
-            TempData["Error"] = "Thong tin giay to khong hop le.";
-            return RedirectToAction(nameof(Index));
+            TempData["Error"] = "Vui long chon loai giay to.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        if (string.IsNullOrWhiteSpace(input.FileUrl))
+        {
+            TempData["Error"] = "Vui long tai file len server truoc khi gui giay to.";
+            return RedirectToAction(nameof(Profile));
         }
 
         try
@@ -228,7 +244,7 @@ public class CustomerController : Controller
             TempData["Error"] = BuildOracleErrorMessage("gui giay to", ex);
         }
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Profile));
     }
 
     [HttpPost]
@@ -322,6 +338,15 @@ public class CustomerController : Controller
             {
                 TempData["Error"] = "Ban chua duoc xac minh giay to. Hay upload CCCD/Bang lai xe.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            var verification = await _rentalRepository.GetCustomerVerificationStatusAsync(userId);
+            var hasApprovedCccd = verification.HasCccd && string.Equals(verification.CccdStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
+            var hasApprovedDriverLicense = verification.HasDriverLicense && string.Equals(verification.DriverLicenseStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
+            if (!hasApprovedCccd || !hasApprovedDriverLicense)
+            {
+                TempData["Error"] = "Can duoc duyet day du CCCD va bang lai xe truoc khi thue xe.";
+                return RedirectToAction(nameof(Profile));
             }
 
             input.CustomerId = userId;
@@ -492,6 +517,51 @@ public class CustomerController : Controller
         catch (OracleException ex)
         {
             return StatusCode(500, new { error = BuildOracleErrorMessage("lay thong tin hop dong", ex) });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> VehicleDetails(int id)
+    {
+        if (id <= 0)
+        {
+            TempData["Error"] = "ID xe khong hop le.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        try
+        {
+            var userId = User.GetUserId();
+            var vehicles = await _rentalRepository.GetVehiclesForCustomerAsync(userId);
+            var vehicle = vehicles.FirstOrDefault(v => v.VehicleId == id);
+
+            if (vehicle is null)
+            {
+                TempData["Error"] = "Khong tim thay xe da chon.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var rentalDates = await _rentalRepository.GetVehicleRentalDatesAsync(id);
+
+            var model = new VehicleDetailsViewModel
+            {
+                VehicleId = vehicle.VehicleId,
+                VehicleName = vehicle.VehicleName,
+                BrandName = vehicle.BrandName,
+                TypeName = vehicle.TypeName,
+                PricePerDay = vehicle.PricePerDay,
+                AmenitiesText = vehicle.AmenitiesText,
+                PrimaryImageUrl = vehicle.PrimaryImageUrl,
+                IsFavorite = vehicle.IsFavorite,
+                RentalDates = rentalDates
+            };
+
+            return View(model);
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = BuildOracleErrorMessage("tai chi tiet xe", ex);
+            return RedirectToAction(nameof(Index));
         }
     }
 

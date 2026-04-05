@@ -338,6 +338,19 @@
         <p>Quản lý thông tin tài khoản và cài đặt</p>
     </div>
 
+        @if (TempData["Success"] is string successMessage && !string.IsNullOrWhiteSpace(successMessage))
+        {
+            <div style="margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--success); background: rgba(63, 185, 80, 0.12); color: #b7f0c2;">
+                @successMessage
+            </div>
+        }
+
+        @if (TempData["Error"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div style="margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--danger); background: rgba(248, 81, 73, 0.12); color: #ffb4ad;">
+                @errorMessage
+            </div>
+        }
     <!-- Tabs -->
     <div class="profile-tabs">
         <button type="button" class="tab-button active" onclick="switchTab('personal')">
@@ -347,7 +360,7 @@
             🔒 Bảo mật
         </button>
         <button type="button" class="tab-button" onclick="switchTab('documents')">
-            📄 Tài liệu
+            📄 Giấy tờ
         </button>
         <button type="button" class="tab-button" onclick="switchTab('preferences')">
             ⚙️ Tùy chọn
@@ -623,11 +636,11 @@
         event.target.classList.add('active');
     }
 
-    async function uploadDocumentFile(fileInputId, fileUrlInputId, uploadButtonId) {
+    async function uploadDocumentFile(fileInputId, fileUrlInputId, uploadButtonId, category) {
         const fileInput = document.getElementById(fileInputId);
         const fileUrlInput = document.getElementById(fileUrlInputId);
         const uploadButton = document.getElementById(uploadButtonId);
-        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const tokenInput = uploadButton?.closest('form')?.querySelector('input[name="__RequestVerificationToken"]');
 
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
             alert('Vui lòng chọn file trước khi tải lên.');
@@ -641,6 +654,7 @@
 
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
+        formData.append('category', category || 'document');
         formData.append('__RequestVerificationToken', tokenInput.value);
 
         uploadButton.disabled = true;
@@ -673,10 +687,10 @@
     }
 
         document.getElementById('uploadDocumentFileButton')?.addEventListener('click', () => {
-            uploadDocumentFile('documentFileInput', 'fileUrl', 'uploadDocumentFileButton');
+            uploadDocumentFile('documentFileInput', 'fileUrl', 'uploadDocumentFileButton', 'document');
         });
 
         document.getElementById('uploadDriveLicenseFileButton')?.addEventListener('click', () => {
-            uploadDocumentFile('driveLicenseFileInput', 'driveLicenseFileUrl', 'uploadDriveLicenseFileButton');
+            uploadDocumentFile('driveLicenseFileInput', 'driveLicenseFileUrl', 'uploadDriveLicenseFileButton', 'driver-license');
         });
 </script>

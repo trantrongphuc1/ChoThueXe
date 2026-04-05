@@ -1601,19 +1601,30 @@ public class RentalRepository : IRentalRepository
             insert into user_documents (document_id, user_id, doc_type, file_url, status, uploaded_at)
             values ((select nvl(max(document_id), 0) + 1 from user_documents), :p_user_id, :p_doc_type, :p_file_url, 'PENDING', sysdate)";
 
+        const string fallbackSql = @"
+            insert into user_documents (document_id, user_id, doc_type, file_url, status, created_at)
+            values ((select nvl(max(document_id), 0) + 1 from user_documents), :p_user_id, :p_doc_type, :p_file_url, 'PENDING', sysdate)";
+
         var normalizedDocType = NormalizeDocType(input.DocType);
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand(sql, connection);
-        command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
-        command.Parameters.Add("p_doc_type", OracleDbType.Varchar2, normalizedDocType, ParameterDirection.Input);
-        command.Parameters.Add("p_file_url", OracleDbType.Varchar2, input.FileUrl, ParameterDirection.Input);
-
         try
         {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+            command.Parameters.Add("p_doc_type", OracleDbType.Varchar2, normalizedDocType, ParameterDirection.Input);
+            command.Parameters.Add("p_file_url", OracleDbType.Varchar2, input.FileUrl, ParameterDirection.Input);
             await command.ExecuteNonQueryAsync();
+        }
+        catch (OracleException ex) when (ex.Number == 904)
+        {
+            await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+            fallbackCommand.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+            fallbackCommand.Parameters.Add("p_doc_type", OracleDbType.Varchar2, normalizedDocType, ParameterDirection.Input);
+            fallbackCommand.Parameters.Add("p_file_url", OracleDbType.Varchar2, input.FileUrl, ParameterDirection.Input);
+            await fallbackCommand.ExecuteNonQueryAsync();
         }
         catch (OracleException ex) when (IsMissingObjectError(ex))
         {
@@ -2435,6 +2446,37 @@ public class RentalRepository : IRentalRepository
                 throw new InvalidOperationException("Khong tim thay hop dong de duyet.");
             }
         }
+    }
+
+    public async Task<IReadOnlyList<ChoThueXe.Models.Portal.RentalDateRange>> GetVehicleRentalDatesAsync(int vehicleId)
+    {
+        const string sql = @"
+            select cd.start_date, cd.end_date
+            from contract_details cd
+            join contracts c on c.contract_id = cd.contract_id
+            where cd.vehicle_id = :p_vehicle_id
+              and c.status in ('ACTIVE', 'COMPLETED')
+            order by cd.start_date";
+
+        var result = new List<ChoThueXe.Models.Portal.RentalDateRange>();
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            result.Add(new ChoThueXe.Models.Portal.RentalDateRange
+            {
+                StartDate = Convert.ToDateTime(reader["START_DATE"]),
+                EndDate = Convert.ToDateTime(reader["END_DATE"])
+            });
+        }
+
+        return result;
     }
 }
 

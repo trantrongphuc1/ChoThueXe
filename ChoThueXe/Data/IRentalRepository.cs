@@ -60,5 +60,7 @@ public interface IRentalRepository
     Task<ContractFullViewModel?> GetContractByIdAsync(int contractId);
     Task UpdateVehicleAsync(CreateVehicleInputModel input);
 
+    Task<IReadOnlyList<ChoThueXe.Models.Portal.RentalDateRange>> GetVehicleRentalDatesAsync(int vehicleId);
+
     Task LogActivityAsync(int? userId, string action, string details);
 }

@@ -292,7 +292,7 @@
         <div class="header-actions">
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <span style="color: var(--text-secondary);">@User.Identity?.Name</span>
+                <a href="/Customer/Profile" style="color: var(--text-secondary); text-decoration: none;">@User.Identity?.Name</a>
                 <form action="/Auth/Logout" method="post" style="display: inline;">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="btn btn-secondary" style="padding: 8px 12px; font-size: 13px; border: none; background: none; cursor: pointer;">Đăng xuất</button>

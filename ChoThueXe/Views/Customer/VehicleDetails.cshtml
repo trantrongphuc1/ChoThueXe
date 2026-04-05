@@ -1,0 +1,383 @@
+@using ChoThueXe.Models.Portal
+@model VehicleDetailsViewModel
+
+@{
+    ViewData["Title"] = $"Chi tiết xe - {Model.VehicleName} | ChoThueXe";
+}
+
+<style>
+    :root {
+        --bg-primary: #0f1117;
+        --bg-secondary: #161b27;
+        --bg-tertiary: #21262d;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --border: #30363d;
+        --text-primary: #e2e8f0;
+        --text-secondary: #8b949e;
+        --success: #3fb950;
+        --error: #f85149;
+        --warning: #d29922;
+        --info: #58a6ff;
+        --radius: 8px;
+        --radius-sm: 4px;
+        --transition: all 0.2s ease;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: "Inter", sans-serif;
+        line-height: 1.6;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+    }
+
+    .vehicle-header {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 32px;
+        align-items: flex-start;
+    }
+
+    .vehicle-image {
+        width: 300px;
+        height: 200px;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+        flex-shrink: 0;
+    }
+
+    .vehicle-info {
+        flex: 1;
+    }
+
+    .vehicle-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .vehicle-meta {
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+        font-size: 16px;
+    }
+
+    .vehicle-price {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 16px;
+    }
+
+    .vehicle-amenities {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--accent-hover);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent);
+    }
+
+    .calendar-section {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+    }
+
+    .calendar-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+    }
+
+    .calendar-month {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px;
+    }
+
+    .calendar-header {
+        text-align: center;
+        margin-bottom: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        border-radius: 2px;
+        transition: var(--transition);
+    }
+
+    .calendar-day-header {
+        font-weight: 600;
+        color: var(--text-secondary);
+        background-color: var(--bg-tertiary);
+    }
+
+    .calendar-day.rented {
+        background-color: var(--error);
+        color: white;
+    }
+
+    .calendar-day.available {
+        background-color: var(--success);
+        color: white;
+    }
+
+    .calendar-day.today {
+        border: 2px solid var(--accent);
+    }
+
+    .legend {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-top: 16px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }
+
+    @@media (max-width: 768px) {
+        .vehicle-header {
+            flex-direction: column;
+        }
+
+        .vehicle-image {
+            width: 100%;
+            height: 150px;
+        }
+
+        .calendar-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container">
+    <div class="vehicle-header">
+        <div class="vehicle-image">
+            @if (!string.IsNullOrEmpty(Model.PrimaryImageUrl))
+            {
+                <img src="@Model.PrimaryImageUrl" alt="@Model.VehicleName" style="width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius);" />
+            }
+            else
+            {
+                <span>🚗</span>
+            }
+        </div>
+        <div class="vehicle-info">
+            <h1 class="vehicle-title">@Model.VehicleName</h1>
+            <div class="vehicle-meta">@Model.BrandName • @Model.TypeName</div>
+            <div class="vehicle-price">@Model.PricePerDay:N0 ₫/ngày</div>
+            @if (!string.IsNullOrEmpty(Model.AmenitiesText))
+            {
+                <div class="vehicle-amenities">Tiện nghi: @Model.AmenitiesText</div>
+            }
+            <div class="action-buttons">
+                <a href="/Customer/Index" class="btn btn-secondary">← Quay lại</a>
+                <form method="post" asp-action="ToggleFavorite" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="vehicleId" value="@Model.VehicleId" />
+                    <button type="submit" class="btn @(Model.IsFavorite ? "btn-secondary" : "btn-primary")">
+                        @(Model.IsFavorite ? "❤️ Đã yêu thích" : "🤍 Thêm yêu thích")
+                    </button>
+                </form>
+                <a href="/Customer/Rent?vehicleId=@Model.VehicleId" class="btn btn-primary">Đặt thuê ngay</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-section">
+        <h2 class="section-title">Lịch thuê xe (Heatmap)</h2>
+        <div class="calendar-container" id="calendarContainer">
+            <!-- Calendar sẽ được tạo bởi JavaScript -->
+        </div>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--error);"></div>
+                <span>Đã thuê</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: var(--success);"></div>
+                <span>Còn trống</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    var rentalDatesJson = Json.Serialize(Model.RentalDates.Select(d => new {
+        startDate = d.StartDate.ToString("yyyy-MM-dd"),
+        endDate = d.EndDate.ToString("yyyy-MM-dd")
+    }));
+}
+
+<script>
+    const rentalDates = @Html.Raw(rentalDatesJson);
+
+    function isDateRented(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        return rentalDates.some(range => {
+            const start = new Date(range.startDate);
+            const end = new Date(range.endDate);
+            return date >= start && date <= end;
+        });
+    }
+
+    function generateCalendar(year, month) {
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        const calendar = document.createElement('div');
+        calendar.className = 'calendar-month';
+
+        const header = document.createElement('div');
+        header.className = 'calendar-header';
+        header.textContent = new Date(year, month).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long' });
+        calendar.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        // Header days
+        const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        dayNames.forEach(day => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'calendar-day calendar-day-header';
+            dayHeader.textContent = day;
+            grid.appendChild(dayHeader);
+        });
+
+        // Calendar days
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 42; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            dayElement.textContent = currentDate.getDate();
+
+            if (currentDate.getMonth() !== month) {
+                dayElement.style.opacity = '0.3';
+            } else if (isDateRented(currentDate)) {
+                dayElement.classList.add('rented');
+            } else {
+                dayElement.classList.add('available');
+            }
+
+            if (currentDate.getTime() === today.getTime()) {
+                dayElement.classList.add('today');
+            }
+
+            grid.appendChild(dayElement);
+        }
+
+        calendar.appendChild(grid);
+        return calendar;
+    }
+
+    function initCalendar() {
+        const container = document.getElementById('calendarContainer');
+        const today = new Date();
+
+        // Generate 6 months from current month
+        for (let i = 0; i < 6; i++) {
+            const targetDate = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            const calendar = generateCalendar(targetDate.getFullYear(), targetDate.getMonth());
+            container.appendChild(calendar);
+        }
+    }
+
+    // Initialize calendar when page loads
+    document.addEventListener('DOMContentLoaded', initCalendar);
+</script>

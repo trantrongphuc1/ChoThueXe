@@ -147,6 +147,15 @@ public class RentalController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
+            var verification = await _rentalRepository.GetCustomerVerificationStatusAsync(input.CustomerId);
+            var hasApprovedCccd = verification.HasCccd && string.Equals(verification.CccdStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
+            var hasApprovedDriverLicense = verification.HasDriverLicense && string.Equals(verification.DriverLicenseStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
+            if (!hasApprovedCccd || !hasApprovedDriverLicense)
+            {
+                TempData["Error"] = "Khach hang can duoc duyet day du CCCD va bang lai xe truoc khi thue xe.";
+                return RedirectToAction(nameof(Index));
+            }
+
             await _rentalRepository.RentVehicleAsync(input);
             TempData["Success"] = "Thue xe thanh cong bang sp_rent_vehicle. Trigger da tu dong tinh tong tien va kiem tra lich.";
             return RedirectToAction(nameof(Index));

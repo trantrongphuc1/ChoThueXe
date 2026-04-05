@@ -53,7 +53,7 @@ public class AuthController : Controller
         var user = await _authRepository.AuthenticateAsync(input.Email, input.Password);
         if (user is null)
         {
-            ViewData["Error"] = "Email hoac mat khau khong dung.";
+            ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
             return View(input);
         }
 
