@@ -1,0 +1,384 @@
+@using System.Text.Json
+@using ChoThueXe.Models.Portal
+@model AdminRevenueReportViewModel
+
+@{
+    ViewData["Title"] = "Báo cáo doanh thu theo xe";
+
+    var topRows = Model.RevenueByVehicle
+        .OrderByDescending(x => x.TotalRevenue)
+        .Take(12)
+        .ToList();
+
+    var totalRevenue = Model.RevenueByVehicle.Sum(x => x.TotalRevenue);
+    var totalContracts = Model.RevenueByVehicle.Sum(x => x.TotalContractsCompleted);
+    var totalDays = Model.RevenueByVehicle.Sum(x => x.TotalRentalDays);
+
+    var monthLabels = Model.RevenueByMonth.Select(x => x.PeriodLabel).ToArray();
+    var monthRevenue = Model.RevenueByMonth.Select(x => x.TotalRevenue).ToArray();
+    var weekLabels = Model.RevenueByWeek.Select(x => x.PeriodLabel).ToArray();
+    var weekRevenue = Model.RevenueByWeek.Select(x => x.TotalRevenue).ToArray();
+
+    var topCustomerLabels = Model.TopCustomersByRentals.Select(x => x.FullName).ToArray();
+    var topCustomerRentCount = Model.TopCustomersByRentals.Select(x => x.RentalCount).ToArray();
+    var topCustomerSpending = Model.TopCustomersByRentals.Select(x => x.TotalSpent).ToArray();
+
+    var chartPayload = new
+    {
+        labels = topRows.Select(x => x.VehicleName).ToArray(),
+        revenue = topRows.Select(x => x.TotalRevenue).ToArray(),
+        contracts = topRows.Select(x => x.TotalContractsCompleted).ToArray(),
+        revenuePerDay = topRows.Select(x => x.RevenuePerDay).ToArray(),
+        monthLabels,
+        monthRevenue,
+        weekLabels,
+        weekRevenue,
+        topCustomerLabels,
+        topCustomerRentCount,
+        topCustomerSpending
+    };
+}
+
+<style>
+    .report-wrap { max-width: 1320px; margin: 28px auto; padding: 0 16px; }
+    .report-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .report-head h1 { margin: 0; font-size: 30px; }
+    .report-sub { color: var(--text-secondary); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi { border: 1px solid var(--border); background: var(--bg-secondary); border-radius: 12px; padding: 14px; }
+    .kpi .label { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: .35px; }
+    .kpi .value { margin-top: 8px; font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .panel { border: 1px solid var(--border); background: var(--bg-secondary); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+    .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .panel-title { font-weight: 700; }
+    .panel-body { padding: 14px; }
+    .charts { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+    .charts-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .chart-box { border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-primary); min-height: 320px; }
+    .chart-box canvas { width: 100% !important; height: 300px !important; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+    .money { font-weight: 700; color: #93c5fd; }
+    .muted { color: var(--text-secondary); font-size: 12px; }
+
+    @@media (max-width: 960px) {
+        .charts { grid-template-columns: 1fr; }
+        .charts-2 { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="report-wrap">
+    <div class="report-head">
+        <div>
+            <h1>Báo cáo doanh thu từng xe</h1>
+            <div class="report-sub">Nguồn dữ liệu: view vw_revenue (đơn đã hoàn tất/đã thanh toán)</div>
+        </div>
+        <a class="btn btn-secondary" href="/Admin/VehicleManagement">← Về quản lý</a>
+    </div>
+
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-error">@error</div>
+    }
+
+    <div class="grid">
+        <div class="kpi"><div class="label">Tổng xe có doanh thu</div><div class="value">@Model.RevenueByVehicle.Count</div></div>
+        <div class="kpi"><div class="label">Tổng doanh thu</div><div class="value">@totalRevenue.ToString("N0") VND</div></div>
+        <div class="kpi"><div class="label">Tổng hợp đồng hoàn tất</div><div class="value">@totalContracts</div></div>
+        <div class="kpi"><div class="label">Tổng ngày thuê</div><div class="value">@totalDays</div></div>
+        <div class="kpi"><div class="label">Khách thuê nhiều nhất</div><div class="value">@(Model.TopCustomersByRentals.FirstOrDefault()?.FullName ?? "-")</div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Biểu đồ Top 12 xe doanh thu cao nhất</div>
+            <div class="muted">Có thể dùng để so sánh hiệu suất xe</div>
+        </div>
+        <div class="panel-body charts">
+            <div class="chart-box">
+                <canvas id="revenueBarChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="contractDoughnutChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Doanh thu theo tháng và theo tuần</div>
+            <div class="muted">Tổng hợp từ hợp đồng trạng thái hoàn tất</div>
+        </div>
+        <div class="panel-body charts-2">
+            <div class="chart-box">
+                <canvas id="monthlyRevenueChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="weeklyRevenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Khách hàng thuê nhiều nhất</div>
+            <div class="muted">Top theo số lượt thuê, kèm tổng chi tiêu</div>
+        </div>
+        <div class="panel-body charts-2">
+            <div class="chart-box">
+                <canvas id="topCustomersChart"></canvas>
+            </div>
+            <div class="table-wrap">
+                @if (!Model.TopCustomersByRentals.Any())
+                {
+                    <div class="muted">Chưa có dữ liệu khách hàng thuê xe.</div>
+                }
+                else
+                {
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Khách hàng</th>
+                            <th>Lượt thuê</th>
+                            <th>Tổng chi tiêu</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var row in Model.TopCustomersByRentals.Select((value, index) => new { value, index }))
+                        {
+                            <tr>
+                                <td>@(row.index + 1)</td>
+                                <td>
+                                    <div>@row.value.FullName</div>
+                                    <div class="muted">ID: @row.value.CustomerId</div>
+                                </td>
+                                <td>@row.value.RentalCount</td>
+                                <td class="money">@row.value.TotalSpent.ToString("N0") VND</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">
+            <div class="panel-title">Bảng chi tiết doanh thu theo xe</div>
+            <div class="muted">Sắp xếp giảm dần theo tổng doanh thu</div>
+        </div>
+        <div class="panel-body table-wrap">
+            @if (!Model.RevenueByVehicle.Any())
+            {
+                <div class="muted">Chưa có dữ liệu doanh thu.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Xe</th>
+                            <th>Hãng/Loại</th>
+                            <th>HĐ hoàn tất</th>
+                            <th>Ngày thuê</th>
+                            <th>TB / HĐ</th>
+                            <th>Doanh thu / ngày</th>
+                            <th>Tổng doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.RevenueByVehicle.OrderByDescending(x => x.TotalRevenue).Select((value, index) => new { value, index }))
+                        {
+                            <tr>
+                                <td>@(item.index + 1)</td>
+                                <td>
+                                    <div>@item.value.VehicleName</div>
+                                    @if (item.value.VehicleId > 0)
+                                    {
+                                        <div class="muted">ID: @item.value.VehicleId</div>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(item.value.BrandName) && string.IsNullOrWhiteSpace(item.value.TypeName) ? "-" : $"{item.value.BrandName} / {item.value.TypeName}")</td>
+                                <td>@item.value.TotalContractsCompleted</td>
+                                <td>@item.value.TotalRentalDays</td>
+                                <td>@item.value.AvgRentalValue.ToString("N0") VND</td>
+                                <td>@item.value.RevenuePerDay.ToString("N0") VND</td>
+                                <td class="money">@item.value.TotalRevenue.ToString("N0") VND</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const chartData = @Html.Raw(JsonSerializer.Serialize(chartPayload));
+
+        const barCtx = document.getElementById('revenueBarChart');
+        if (barCtx) {
+            new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [
+                        {
+                            label: 'Tổng doanh thu (VND)',
+                            data: chartData.revenue,
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(59, 130, 246, 0.72)',
+                            borderColor: 'rgba(59, 130, 246, 1)'
+                        },
+                        {
+                            label: 'Doanh thu / ngày (VND)',
+                            data: chartData.revenuePerDay,
+                            borderWidth: 1,
+                            borderRadius: 8,
+                            backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                            borderColor: 'rgba(34, 197, 94, 1)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+                    }
+                }
+            });
+        }
+
+        const doughnutCtx = document.getElementById('contractDoughnutChart');
+        if (doughnutCtx) {
+            new Chart(doughnutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Số HĐ hoàn tất',
+                        data: chartData.contracts,
+                        backgroundColor: [
+                            '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7',
+                            '#14b8a6', '#84cc16', '#fb7185', '#f97316', '#8b5cf6', '#0ea5e9'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#cbd5e1', boxWidth: 12, padding: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        const monthlyCtx = document.getElementById('monthlyRevenueChart');
+        if (monthlyCtx) {
+            new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.monthLabels,
+                    datasets: [{
+                        label: 'Doanh thu theo tháng (VND)',
+                        data: chartData.monthRevenue,
+                        fill: true,
+                        tension: 0.28,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+                    }
+                }
+            });
+        }
+
+        const weeklyCtx = document.getElementById('weeklyRevenueChart');
+        if (weeklyCtx) {
+            new Chart(weeklyCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.weekLabels,
+                    datasets: [{
+                        label: 'Doanh thu theo tuần (VND)',
+                        data: chartData.weekRevenue,
+                        fill: true,
+                        tension: 0.3,
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+                    }
+                }
+            });
+        }
+
+        const topCustomersCtx = document.getElementById('topCustomersChart');
+        if (topCustomersCtx) {
+            new Chart(topCustomersCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.topCustomerLabels,
+                    datasets: [
+                        {
+                            label: 'Lượt thuê',
+                            data: chartData.topCustomerRentCount,
+                            backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Tổng chi tiêu (VND)',
+                            data: chartData.topCustomerSpending,
+                            backgroundColor: 'rgba(249, 115, 22, 0.65)',
+                            borderColor: 'rgba(249, 115, 22, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148, 163, 184, 0.08)' } }
+                    }
+                }
+            });
+        }
+    </script>
+}

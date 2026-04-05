@@ -25,7 +25,7 @@ public class CustomerController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(string? q, string[]? amenities)
+    public async Task<IActionResult> Index(string? q, string[]? amenities, int? brandId, int? typeId, DateTime? checkIn, DateTime? checkOut)
     {
         try
         {
@@ -35,8 +35,32 @@ public class CustomerController : Controller
                 .Select(value => value.Trim().ToUpperInvariant())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
+            var normalizedBrandId = brandId.HasValue && brandId.Value > 0 ? brandId : null;
+            var normalizedTypeId = typeId.HasValue && typeId.Value > 0 ? typeId : null;
+            var normalizedCheckIn = checkIn?.Date;
+            var normalizedCheckOut = checkOut?.Date;
 
-            var model = await BuildDashboardAsync(userId, q, selectedAmenities);
+            if (normalizedCheckIn.HasValue ^ normalizedCheckOut.HasValue)
+            {
+                TempData["Error"] = "Vui long chon day du ngay nhan va ngay tra.";
+                normalizedCheckIn = null;
+                normalizedCheckOut = null;
+            }
+            else if (normalizedCheckIn.HasValue && normalizedCheckOut.HasValue && normalizedCheckOut.Value < normalizedCheckIn.Value)
+            {
+                TempData["Error"] = "Ngay tra phai lon hon hoac bang ngay nhan.";
+                normalizedCheckIn = null;
+                normalizedCheckOut = null;
+            }
+
+            var model = await BuildDashboardAsync(
+                userId,
+                q,
+                selectedAmenities,
+                normalizedBrandId,
+                normalizedTypeId,
+                normalizedCheckIn,
+                normalizedCheckOut);
             return View(model);
         }
         catch (OracleException ex) when (ex.Number == 942)
@@ -56,7 +80,13 @@ public class CustomerController : Controller
                 Contracts = [],
                 PendingContracts = [],
                 ReviewableContracts = [],
+                BrandOptions = [],
+                TypeOptions = [],
                 AmenityOptions = [],
+                SelectedBrandId = null,
+                SelectedTypeId = null,
+                CheckInDate = null,
+                CheckOutDate = null,
                 VerificationStatus = new()
             };
             return View(model);
@@ -69,18 +99,46 @@ public class CustomerController : Controller
     }
 
     [HttpGet]
+    public async Task<IActionResult> Contracts()
+    {
+        try
+        {
+            var userId = User.GetUserId();
+            var contractsTask = _rentalRepository.GetContractsByCustomerAsync(userId);
+            var pendingContractsTask = _rentalRepository.GetPendingContractsByCustomerAsync(userId);
+
+            await Task.WhenAll(contractsTask, pendingContractsTask);
+
+            return View(new CustomerDashboardViewModel
+            {
+                UserId = userId,
+                Contracts = contractsTask.Result,
+                PendingContracts = pendingContractsTask.Result
+            });
+        }
+        catch (OracleException ex)
+        {
+            TempData["Error"] = BuildOracleErrorMessage("tai danh sach hop dong", ex);
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Profile()
     {
         try
         {
             var userId = User.GetUserId();
             var profile = await _rentalRepository.GetUserProfileAsync(userId);
+            var verificationStatus = await _rentalRepository.GetCustomerVerificationStatusAsync(userId);
 
             var model = new UpdateProfileInputModel
             {
                 FullName = profile.FullName,
                 Phone = profile.Phone
             };
+
+            ViewBag.VerificationStatus = verificationStatus;
 
             return View(model);
         }
@@ -336,16 +394,7 @@ public class CustomerController : Controller
             var isVerified = await _rentalRepository.IsUserVerifiedAsync(userId);
             if (!isVerified)
             {
-                TempData["Error"] = "Ban chua duoc xac minh giay to. Hay upload CCCD/Bang lai xe.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var verification = await _rentalRepository.GetCustomerVerificationStatusAsync(userId);
-            var hasApprovedCccd = verification.HasCccd && string.Equals(verification.CccdStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
-            var hasApprovedDriverLicense = verification.HasDriverLicense && string.Equals(verification.DriverLicenseStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
-            if (!hasApprovedCccd || !hasApprovedDriverLicense)
-            {
-                TempData["Error"] = "Can duoc duyet day du CCCD va bang lai xe truoc khi thue xe.";
+                TempData["Error"] = "Tai khoan chua xac minh giay to. Vui long cap nhat trong trang ho so truoc khi thue xe.";
                 return RedirectToAction(nameof(Profile));
             }
 
@@ -378,7 +427,7 @@ public class CustomerController : Controller
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Du lieu thanh toan khong hop le.";
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Contracts));
         }
 
         try
@@ -395,7 +444,7 @@ public class CustomerController : Controller
             TempData["Error"] = BuildOracleErrorMessage("thanh toan", ex);
         }
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Contracts));
     }
 
     [HttpPost]
@@ -575,12 +624,21 @@ public class CustomerController : Controller
         return $"Khong the {operation} luc nay. Vui long thu lai.";
     }
 
-    private async Task<CustomerDashboardViewModel> BuildDashboardAsync(int userId, string? keyword, IReadOnlyCollection<string> selectedAmenityCodes)
+    private async Task<CustomerDashboardViewModel> BuildDashboardAsync(
+        int userId,
+        string? keyword,
+        IReadOnlyCollection<string> selectedAmenityCodes,
+        int? selectedBrandId,
+        int? selectedTypeId,
+        DateTime? checkInDate,
+        DateTime? checkOutDate)
     {
         var profileTask = _rentalRepository.GetUserProfileAsync(userId);
+        var brandsTask = _rentalRepository.GetBrandsAsync();
+        var typesTask = _rentalRepository.GetTypesAsync();
         var amenitiesTask = _rentalRepository.GetAmenityOptionsAsync();
         var notificationsTask = _rentalRepository.GetNotificationsForUserAsync(userId);
-        var vehiclesTask = _rentalRepository.GetVehiclesForCustomerAsync(userId, keyword, selectedAmenityCodes);
+        var vehiclesTask = _rentalRepository.GetVehiclesForCustomerAsync(userId, keyword, selectedAmenityCodes, checkInDate, checkOutDate);
         var favoritesTask = _rentalRepository.GetFavoriteVehiclesByCustomerAsync(userId);
         var messagesTask = _rentalRepository.GetMessagesForCustomerAsync(userId);
         var reviewableTask = _rentalRepository.GetReviewableContractsByCustomerAsync(userId);
@@ -591,6 +649,8 @@ public class CustomerController : Controller
         try
         {
             await Task.WhenAll(
+                brandsTask,
+                typesTask,
                 amenitiesTask,
                 notificationsTask,
                 vehiclesTask,
@@ -611,6 +671,41 @@ public class CustomerController : Controller
         }
 
         var profile = await profileTask;
+        var brandOptions = TryGetResult(brandsTask, []);
+        var typeOptions = TryGetResult(typesTask, []);
+
+        var selectedBrandName = selectedBrandId.HasValue
+            ? brandOptions.FirstOrDefault(x => x.BrandId == selectedBrandId.Value)?.BrandName
+            : null;
+
+        var selectedTypeName = selectedTypeId.HasValue
+            ? typeOptions.FirstOrDefault(x => x.TypeId == selectedTypeId.Value)?.TypeName
+            : null;
+
+        var filteredVehicles = TryGetResult(vehiclesTask, []);
+        if (!string.IsNullOrWhiteSpace(selectedBrandName))
+        {
+            filteredVehicles = filteredVehicles
+                .Where(v => string.Equals(v.BrandName, selectedBrandName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedTypeName))
+        {
+            filteredVehicles = filteredVehicles
+                .Where(v => string.Equals(v.TypeName, selectedTypeName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        if (checkInDate.HasValue && checkOutDate.HasValue)
+        {
+            var estimatedDays = Math.Max(1, (checkOutDate.Value.Date - checkInDate.Value.Date).Days);
+            foreach (var vehicle in filteredVehicles)
+            {
+                vehicle.EstimatedRentalDays = estimatedDays;
+                vehicle.EstimatedRentalCost = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, checkInDate.Value, checkOutDate.Value);
+            }
+        }
 
         return new CustomerDashboardViewModel
         {
@@ -619,10 +714,16 @@ public class CustomerController : Controller
             Email = profile.Email,
             Phone = profile.Phone,
             SearchKeyword = keyword?.Trim() ?? string.Empty,
+            BrandOptions = brandOptions,
+            TypeOptions = typeOptions,
             AmenityOptions = TryGetResult(amenitiesTask, []),
             SelectedAmenityCodes = selectedAmenityCodes.ToArray(),
+            SelectedBrandId = selectedBrandId,
+            SelectedTypeId = selectedTypeId,
+            CheckInDate = checkInDate,
+            CheckOutDate = checkOutDate,
             Notifications = TryGetResult(notificationsTask, []),
-            Vehicles = TryGetResult(vehiclesTask, []),
+            Vehicles = filteredVehicles,
             FavoriteVehicles = TryGetResult(favoritesTask, []),
             Messages = TryGetResult(messagesTask, []),
             ReviewableContracts = TryGetResult(reviewableTask, []),

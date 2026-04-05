@@ -1,0 +1,263 @@
+@model ChoThueXe.Models.Portal.CustomerDashboardViewModel
+@{
+    ViewData["Title"] = "Hợp đồng thuê";
+    var unpaidContracts = Model.PendingContracts
+        .Where(contract => contract.DueAmount > 0)
+        .OrderByDescending(contract => contract.ContractId)
+        .ToList();
+}
+
+<style>
+    .contracts-wrap {
+        max-width: 1280px;
+        margin: 28px auto;
+        padding: 0 16px;
+    }
+
+    .panel {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+
+    .panel-head {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        font-weight: 700;
+        font-size: 22px;
+    }
+
+    .panel-body {
+        padding: 14px;
+    }
+
+    .empty {
+        color: var(--text-secondary);
+        padding: 28px 12px;
+        text-align: center;
+    }
+
+    .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .summary-box {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-secondary);
+        padding: 10px 12px;
+    }
+
+    .summary-box .label {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .summary-box .value {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .alert {
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+        border: 1px solid transparent;
+    }
+
+    .alert-success {
+        background: var(--success-light);
+        border-color: var(--success);
+        color: #14532d;
+    }
+
+    .alert-error {
+        background: var(--error-light);
+        border-color: var(--error);
+        color: #7f1d1d;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-pending { background: rgba(217, 119, 6, 0.15); color: #d97706; }
+    .badge-approved { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+    .badge-completed { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
+    .badge-other { background: rgba(100, 116, 139, 0.2); color: #cbd5e1; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        padding: 10px 8px;
+        vertical-align: top;
+    }
+
+    th {
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+    }
+
+    .btn {
+        border: 1px solid var(--border);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-radius: 8px;
+        padding: 7px 10px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .table-responsive { overflow-x: auto; }
+</style>
+
+<div class="contracts-wrap">
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-error">@error</div>
+    }
+
+    <div class="summary">
+        <div class="summary-box">
+            <div class="label">Tổng hợp đồng</div>
+            <div class="value">@Model.Contracts.Count</div>
+        </div>
+        <div class="summary-box">
+            <div class="label">Cần thanh toán</div>
+            <div class="value">@unpaidContracts.Count</div>
+        </div>
+        <div class="summary-box">
+            <div class="label">Tổng còn thiếu</div>
+            <div class="value">@unpaidContracts.Sum(x => x.DueAmount).ToString("N0") VND</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">Hợp đồng thuê gần đây</div>
+        <div class="panel-body">
+            @if (!Model.Contracts.Any())
+            {
+                <div class="empty">Bạn chưa có hợp đồng thuê nào.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã hợp đồng</th>
+                                <th>Xe</th>
+                                <th>Thời gian thuê</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var contract in Model.Contracts.OrderByDescending(x => x.ContractId).Take(20))
+                            {
+                                <tr>
+                                    <td>#@contract.ContractId</td>
+                                    <td>@contract.VehicleName</td>
+                                    <td>@contract.StartDate.ToString("dd/MM/yyyy") - @contract.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@contract.TotalAmount.ToString("N0") VND</td>
+                                    <td>
+                                        @if (contract.Status == "PENDING")
+                                        {
+                                            <span class="badge badge-pending">Chờ duyệt</span>
+                                        }
+                                        else if (contract.Status == "ACTIVE" || contract.Status == "APPROVED")
+                                        {
+                                            <span class="badge badge-approved">Đã duyệt</span>
+                                        }
+                                        else if (contract.Status == "COMPLETED")
+                                        {
+                                            <span class="badge badge-completed">Hoàn thành</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-other">@contract.Status</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="/Rental/Details/@contract.ContractId" class="btn">Chi tiết</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">Thanh toán hợp đồng</div>
+        <div class="panel-body">
+            @if (!unpaidContracts.Any())
+            {
+                <div class="empty">Hiện không có hợp đồng nào cần thanh toán.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã hợp đồng</th>
+                                <th>Tổng tiền</th>
+                                <th>Đã trả</th>
+                                <th>Còn thiếu</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pending in unpaidContracts.Take(20))
+                            {
+                                <tr>
+                                    <td>#@pending.ContractId</td>
+                                    <td>@pending.TotalAmount.ToString("N0") VND</td>
+                                    <td>@pending.PaidAmount.ToString("N0") VND</td>
+                                    <td style="color: var(--warning); font-weight: 700;">@pending.DueAmount.ToString("N0") VND</td>
+                                    <td>
+                                        <form asp-action="Pay" method="post" style="display:inline-flex; gap:8px; align-items:center;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ContractId" value="@pending.ContractId" />
+                                            <input type="hidden" name="Amount" value="@pending.DueAmount" />
+                                            <button type="submit" class="btn btn-primary">Thanh toán đủ</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

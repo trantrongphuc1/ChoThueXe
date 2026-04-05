@@ -3,6 +3,9 @@
     ViewData["Title"] = "Admin Dashboard";
     var contractStatusFilter = (ViewData["ContractStatusFilter"] as string) ?? string.Empty;
     var contractKeywordFilter = (ViewData["ContractKeywordFilter"] as string) ?? string.Empty;
+    var totalRevenue = Model.RevenueByVehicle.Sum(x => x.TotalRevenue);
+    var totalRevenueContracts = Model.RevenueByVehicle.Sum(x => x.TotalContractsCompleted);
+    var totalRevenueDays = Model.RevenueByVehicle.Sum(x => x.TotalRentalDays);
 }
 
 <style>
@@ -55,6 +58,7 @@
         <div class="summary-box"><div class="label">Tin nhắn hỗ trợ</div><div class="value">@Model.Messages.Count</div></div>
         <div class="summary-box"><div class="label">Tổng xe hệ thống</div><div class="value">@Model.Vehicles.Count</div></div>
         <div class="summary-box"><div class="label">Tổng đơn thuê</div><div class="value">@Model.Contracts.Count</div></div>
+        <div class="summary-box"><div class="label">Doanh thu (vw_revenue)</div><div class="value">@totalRevenue.ToString("N0") VND</div></div>
     </div>
 
     <div class="panel">
@@ -359,6 +363,11 @@
                             <td>@v.Status</td>
                             <td>
                                 <a class="btn" asp-action="EditVehicle" asp-route-vehicleId="@v.VehicleId">Sửa</a>
+                                <form asp-action="DeleteVehicle" method="post" style="display:inline; margin-left:6px;" onsubmit="return confirm('Xóa xe này? Hành động sẽ ẩn xe khỏi hệ thống thuê.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="vehicleId" value="@v.VehicleId" />
+                                    <button type="submit" class="btn btn-danger">Xóa</button>
+                                </form>
                             </td>
                         </tr>
                     }
@@ -426,6 +435,71 @@
                     </tbody>
                 </table>
                 <div class="small" style="margin-top:8px;">Đang hiển thị tối đa 100 đơn thuê mới nhất.</div>
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">8) Bảng thống kê doanh thu xe (vw_revenue)</div>
+        <div class="panel-body">
+            @if (!Model.RevenueByVehicle.Any())
+            {
+                <div class="empty">Chưa có dữ liệu doanh thu từ view vw_revenue.</div>
+            }
+            else
+            {
+                <div class="form-grid" style="margin-bottom: 12px;">
+                    <div class="summary-box">
+                        <div class="label">Tổng doanh thu</div>
+                        <div class="value">@totalRevenue.ToString("N0") VND</div>
+                    </div>
+                    <div class="summary-box">
+                        <div class="label">Tổng hợp đồng hoàn tất</div>
+                        <div class="value">@totalRevenueContracts</div>
+                    </div>
+                    <div class="summary-box">
+                        <div class="label">Tổng ngày thuê</div>
+                        <div class="value">@totalRevenueDays</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Xe</th>
+                        <th>Hãng/Loại</th>
+                        <th>HĐ hoàn tất</th>
+                        <th>Ngày thuê</th>
+                        <th>Doanh thu TB/HĐ</th>
+                        <th>Doanh thu/ngày</th>
+                        <th>Tổng doanh thu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.RevenueByVehicle.Take(100).Select((value, index) => new { value, index }))
+                    {
+                        <tr>
+                            <td>@(row.index + 1)</td>
+                            <td>
+                                <div>@row.value.VehicleName</div>
+                                @if (row.value.VehicleId > 0)
+                                {
+                                    <div class="small">ID: @row.value.VehicleId</div>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(row.value.BrandName) && string.IsNullOrWhiteSpace(row.value.TypeName) ? "-" : $"{row.value.BrandName} / {row.value.TypeName}")</td>
+                            <td>@row.value.TotalContractsCompleted</td>
+                            <td>@row.value.TotalRentalDays</td>
+                            <td>@row.value.AvgRentalValue.ToString("N0") VND</td>
+                            <td>@row.value.RevenuePerDay.ToString("N0") VND</td>
+                            <td><strong>@row.value.TotalRevenue.ToString("N0") VND</strong></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+
+                <div class="small" style="margin-top:8px;">Đang hiển thị tối đa 100 dòng doanh thu cao nhất từ vw_revenue.</div>
             }
         </div>
     </div>

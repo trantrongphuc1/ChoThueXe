@@ -3,6 +3,7 @@
 
 @{
     ViewData["Title"] = "Chỉnh sửa hồ sơ";
+    var verificationStatus = ViewBag.VerificationStatus as CustomerVerificationStatusViewModel ?? new CustomerVerificationStatusViewModel();
 }
 
 <style>
@@ -374,6 +375,26 @@
                 <div class="avatar">👤</div>
                 <div class="avatar-name">@Html.DisplayFor(model => model.FullName)</div>
                 <div class="avatar-email">@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value</div>
+            </div>
+
+            <div class="info-section" style="margin-bottom: 24px;">
+                <label>Trạng thái xác minh giấy tờ</label>
+                @if (verificationStatus.IsVerified)
+                {
+                    <span>Đã xác minh đầy đủ CCCD và bằng lái.</span>
+                }
+                else if (verificationStatus.IsPending)
+                {
+                    <span>Đang chờ admin duyệt giấy tờ.</span>
+                }
+                else if (verificationStatus.IsRejected)
+                {
+                    <span>Giấy tờ bị từ chối. Vui lòng cập nhật ở tab Giấy tờ.</span>
+                }
+                else
+                {
+                    <span>Chưa xác minh giấy tờ. Hãy vào tab Giấy tờ để cập nhật.</span>
+                }
             </div>
 
             <form asp-action="Update" asp-controller="Customer" method="post">

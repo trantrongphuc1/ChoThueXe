@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@ViewData["Title"] - ChoThueXe</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,6 +45,43 @@
             font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             font-size: 14px;
             line-height: 1.6;
+            color-scheme: dark;
+        }
+
+        input,
+        select,
+        textarea {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        input[type="date"],
+        input[type="datetime-local"],
+        input[type="month"],
+        input[type="time"] {
+            color-scheme: dark;
+        }
+
+        select option {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        input::-webkit-calendar-picker-indicator {
+            filter: invert(0.9);
+            opacity: 0.85;
+            cursor: pointer;
         }
 
         /* Scrollbar */
@@ -269,13 +307,21 @@
         </a>
 
         <nav class="header-nav">
-            <li><a href="/" class="header-nav-link">Trang chủ</a></li>
-            <li><a href="/Vehicle" class="header-nav-link">Danh sách xe</a></li>
+            @if (User.Identity?.IsAuthenticated == true && User.IsInRole("ADMIN"))
+            {
+                <li><a href="/Admin/VehicleManagement" class="header-nav-link">Quản lý xe</a></li>
+            }
+            else
+            {
+                <li><a href="/" class="header-nav-link">Trang chủ</a></li>
+            }
             @if (User.Identity?.IsAuthenticated == true)
             {
                 @if (User.IsInRole("ADMIN"))
                 {
-                    <li><a href="/Admin" class="header-nav-link">Dashboard Admin</a></li>
+                    <li><a href="/Admin/CustomerManagement" class="header-nav-link">Quản lý khách hàng</a></li>
+                    <li><a href="/Admin/RentalManagement" class="header-nav-link">Quản lý đơn thuê</a></li>
+                    <li><a href="/Admin/RevenueReport" class="header-nav-link">Báo cáo doanh thu</a></li>
                 }
                 @if (User.IsInRole("EMPLOYEE"))
                 {
@@ -284,6 +330,7 @@
                 @if (!User.IsInRole("ADMIN") && !User.IsInRole("EMPLOYEE"))
                 {
                     <li><a href="/Customer" class="header-nav-link">Dashboard Khách</a></li>
+                    <li><a href="/Customer/Contracts" class="header-nav-link">Hợp đồng thuê</a></li>
                 }
             }
             <li><a href="/Contact" class="header-nav-link">Liên hệ</a></li>
@@ -327,7 +374,6 @@
             <div class="footer-section">
                 <h3>Cho khách hàng</h3>
                 <ul>
-                    <li><a href="/Rental/Search">Danh sách xe</a></li>
                     <li><a href="/Rental/Book">Hướng dẫn thuê xe</a></li>
                     <li><a href="/Home/FAQ">Các câu hỏi thường gặp</a></li>
                     <li><a href="/Home/Contact">Liên hệ hỗ trợ</a></li>

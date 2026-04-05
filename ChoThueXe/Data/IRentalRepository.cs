@@ -5,8 +5,17 @@ namespace ChoThueXe.Data;
 
 public interface IRentalRepository
 {
-    Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesAsync(string? keyword = null, IReadOnlyCollection<string>? amenityCodes = null);
-    Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesForCustomerAsync(int customerId, string? keyword = null, IReadOnlyCollection<string>? amenityCodes = null);
+    Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesAsync(
+        string? keyword = null,
+        IReadOnlyCollection<string>? amenityCodes = null,
+        DateTime? checkInDate = null,
+        DateTime? checkOutDate = null);
+    Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesForCustomerAsync(
+        int customerId,
+        string? keyword = null,
+        IReadOnlyCollection<string>? amenityCodes = null,
+        DateTime? checkInDate = null,
+        DateTime? checkOutDate = null);
     Task<IReadOnlyList<VehicleDetailViewModel>> GetFavoriteVehiclesByCustomerAsync(int customerId);
     Task<IReadOnlyList<ContractFullViewModel>> GetContractsAsync();
     Task<IReadOnlyList<RevenueViewModel>> GetRevenueAsync();
@@ -22,11 +31,17 @@ public interface IRentalRepository
     Task<IReadOnlyList<BrandOptionViewModel>> GetBrandsAsync();
     Task<IReadOnlyList<TypeOptionViewModel>> GetTypesAsync();
     Task<IReadOnlyList<AmenityOptionViewModel>> GetAmenityOptionsAsync();
+    Task CreateBrandAsync(string brandName);
+    Task CreateVehicleTypeAsync(string typeName);
+    Task CreateAmenityAsync(string amenityName);
     Task<IReadOnlyList<NotificationViewModel>> GetNotificationsForUserAsync(int userId);
     Task<IReadOnlyList<SupportMessageViewModel>> GetMessagesForAdminAsync();
     Task<IReadOnlyList<SupportMessageViewModel>> GetMessagesForCustomerAsync(int customerId);
     Task<IReadOnlyList<ReviewableContractViewModel>> GetReviewableContractsByCustomerAsync(int customerId);
     Task<IReadOnlyList<AdminAccountManagementViewModel>> GetAdminAccountsAsync();
+    Task CreateAdminAccountAsync(AdminAccountCrudInputModel input);
+    Task UpdateAdminAccountAsync(AdminAccountCrudInputModel input);
+    Task DeleteAdminAccountAsync(int userId);
     Task<IReadOnlyList<AdminVehicleOccupancyViewModel>> GetAdminVehicleOccupanciesAsync();
     Task<IReadOnlyList<RevenueByAccountViewModel>> GetRevenueByAccountAsync();
     Task<IReadOnlyList<TopRentedVehicleViewModel>> GetTopRentedVehiclesAsync();
@@ -43,6 +58,7 @@ public interface IRentalRepository
     Task ApproveDocumentAsync(int documentId, int approvedBy);
     Task ReviewUserDocumentsAsync(int userId, int approvedBy, bool isMatched);
     Task AddVehicleAsync(CreateVehicleInputModel input);
+    Task DeleteVehicleAsync(int vehicleId, int deletedBy);
     Task ToggleFavoriteVehicleAsync(int customerId, int vehicleId);
     Task SendMessageToAdminAsync(int customerId, string content);
     Task ReplyMessageAsync(int messageId, int adminId, string replyContent);
@@ -58,6 +74,7 @@ public interface IRentalRepository
     Task SubmitDriveLicenseAsync(int userId, string licenseNumber, DateTime issuedAt, DateTime expireAt, string issuedBy);
 
     Task<ContractFullViewModel?> GetContractByIdAsync(int contractId);
+    Task<CreateVehicleInputModel?> GetVehicleForEditAsync(int vehicleId);
     Task UpdateVehicleAsync(CreateVehicleInputModel input);
 
     Task<IReadOnlyList<ChoThueXe.Models.Portal.RentalDateRange>> GetVehicleRentalDatesAsync(int vehicleId);

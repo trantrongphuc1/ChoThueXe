@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Chỉnh sửa xe | ChoThueXe";
     var isEdit = Model?.VehicleId > 0;
+    var amenityOptions = ViewBag.Amenities as IEnumerable<AmenityOptionViewModel> ?? Enumerable.Empty<AmenityOptionViewModel>();
 }
 
 <style>
@@ -170,6 +171,28 @@
         margin-top: 4px;
     }
 
+    .amenity-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .amenity-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        background-color: var(--bg-primary);
+    }
+
+    .amenity-chip input {
+        width: auto;
+        margin: 0;
+    }
+
     .action-buttons {
         display: flex;
         gap: 12px;
@@ -322,6 +345,26 @@
         <div class="form-section">
             <div class="form-section-title">Thông tin giá</div>
 
+            <div class="form-row" style="margin-bottom: 16px;">
+                <div class="form-group">
+                    <label asp-for="Transmission">Hộp số *</label>
+                    <select asp-for="Transmission" required>
+                        <option value="Auto">Auto</option>
+                        <option value="Manual">Manual</option>
+                    </select>
+                    <span asp-validation-for="Transmission" class="error-message"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="FuelType">Nhiên liệu *</label>
+                    <select asp-for="FuelType" required>
+                        <option value="Gas">Xăng</option>
+                        <option value="Diesel">Dầu</option>
+                    </select>
+                    <span asp-validation-for="FuelType" class="error-message"></span>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label asp-for="PricePerDay">Giá/ngày (VND) *</label>
                 <input type="number" asp-for="PricePerDay" placeholder="VD: 500000" min="1" required />
@@ -337,6 +380,35 @@
                     <option value="INACTIVE">Ngừng hoạt động</option>
                 </select>
                 <span asp-validation-for="Status" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Tiện nghi (có thể chọn nhiều)</label>
+                @if (amenityOptions.Any())
+                {
+                    <div class="amenity-grid">
+                        @foreach (var amenity in amenityOptions)
+                        {
+                            var amenityCode = amenity?.Code ?? string.Empty;
+                            var amenityName = amenity?.Name ?? string.Empty;
+                            if (string.IsNullOrWhiteSpace(amenityCode))
+                            {
+                                continue;
+                            }
+
+                            var selectedAmenities = Model?.SelectedAmenities ?? [];
+                            var isChecked = selectedAmenities.Any(code => string.Equals(code, amenityCode, StringComparison.OrdinalIgnoreCase));
+                            <label class="amenity-chip">
+                                <input type="checkbox" name="SelectedAmenities" value="@amenityCode" @(isChecked ? "checked" : null) />
+                                <span>@amenityName</span>
+                            </label>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="help-text">Chưa có tiện nghi nào. Hãy tạo tiện nghi ở trang Quản lý xe.</p>
+                }
             </div>
         </div>
 

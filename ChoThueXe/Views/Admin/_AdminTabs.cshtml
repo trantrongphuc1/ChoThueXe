@@ -1,0 +1,47 @@
+@{
+    var currentAction = (ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty).Trim();
+
+    string ActiveClass(string actionName)
+        => string.Equals(currentAction, actionName, StringComparison.OrdinalIgnoreCase) ? "admin-tab active" : "admin-tab";
+}
+
+<style>
+    .admin-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .admin-tab {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.2s ease;
+    }
+
+    .admin-tab:hover {
+        color: var(--text-primary);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+    }
+
+    .admin-tab.active {
+        color: #fff;
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        border-color: transparent;
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.26);
+    }
+</style>
+
+<nav class="admin-tabs">
+    <a class="@ActiveClass("VehicleManagement")" href="/Admin/VehicleManagement">Quản lý xe</a>
+    <a class="@ActiveClass("CustomerManagement")" href="/Admin/CustomerManagement">Quản lý khách hàng</a>
+    <a class="@ActiveClass("RentalManagement")" href="/Admin/RentalManagement">Quản lý đơn thuê</a>
+    <a class="@ActiveClass("RevenueReport")" href="/Admin/RevenueReport">Báo cáo doanh thu</a>
+</nav>

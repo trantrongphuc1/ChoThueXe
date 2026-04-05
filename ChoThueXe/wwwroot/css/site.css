@@ -19,6 +19,42 @@ html {
 
 body {
   margin-bottom: 60px;
+  color-scheme: dark;
+}
+
+input,
+select,
+textarea {
+  background-color: var(--bg-tertiary, #21262d);
+  color: var(--text-primary, #e2e8f0);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: var(--bg-secondary, #161b27);
+  color: var(--text-primary, #e2e8f0);
+}
+
+input::-webkit-calendar-picker-indicator {
+  filter: invert(0.9);
+  opacity: 0.85;
+  cursor: pointer;
 }
 
 .profile-avatar-link {

@@ -15,4 +15,6 @@ public class VehicleDetailViewModel
     public string AmenitiesText { get; set; } = string.Empty;
     public string PrimaryImageUrl { get; set; } = string.Empty;
     public bool IsFavorite { get; set; }
+    public decimal? EstimatedRentalCost { get; set; }
+    public int? EstimatedRentalDays { get; set; }
 }

@@ -4,12 +4,18 @@ using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using System.Data;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ChoThueXe.Data;
 
 public class RentalRepository : IRentalRepository
 {
+    private const string Pbkdf2Prefix = "PBKDF2";
+    private const int Pbkdf2Iterations = 100_000;
+    private const int SaltSize = 16;
+    private const int HashSize = 32;
+
     private const string FavoriteVehiclesTable = "favorite_vehicles";
     private const string AmenitiesTable = "amenities";
     private const string VehicleAmenitiesTable = "vehicle_amenities";
@@ -37,14 +43,23 @@ public class RentalRepository : IRentalRepository
             ?? throw new InvalidOperationException("Missing OracleDb connection string.");
     }
 
-    public Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesAsync(string? keyword = null, IReadOnlyCollection<string>? amenityCodes = null)
+    public Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesAsync(
+        string? keyword = null,
+        IReadOnlyCollection<string>? amenityCodes = null,
+        DateTime? checkInDate = null,
+        DateTime? checkOutDate = null)
     {
-        return GetVehiclesCoreAsync(null, keyword, amenityCodes);
+        return GetVehiclesCoreAsync(null, keyword, amenityCodes, checkInDate, checkOutDate);
     }
 
-    public Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesForCustomerAsync(int customerId, string? keyword = null, IReadOnlyCollection<string>? amenityCodes = null)
+    public Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesForCustomerAsync(
+        int customerId,
+        string? keyword = null,
+        IReadOnlyCollection<string>? amenityCodes = null,
+        DateTime? checkInDate = null,
+        DateTime? checkOutDate = null)
     {
-        return GetVehiclesCoreAsync(customerId, keyword, amenityCodes);
+        return GetVehiclesCoreAsync(customerId, keyword, amenityCodes, checkInDate, checkOutDate);
     }
 
     public async Task<IReadOnlyList<VehicleDetailViewModel>> GetFavoriteVehiclesByCustomerAsync(int customerId)
@@ -110,7 +125,12 @@ public class RentalRepository : IRentalRepository
         return result;
     }
 
-    private async Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesCoreAsync(int? customerId, string? keyword, IReadOnlyCollection<string>? amenityCodes)
+    private async Task<IReadOnlyList<VehicleDetailViewModel>> GetVehiclesCoreAsync(
+        int? customerId,
+        string? keyword,
+        IReadOnlyCollection<string>? amenityCodes,
+        DateTime? checkInDate,
+        DateTime? checkOutDate)
     {
         var normalizedKeyword = string.IsNullOrWhiteSpace(keyword) ? string.Empty : keyword.Trim();
         var selectedAmenityCodes = (amenityCodes ?? [])
@@ -118,6 +138,7 @@ public class RentalRepository : IRentalRepository
             .Select(code => code.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var hasDateFilter = checkInDate.HasValue && checkOutDate.HasValue;
 
         var result = new List<VehicleDetailViewModel>();
 
@@ -126,7 +147,7 @@ public class RentalRepository : IRentalRepository
 
         async Task ExecuteFallbackAsync(bool includeFavoriteJoin)
         {
-            var fallbackSql = BuildVehicleFallbackSql(includeFavoriteJoin && customerId.HasValue, normalizedKeyword);
+            var fallbackSql = BuildVehicleFallbackSql(includeFavoriteJoin && customerId.HasValue, normalizedKeyword, hasDateFilter);
             await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
 
             if (includeFavoriteJoin && customerId.HasValue)
@@ -139,13 +160,19 @@ public class RentalRepository : IRentalRepository
                 fallbackCommand.Parameters.Add("p_keyword", OracleDbType.Varchar2, normalizedKeyword.ToUpperInvariant(), ParameterDirection.Input);
             }
 
+            if (hasDateFilter)
+            {
+                fallbackCommand.Parameters.Add("p_start_date", OracleDbType.Date, checkInDate!.Value, ParameterDirection.Input);
+                fallbackCommand.Parameters.Add("p_end_date", OracleDbType.Date, checkOutDate!.Value, ParameterDirection.Input);
+            }
+
             await using var fallbackReader = await fallbackCommand.ExecuteReaderAsync();
             await FillVehicleListAsync(fallbackReader, result);
         }
 
         try
         {
-            var sql = BuildVehicleSearchSql(customerId.HasValue, normalizedKeyword, selectedAmenityCodes);
+            var sql = BuildVehicleSearchSql(customerId.HasValue, normalizedKeyword, selectedAmenityCodes, hasDateFilter);
             await using var command = new OracleCommand(sql, connection);
 
             if (customerId.HasValue)
@@ -156,6 +183,12 @@ public class RentalRepository : IRentalRepository
             if (!string.IsNullOrWhiteSpace(normalizedKeyword))
             {
                 command.Parameters.Add("p_keyword", OracleDbType.Varchar2, normalizedKeyword.ToUpperInvariant(), ParameterDirection.Input);
+            }
+
+            if (hasDateFilter)
+            {
+                command.Parameters.Add("p_start_date", OracleDbType.Date, checkInDate!.Value, ParameterDirection.Input);
+                command.Parameters.Add("p_end_date", OracleDbType.Date, checkOutDate!.Value, ParameterDirection.Input);
             }
 
             for (var i = 0; i < selectedAmenityCodes.Count; i++)
@@ -195,7 +228,7 @@ public class RentalRepository : IRentalRepository
         }
     }
 
-    private string BuildVehicleSearchSql(bool hasCustomer, string keyword, IReadOnlyList<string> selectedAmenityCodes)
+    private string BuildVehicleSearchSql(bool hasCustomer, string keyword, IReadOnlyList<string> selectedAmenityCodes, bool hasDateFilter)
     {
         var sb = new StringBuilder();
         sb.AppendLine("select");
@@ -217,6 +250,7 @@ public class RentalRepository : IRentalRepository
         }
 
         sb.AppendLine("where 1 = 1");
+        sb.AppendLine("  and nvl(upper(v.status), 'AVAILABLE') not in ('INACTIVE', 'DELETED')");
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -228,11 +262,24 @@ public class RentalRepository : IRentalRepository
             sb.AppendLine($"  and exists (select 1 from {VehicleAmenitiesTable} va where va.vehicle_id = v.vehicle_id and upper(va.amenity_code) = :p_am_{i})");
         }
 
+        if (hasDateFilter)
+        {
+            sb.AppendLine("  and not exists (");
+            sb.AppendLine("      select 1");
+            sb.AppendLine("      from contract_details cd");
+            sb.AppendLine("      join contracts c on c.contract_id = cd.contract_id");
+            sb.AppendLine("      where cd.vehicle_id = v.vehicle_id");
+            sb.AppendLine("        and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
+            sb.AppendLine("        and cd.start_date <= :p_end_date");
+            sb.AppendLine("        and cd.end_date >= :p_start_date");
+            sb.AppendLine("  )");
+        }
+
         sb.AppendLine("order by v.vehicle_id");
         return sb.ToString();
     }
 
-    private string BuildVehicleFallbackSql(bool hasCustomer, string keyword)
+    private string BuildVehicleFallbackSql(bool hasCustomer, string keyword, bool hasDateFilter)
     {
         var sb = new StringBuilder();
         sb.AppendLine("select");
@@ -256,10 +303,24 @@ public class RentalRepository : IRentalRepository
         }
 
         sb.AppendLine("where 1 = 1");
+        sb.AppendLine("  and nvl(upper(v.status), 'AVAILABLE') not in ('INACTIVE', 'DELETED')");
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             sb.AppendLine("  and instr(upper(v.vehicle_name || ' ' || nvl(b.brand_name, '') || ' ' || nvl(t.type_name, '')), :p_keyword) > 0");
+        }
+
+        if (hasDateFilter)
+        {
+            sb.AppendLine("  and not exists (");
+            sb.AppendLine("      select 1");
+            sb.AppendLine("      from contract_details cd");
+            sb.AppendLine("      join contracts c on c.contract_id = cd.contract_id");
+            sb.AppendLine("      where cd.vehicle_id = v.vehicle_id");
+            sb.AppendLine("        and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
+            sb.AppendLine("        and cd.start_date <= :p_end_date");
+            sb.AppendLine("        and cd.end_date >= :p_start_date");
+            sb.AppendLine("  )");
         }
 
         sb.AppendLine("order by v.vehicle_id");
@@ -373,7 +434,30 @@ public class RentalRepository : IRentalRepository
     public async Task<IReadOnlyList<RevenueViewModel>> GetRevenueAsync()
     {
         const string sql = @"
-            select vehicle_name, total_revenue
+            select
+                vehicle_id,
+                vehicle_name,
+                nvl(brand_name, '') as brand_name,
+                nvl(type_name, '') as type_name,
+                nvl(total_contracts_completed, 0) as total_contracts_completed,
+                nvl(total_revenue, 0) as total_revenue,
+                nvl(avg_rental_value, 0) as avg_rental_value,
+                nvl(total_rental_days, 0) as total_rental_days,
+                nvl(revenue_per_day, 0) as revenue_per_day
+            from vw_revenue
+            order by total_revenue desc";
+
+        const string fallbackSql = @"
+            select
+                0 as vehicle_id,
+                vehicle_name,
+                '' as brand_name,
+                '' as type_name,
+                0 as total_contracts_completed,
+                nvl(total_revenue, 0) as total_revenue,
+                0 as avg_rental_value,
+                0 as total_rental_days,
+                0 as revenue_per_day
             from vw_revenue
             order by total_revenue desc";
 
@@ -386,15 +470,13 @@ public class RentalRepository : IRentalRepository
         {
             await using var command = new OracleCommand(sql, connection);
             await using var reader = await command.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                result.Add(new RevenueViewModel
-                {
-                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
-                    TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"])
-                });
-            }
+            await FillRevenueListAsync(reader, result);
+        }
+        catch (OracleException ex) when (ex.Number == 904)
+        {
+            await using var fallbackCommand = new OracleCommand(fallbackSql, connection);
+            await using var fallbackReader = await fallbackCommand.ExecuteReaderAsync();
+            await FillRevenueListAsync(fallbackReader, result);
         }
         catch (OracleException ex) when (IsMissingObjectError(ex))
         {
@@ -402,6 +484,25 @@ public class RentalRepository : IRentalRepository
         }
 
         return result;
+    }
+
+    private static async Task FillRevenueListAsync(OracleDataReader reader, List<RevenueViewModel> result)
+    {
+        while (await reader.ReadAsync())
+        {
+            result.Add(new RevenueViewModel
+            {
+                VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
+                VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                BrandName = Convert.ToString(reader["BRAND_NAME"]) ?? string.Empty,
+                TypeName = Convert.ToString(reader["TYPE_NAME"]) ?? string.Empty,
+                TotalContractsCompleted = Convert.ToInt32(reader["TOTAL_CONTRACTS_COMPLETED"]),
+                TotalRevenue = Convert.ToDecimal(reader["TOTAL_REVENUE"]),
+                AvgRentalValue = Convert.ToDecimal(reader["AVG_RENTAL_VALUE"]),
+                TotalRentalDays = Convert.ToInt32(reader["TOTAL_RENTAL_DAYS"]),
+                RevenuePerDay = Convert.ToDecimal(reader["REVENUE_PER_DAY"])
+            });
+        }
     }
 
     public async Task<IReadOnlyList<UserOptionViewModel>> GetUsersAsync()
@@ -960,6 +1061,141 @@ public class RentalRepository : IRentalRepository
         return result.Count == 0 ? DefaultAmenityOptions : result;
     }
 
+    public async Task CreateBrandAsync(string brandName)
+    {
+        const string checkSql = @"
+            select count(1)
+            from brands
+            where upper(trim(brand_name)) = upper(trim(:p_brand_name))";
+
+        const string insertSql = @"
+            insert into brands (brand_id, brand_name)
+            values ((select nvl(max(brand_id), 0) + 1 from brands), :p_brand_name)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var normalizedName = (brandName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            throw new InvalidOperationException("Ten hang xe khong hop le.");
+        }
+
+        await using (var checkCommand = new OracleCommand(checkSql, connection))
+        {
+            checkCommand.Parameters.Add("p_brand_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+            var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+            if (exists)
+            {
+                throw new InvalidOperationException("Hang xe da ton tai.");
+            }
+        }
+
+        await using var insertCommand = new OracleCommand(insertSql, connection);
+        insertCommand.Parameters.Add("p_brand_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+        await insertCommand.ExecuteNonQueryAsync();
+    }
+
+    public async Task CreateVehicleTypeAsync(string typeName)
+    {
+        const string checkSql = @"
+            select count(1)
+            from vehicle_types
+            where upper(trim(type_name)) = upper(trim(:p_type_name))";
+
+        const string insertSql = @"
+            insert into vehicle_types (type_id, type_name)
+            values ((select nvl(max(type_id), 0) + 1 from vehicle_types), :p_type_name)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var normalizedName = (typeName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            throw new InvalidOperationException("Ten loai xe khong hop le.");
+        }
+
+        await using (var checkCommand = new OracleCommand(checkSql, connection))
+        {
+            checkCommand.Parameters.Add("p_type_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+            var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+            if (exists)
+            {
+                throw new InvalidOperationException("Loai xe da ton tai.");
+            }
+        }
+
+        await using var insertCommand = new OracleCommand(insertSql, connection);
+        insertCommand.Parameters.Add("p_type_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+        await insertCommand.ExecuteNonQueryAsync();
+    }
+
+    public async Task CreateAmenityAsync(string amenityName)
+    {
+        const string checkSql = @"
+            select count(1)
+            from amenities
+            where upper(trim(amenity_name)) = upper(trim(:p_amenity_name))";
+
+        const string insertSql = @"
+            insert into amenities (amenity_code, amenity_name)
+            values (:p_amenity_code, :p_amenity_name)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var normalizedName = (amenityName ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            throw new InvalidOperationException("Ten tien nghi khong hop le.");
+        }
+
+        await using (var checkCommand = new OracleCommand(checkSql, connection))
+        {
+            checkCommand.Parameters.Add("p_amenity_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+            var exists = Convert.ToInt32(await checkCommand.ExecuteScalarAsync()) > 0;
+            if (exists)
+            {
+                throw new InvalidOperationException("Tien nghi da ton tai.");
+            }
+        }
+
+        var baseCode = new string(normalizedName
+            .ToUpperInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) ? ch : '_')
+            .ToArray())
+            .Trim('_');
+
+        if (string.IsNullOrWhiteSpace(baseCode))
+        {
+            baseCode = "AMENITY";
+        }
+
+        var amenityCode = baseCode;
+        var suffix = 1;
+
+        while (true)
+        {
+            const string codeCheckSql = "select count(1) from amenities where upper(amenity_code) = upper(:p_amenity_code)";
+            await using var codeCheckCommand = new OracleCommand(codeCheckSql, connection);
+            codeCheckCommand.Parameters.Add("p_amenity_code", OracleDbType.Varchar2, amenityCode, ParameterDirection.Input);
+            var codeExists = Convert.ToInt32(await codeCheckCommand.ExecuteScalarAsync()) > 0;
+            if (!codeExists)
+            {
+                break;
+            }
+
+            amenityCode = $"{baseCode}_{suffix}";
+            suffix++;
+        }
+
+        await using var insertCommand = new OracleCommand(insertSql, connection);
+        insertCommand.Parameters.Add("p_amenity_code", OracleDbType.Varchar2, amenityCode, ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_amenity_name", OracleDbType.Varchar2, normalizedName, ParameterDirection.Input);
+        await insertCommand.ExecuteNonQueryAsync();
+    }
+
     public async Task<IReadOnlyList<NotificationViewModel>> GetNotificationsForUserAsync(int userId)
     {
         var sql = $@"
@@ -1054,6 +1290,7 @@ public class RentalRepository : IRentalRepository
                 u.user_id,
                 u.full_name,
                 u.email,
+                nvl(u.phone, '') as phone,
                 r.role_name,
                 nvl((select count(1) from contracts c where c.customer_id = u.user_id), 0) as contract_count,
                 nvl((
@@ -1082,6 +1319,7 @@ public class RentalRepository : IRentalRepository
                     UserId = Convert.ToInt32(reader["USER_ID"]),
                     FullName = Convert.ToString(reader["FULL_NAME"]) ?? string.Empty,
                     Email = Convert.ToString(reader["EMAIL"]) ?? string.Empty,
+                    Phone = Convert.ToString(reader["PHONE"]) ?? string.Empty,
                     RoleName = Convert.ToString(reader["ROLE_NAME"]) ?? string.Empty,
                     ContractCount = Convert.ToInt32(reader["CONTRACT_COUNT"]),
                     TotalPaid = Convert.ToDecimal(reader["TOTAL_PAID"])
@@ -1094,6 +1332,119 @@ public class RentalRepository : IRentalRepository
         }
 
         return result;
+    }
+
+    public async Task CreateAdminAccountAsync(AdminAccountCrudInputModel input)
+    {
+        const string findRoleSql = @"
+            select role_id
+            from roles
+            where upper(role_name) = upper(:p_role_name)
+            fetch first 1 row only";
+
+        const string nextUserSql = "select nvl(max(user_id), 0) + 1 from users";
+
+        const string insertSql = @"
+            insert into users (user_id, role_id, full_name, email, password, phone)
+            values (:p_user_id, :p_role_id, :p_full_name, :p_email, :p_password, :p_phone)";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var roleCommand = new OracleCommand(findRoleSql, connection);
+        roleCommand.Parameters.Add("p_role_name", OracleDbType.Varchar2, input.RoleName.Trim().ToUpperInvariant(), ParameterDirection.Input);
+        var rawRoleId = await roleCommand.ExecuteScalarAsync();
+        if (rawRoleId is null || rawRoleId == DBNull.Value)
+        {
+            throw new InvalidOperationException("Khong tim thay role da chon.");
+        }
+
+        await using var nextUserCommand = new OracleCommand(nextUserSql, connection);
+        var rawUserId = await nextUserCommand.ExecuteScalarAsync();
+        var nextUserId = Convert.ToInt32(rawUserId);
+
+        var password = string.IsNullOrWhiteSpace(input.Password) ? "123456Aa!" : input.Password.Trim();
+
+        await using var insertCommand = new OracleCommand(insertSql, connection);
+        insertCommand.Parameters.Add("p_user_id", OracleDbType.Int32, nextUserId, ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_role_id", OracleDbType.Int32, Convert.ToInt32(rawRoleId), ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_full_name", OracleDbType.Varchar2, input.FullName.Trim(), ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_email", OracleDbType.Varchar2, input.Email.Trim(), ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(password), ParameterDirection.Input);
+        insertCommand.Parameters.Add("p_phone", OracleDbType.Varchar2, input.Phone?.Trim() ?? string.Empty, ParameterDirection.Input);
+        await insertCommand.ExecuteNonQueryAsync();
+    }
+
+    public async Task UpdateAdminAccountAsync(AdminAccountCrudInputModel input)
+    {
+        const string findRoleSql = @"
+            select role_id
+            from roles
+            where upper(role_name) = upper(:p_role_name)
+            fetch first 1 row only";
+
+        const string updateSql = @"
+            update users
+            set full_name = :p_full_name,
+                email = :p_email,
+                phone = :p_phone,
+                role_id = :p_role_id
+            where user_id = :p_user_id";
+
+        const string updateWithPasswordSql = @"
+            update users
+            set full_name = :p_full_name,
+                email = :p_email,
+                phone = :p_phone,
+                role_id = :p_role_id,
+                password = :p_password
+            where user_id = :p_user_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var roleCommand = new OracleCommand(findRoleSql, connection);
+        roleCommand.Parameters.Add("p_role_name", OracleDbType.Varchar2, input.RoleName.Trim().ToUpperInvariant(), ParameterDirection.Input);
+        var rawRoleId = await roleCommand.ExecuteScalarAsync();
+        if (rawRoleId is null || rawRoleId == DBNull.Value)
+        {
+            throw new InvalidOperationException("Khong tim thay role da chon.");
+        }
+
+        var hasNewPassword = !string.IsNullOrWhiteSpace(input.Password);
+        await using var updateCommand = new OracleCommand(hasNewPassword ? updateWithPasswordSql : updateSql, connection);
+        updateCommand.Parameters.Add("p_full_name", OracleDbType.Varchar2, input.FullName.Trim(), ParameterDirection.Input);
+        updateCommand.Parameters.Add("p_email", OracleDbType.Varchar2, input.Email.Trim(), ParameterDirection.Input);
+        updateCommand.Parameters.Add("p_phone", OracleDbType.Varchar2, input.Phone?.Trim() ?? string.Empty, ParameterDirection.Input);
+        updateCommand.Parameters.Add("p_role_id", OracleDbType.Int32, Convert.ToInt32(rawRoleId), ParameterDirection.Input);
+        if (hasNewPassword)
+        {
+            updateCommand.Parameters.Add("p_password", OracleDbType.Varchar2, HashPassword(input.Password!.Trim()), ParameterDirection.Input);
+        }
+
+        updateCommand.Parameters.Add("p_user_id", OracleDbType.Int32, input.UserId, ParameterDirection.Input);
+
+        var affected = await updateCommand.ExecuteNonQueryAsync();
+        if (affected == 0)
+        {
+            throw new InvalidOperationException("Khong tim thay tai khoan can cap nhat.");
+        }
+    }
+
+    public async Task DeleteAdminAccountAsync(int userId)
+    {
+        const string sql = "delete from users where user_id = :p_user_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+        var affected = await command.ExecuteNonQueryAsync();
+        if (affected == 0)
+        {
+            throw new InvalidOperationException("Khong tim thay tai khoan de xoa.");
+        }
     }
 
     public async Task<IReadOnlyList<AdminVehicleOccupancyViewModel>> GetAdminVehicleOccupanciesAsync()
@@ -2181,6 +2532,18 @@ public class RentalRepository : IRentalRepository
         };
     }
 
+    private static string HashPassword(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, Pbkdf2Iterations, HashAlgorithmName.SHA256, HashSize);
+
+        return string.Join("$",
+            Pbkdf2Prefix,
+            Pbkdf2Iterations.ToString(),
+            Convert.ToBase64String(salt),
+            Convert.ToBase64String(hash));
+    }
+
     public async Task LogActivityAsync(int? userId, string action, string details)
     {
         var sql = $@"
@@ -2374,6 +2737,90 @@ public class RentalRepository : IRentalRepository
         }
     }
 
+    public async Task<CreateVehicleInputModel?> GetVehicleForEditAsync(int vehicleId)
+    {
+        if (vehicleId <= 0)
+        {
+            return null;
+        }
+
+        const string vehicleSql = @"
+            select
+                vehicle_id,
+                owner_id,
+                brand_id,
+                type_id,
+                vehicle_name,
+                license_plate,
+                seats,
+                nvl(transmission, 'Auto') as transmission,
+                nvl(fuel_type, 'Gas') as fuel_type,
+                price_per_day,
+                nvl(status, 'AVAILABLE') as status
+            from vehicles
+            where vehicle_id = :p_vehicle_id";
+
+        var amenitySql = $@"
+            select amenity_code
+            from {VehicleAmenitiesTable}
+            where vehicle_id = :p_vehicle_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        CreateVehicleInputModel? model = null;
+
+        await using (var command = new OracleCommand(vehicleSql, connection))
+        {
+            command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+            await using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                model = new CreateVehicleInputModel
+                {
+                    VehicleId = Convert.ToInt32(reader["VEHICLE_ID"]),
+                    OwnerId = Convert.ToInt32(reader["OWNER_ID"]),
+                    BrandId = Convert.ToInt32(reader["BRAND_ID"]),
+                    TypeId = Convert.ToInt32(reader["TYPE_ID"]),
+                    VehicleName = Convert.ToString(reader["VEHICLE_NAME"]) ?? string.Empty,
+                    LicensePlate = Convert.ToString(reader["LICENSE_PLATE"]) ?? string.Empty,
+                    Seats = Convert.ToInt32(reader["SEATS"]),
+                    Transmission = Convert.ToString(reader["TRANSMISSION"]) ?? "Auto",
+                    FuelType = Convert.ToString(reader["FUEL_TYPE"]) ?? "Gas",
+                    PricePerDay = Convert.ToDecimal(reader["PRICE_PER_DAY"]),
+                    Status = Convert.ToString(reader["STATUS"]) ?? "AVAILABLE",
+                    SelectedAmenities = []
+                };
+            }
+        }
+
+        if (model is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            await using var amenityCommand = new OracleCommand(amenitySql, connection);
+            amenityCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+            await using var amenityReader = await amenityCommand.ExecuteReaderAsync();
+            while (await amenityReader.ReadAsync())
+            {
+                var code = Convert.ToString(amenityReader["AMENITY_CODE"]) ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(code))
+                {
+                    model.SelectedAmenities.Add(code.Trim().ToUpperInvariant());
+                }
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Ignore if amenities feature tables are not provisioned yet.
+        }
+
+        return model;
+    }
+
     public async Task UpdateVehicleAsync(CreateVehicleInputModel input)
     {
         if (input.VehicleId <= 0)
@@ -2383,6 +2830,7 @@ public class RentalRepository : IRentalRepository
 
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
 
         var sql = """
             update vehicles set
@@ -2390,23 +2838,112 @@ public class RentalRepository : IRentalRepository
                 brand_id = :brand_id,
                 type_id = :type_id,
                 license_plate = :license_plate,
+                transmission = :transmission,
+                fuel_type = :fuel_type,
                 price_per_day = :price_per_day,
                 status = :status
             where vehicle_id = :vehicle_id
             """;
 
         await using var command = new OracleCommand(sql, connection);
+        command.Transaction = transaction;
         command.Parameters.Add("vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
         command.Parameters.Add("vehicle_name", OracleDbType.Varchar2, input.VehicleName, ParameterDirection.Input);
         command.Parameters.Add("brand_id", OracleDbType.Int32, input.BrandId, ParameterDirection.Input);
         command.Parameters.Add("type_id", OracleDbType.Int32, input.TypeId, ParameterDirection.Input);
         command.Parameters.Add("license_plate", OracleDbType.Varchar2, input.LicensePlate, ParameterDirection.Input);
+        command.Parameters.Add("transmission", OracleDbType.Varchar2, input.Transmission ?? "Auto", ParameterDirection.Input);
+        command.Parameters.Add("fuel_type", OracleDbType.Varchar2, input.FuelType ?? "Gas", ParameterDirection.Input);
         command.Parameters.Add("price_per_day", OracleDbType.Decimal, input.PricePerDay, ParameterDirection.Input);
-        command.Parameters.Add("status", OracleDbType.Varchar2, input.Status ?? "ACTIVE", ParameterDirection.Input);
+        command.Parameters.Add("status", OracleDbType.Varchar2, input.Status ?? "AVAILABLE", ParameterDirection.Input);
 
         await command.ExecuteNonQueryAsync();
 
+        try
+        {
+            var deleteAmenitiesSql = $"delete from {VehicleAmenitiesTable} where vehicle_id = :p_vehicle_id";
+            await using (var deleteCommand = new OracleCommand(deleteAmenitiesSql, connection))
+            {
+                deleteCommand.Transaction = transaction;
+                deleteCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+                await deleteCommand.ExecuteNonQueryAsync();
+            }
+
+            var selectedAmenities = (input.SelectedAmenities ?? [])
+                .Where(code => !string.IsNullOrWhiteSpace(code))
+                .Select(code => code.Trim().ToUpperInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (selectedAmenities.Count > 0)
+            {
+                var insertAmenitySql = $@"
+                    insert into {VehicleAmenitiesTable} (vehicle_id, amenity_code)
+                    values (:p_vehicle_id, :p_amenity_code)";
+
+                foreach (var amenityCode in selectedAmenities)
+                {
+                    await using var amenityCommand = new OracleCommand(insertAmenitySql, connection);
+                    amenityCommand.Transaction = transaction;
+                    amenityCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, input.VehicleId, ParameterDirection.Input);
+                    amenityCommand.Parameters.Add("p_amenity_code", OracleDbType.Varchar2, amenityCode, ParameterDirection.Input);
+                    await amenityCommand.ExecuteNonQueryAsync();
+                }
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex))
+        {
+            // Continue update even if amenities feature tables are not provisioned.
+        }
+
+        transaction.Commit();
+
         await LogActivityAsync(input.OwnerId, "UPDATE_VEHICLE", $"Updated vehicle {input.VehicleId}: {input.VehicleName}");
+    }
+
+    public async Task DeleteVehicleAsync(int vehicleId, int deletedBy)
+    {
+        if (vehicleId <= 0)
+        {
+            throw new InvalidOperationException("Xe khong hop le.");
+        }
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        const string blockActiveSql = @"
+            select count(1)
+            from contracts c
+            join contract_details cd on cd.contract_id = c.contract_id
+            where cd.vehicle_id = :p_vehicle_id
+              and upper(c.status) in ('PENDING', 'ACTIVE', 'APPROVED')";
+
+        await using (var blockCommand = new OracleCommand(blockActiveSql, connection))
+        {
+            blockCommand.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+            var activeCount = Convert.ToInt32(await blockCommand.ExecuteScalarAsync());
+            if (activeCount > 0)
+            {
+                throw new InvalidOperationException("Khong the xoa xe dang co hop dong cho xu ly hoac dang hoat dong.");
+            }
+        }
+
+        const string sql = @"
+            update vehicles
+            set status = 'DELETED'
+            where vehicle_id = :p_vehicle_id";
+
+        await using (var command = new OracleCommand(sql, connection))
+        {
+            command.Parameters.Add("p_vehicle_id", OracleDbType.Int32, vehicleId, ParameterDirection.Input);
+            var affected = await command.ExecuteNonQueryAsync();
+            if (affected <= 0)
+            {
+                throw new InvalidOperationException("Khong tim thay xe can xoa.");
+            }
+        }
+
+        await LogActivityAsync(deletedBy, "DELETE_VEHICLE", $"Deleted vehicle {vehicleId}");
     }
 
     public async Task ApproveContractAsync(int contractId)

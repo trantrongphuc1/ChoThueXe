@@ -1,0 +1,119 @@
+@model ChoThueXe.Models.Portal.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Quản lý đơn thuê";
+    var contractStatusFilter = (ViewData["ContractStatusFilter"] as string) ?? string.Empty;
+    var contractKeywordFilter = (ViewData["ContractKeywordFilter"] as string) ?? string.Empty;
+}
+
+<style>
+    .admin-wrap { max-width: 1280px; margin: 24px auto; padding: 0 16px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .admin-header h1 { margin: 0; font-size: 28px; }
+    .panel { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-secondary); margin-bottom: 16px; overflow: hidden; }
+    .panel-head { padding: 12px 14px; border-bottom: 1px solid var(--border); font-weight: 700; }
+    .panel-body { padding: 12px 14px; }
+    .empty { color: var(--text-secondary); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
+    th { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; }
+    .btn { border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 7px 10px; cursor: pointer; text-decoration: none; }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .form-control, select { width: 100%; border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 8px 10px; }
+    .small { font-size: 12px; color: var(--text-secondary); }
+    .summary { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .summary-box { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg-secondary); }
+    .summary-box .label { color: var(--text-secondary); font-size: 12px; }
+    .summary-box .value { font-size: 20px; font-weight: 700; }
+    .alert { border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid transparent; }
+    .alert-success { background: var(--success-light); border-color: var(--success); color: #14532d; }
+    .alert-danger { background: var(--error-light); border-color: var(--error); color: #7f1d1d; }
+</style>
+
+<div class="admin-wrap">
+    <div class="admin-header">
+        <h1>Quản lý đơn thuê xe</h1>
+        <a class="btn" href="/Home">Về trang chủ</a>
+    </div>
+
+    @if (TempData["Success"] is string success)
+    {
+        <div class="alert alert-success">@success</div>
+    }
+    @if (TempData["Error"] is string error)
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    <div class="summary">
+        <div class="summary-box"><div class="label">Số đơn hiển thị</div><div class="value">@Model.Contracts.Count</div></div>
+        <div class="summary-box"><div class="label">Tổng tiền (lọc hiện tại)</div><div class="value">@Model.Contracts.Sum(x => x.TotalAmount).ToString("N0") VND</div></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">Bộ lọc đơn thuê</div>
+        <div class="panel-body">
+            <form asp-action="RentalManagement" method="get" class="form-grid">
+                <div>
+                    <label>Trạng thái đơn</label>
+                    <select name="contractStatus">
+                        <option value="" selected="@(string.IsNullOrWhiteSpace(contractStatusFilter))">Tất cả</option>
+                        <option value="PENDING" selected="@string.Equals(contractStatusFilter, "PENDING", StringComparison.OrdinalIgnoreCase)">PENDING</option>
+                        <option value="APPROVED" selected="@string.Equals(contractStatusFilter, "APPROVED", StringComparison.OrdinalIgnoreCase)">APPROVED</option>
+                        <option value="PAID" selected="@string.Equals(contractStatusFilter, "PAID", StringComparison.OrdinalIgnoreCase)">PAID</option>
+                        <option value="REJECTED" selected="@string.Equals(contractStatusFilter, "REJECTED", StringComparison.OrdinalIgnoreCase)">REJECTED</option>
+                        <option value="CANCELLED" selected="@string.Equals(contractStatusFilter, "CANCELLED", StringComparison.OrdinalIgnoreCase)">CANCELLED</option>
+                        <option value="COMPLETED" selected="@string.Equals(contractStatusFilter, "COMPLETED", StringComparison.OrdinalIgnoreCase)">COMPLETED</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Tìm theo mã đơn / khách / xe</label>
+                    <input class="form-control" type="text" name="contractQ" value="@contractKeywordFilter" placeholder="VD: 1024, Nguyen Van A, Camry" />
+                </div>
+                <div style="display:flex; gap:8px; align-items:end;">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a asp-action="RentalManagement" class="btn">Xóa lọc</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-head">Danh sách đơn thuê</div>
+        <div class="panel-body">
+            @if (!Model.Contracts.Any())
+            {
+                <div class="empty">Chưa có đơn thuê nào theo bộ lọc hiện tại.</div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Contract</th>
+                        <th>Khách hàng</th>
+                        <th>Xe</th>
+                        <th>Thời gian thuê</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var c in Model.Contracts.OrderByDescending(x => x.ContractId).Take(200))
+                    {
+                        <tr>
+                            <td>#@c.ContractId</td>
+                            <td>@c.FullName</td>
+                            <td>@c.VehicleName</td>
+                            <td>@c.StartDate.ToString("dd/MM/yyyy") - @c.EndDate.ToString("dd/MM/yyyy")</td>
+                            <td>@c.TotalAmount.ToString("N0") VND</td>
+                            <td>@c.Status</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                <div class="small" style="margin-top:8px;">Đang hiển thị tối đa 200 đơn thuê mới nhất.</div>
+            }
+        </div>
+    </div>
+</div>

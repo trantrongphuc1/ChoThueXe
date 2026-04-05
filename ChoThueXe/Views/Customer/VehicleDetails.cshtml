@@ -131,11 +131,12 @@
     }
 
     .calendar-section {
-        background-color: var(--bg-secondary);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.06), transparent 24%), var(--bg-secondary);
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: 16px;
         padding: 24px;
         margin-bottom: 24px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
     }
 
     .section-title {
@@ -145,6 +146,13 @@
         margin-bottom: 16px;
     }
 
+    .calendar-subtitle {
+        color: var(--text-secondary);
+        margin-top: -8px;
+        margin-bottom: 20px;
+        font-size: 13px;
+    }
+
     .calendar-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -152,53 +160,94 @@
     }
 
     .calendar-month {
-        background-color: var(--bg-primary);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%), var(--bg-primary);
         border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
+        border-radius: 14px;
         padding: 16px;
+        overflow: hidden;
     }
 
     .calendar-header {
-        text-align: center;
-        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
         font-weight: 600;
         color: var(--text-primary);
+    }
+
+    .calendar-header .month-title {
+        font-size: 15px;
+        letter-spacing: 0.2px;
+    }
+
+    .calendar-header .month-stats {
+        font-size: 12px;
+        color: var(--text-secondary);
+        padding: 6px 10px;
+        border-radius: 999px;
+        background-color: rgba(148, 163, 184, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        white-space: nowrap;
     }
 
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
+        gap: 4px;
     }
 
     .calendar-day {
-        aspect-ratio: 1;
+        min-height: 38px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 12px;
-        border-radius: 2px;
+        border-radius: 10px;
         transition: var(--transition);
+        border: 1px solid transparent;
+        position: relative;
+        user-select: none;
     }
 
     .calendar-day-header {
         font-weight: 600;
         color: var(--text-secondary);
         background-color: var(--bg-tertiary);
+        min-height: 30px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.4px;
     }
 
     .calendar-day.rented {
-        background-color: var(--error);
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(190, 18, 60, 0.92));
         color: white;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     .calendar-day.available {
-        background-color: var(--success);
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.92), rgba(21, 128, 61, 0.88));
         color: white;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .calendar-day.past {
+        opacity: 0.45;
+        filter: grayscale(0.2);
     }
 
     .calendar-day.today {
-        border: 2px solid var(--accent);
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.28);
+        transform: translateY(-1px);
+    }
+
+    .calendar-day:not(.calendar-day-header):hover {
+        transform: translateY(-1px);
+        border-color: rgba(59, 130, 246, 0.45);
     }
 
     .legend {
@@ -222,6 +271,20 @@
         border-radius: 2px;
     }
 
+    .calendar-footer {
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .calendar-footer strong {
+        color: var(--text-primary);
+    }
+
     @@media (max-width: 768px) {
         .vehicle-header {
             flex-direction: column;
@@ -234,6 +297,11 @@
 
         .calendar-container {
             grid-template-columns: 1fr;
+        }
+
+        .calendar-header {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -274,6 +342,7 @@
 
     <div class="calendar-section">
         <h2 class="section-title">Lịch thuê xe (Heatmap)</h2>
+        <div class="calendar-subtitle">Màu đỏ là ngày đã có khách thuê, màu xanh là ngày còn trống. Bạn có thể lướt nhanh để xem tình trạng từng tháng.</div>
         <div class="calendar-container" id="calendarContainer">
             <!-- Calendar sẽ được tạo bởi JavaScript -->
         </div>
@@ -296,7 +365,6 @@
         endDate = d.EndDate.ToString("yyyy-MM-dd")
     }));
 }
-
 <script>
     const rentalDates = @Html.Raw(rentalDatesJson);
 
@@ -311,16 +379,27 @@
 
     function generateCalendar(year, month) {
         const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay());
 
         const calendar = document.createElement('div');
         calendar.className = 'calendar-month';
 
+        let rentedCount = 0;
+        let availableCount = 0;
+
         const header = document.createElement('div');
         header.className = 'calendar-header';
-        header.textContent = new Date(year, month).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long' });
+        const monthTitle = document.createElement('span');
+        monthTitle.className = 'month-title';
+        monthTitle.textContent = new Date(year, month).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long' });
+
+        const monthStats = document.createElement('span');
+        monthStats.className = 'month-stats';
+        monthStats.textContent = 'Đang tải...';
+
+        header.appendChild(monthTitle);
+        header.appendChild(monthStats);
         calendar.appendChild(header);
 
         const grid = document.createElement('div');
@@ -347,22 +426,38 @@
             dayElement.className = 'calendar-day';
             dayElement.textContent = currentDate.getDate();
 
-            if (currentDate.getMonth() !== month) {
+            const isCurrentMonth = currentDate.getMonth() === month;
+            const isPastDate = currentDate < today;
+            const rented = isDateRented(currentDate);
+
+            if (!isCurrentMonth) {
                 dayElement.style.opacity = '0.3';
-            } else if (isDateRented(currentDate)) {
+                dayElement.title = 'Ngoài tháng';
+            } else if (rented) {
                 dayElement.classList.add('rented');
+                dayElement.title = 'Đã thuê';
+                rentedCount += 1;
             } else {
                 dayElement.classList.add('available');
+                dayElement.title = 'Còn trống';
+                availableCount += 1;
+            }
+
+            if (isPastDate && isCurrentMonth) {
+                dayElement.classList.add('past');
             }
 
             if (currentDate.getTime() === today.getTime()) {
                 dayElement.classList.add('today');
+                dayElement.title = rented ? 'Hôm nay - đã thuê' : 'Hôm nay - còn trống';
             }
 
             grid.appendChild(dayElement);
         }
 
         calendar.appendChild(grid);
+
+        monthStats.textContent = `${rentedCount} đã thuê · ${availableCount} còn trống`;
         return calendar;
     }
 
