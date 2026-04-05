@@ -410,8 +410,21 @@
 
         .calendar-picker-wrap {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .calendar-nav-label {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
         .calendar-month {
@@ -682,6 +695,15 @@
             align-items: flex-start;
             gap: 12px;
         }
+
+        .calendar-picker-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .calendar-nav {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
 </style>
 
@@ -744,6 +766,10 @@
                                 <div class="date-point">Đến ngày<strong id="selectedEndText">Chưa chọn</strong></div>
                             </div>
                             <div class="search-hint" style="margin-top:0;">Click lần 1 chọn ngày nhận, lần 2 chọn ngày trả, click tiếp sẽ chọn lại từ ngày mới.</div>
+                            <div class="calendar-nav">
+                                <span id="calendarWindowLabel" class="calendar-nav-label">Đang xem tháng hiện tại và tháng kế tiếp</span>
+                                <button type="button" id="nextCalendarWindow" class="btn btn-secondary">Next</button>
+                            </div>
                             <div id="dateRangeCalendar" class="calendar-picker-wrap"></div>
                         </div>
                         <div class="amenity-modal-actions">
@@ -915,6 +941,8 @@
         const applyDateRangeButton = document.getElementById('applyDateRange');
         const clearDateRangeButton = document.getElementById('clearDateRange');
         const dateRangeCalendar = document.getElementById('dateRangeCalendar');
+        const calendarWindowLabel = document.getElementById('calendarWindowLabel');
+        const nextCalendarWindow = document.getElementById('nextCalendarWindow');
         const selectedStartText = document.getElementById('selectedStartText');
         const selectedEndText = document.getElementById('selectedEndText');
         const hiddenCheckIn = document.getElementById('checkIn');
@@ -937,6 +965,10 @@
         const rangeState = {
             start: '',
             end: ''
+        };
+
+        const calendarState = {
+            monthOffset: 0
         };
 
         function formatDisplayDate(value) {
@@ -1086,9 +1118,15 @@
             dateRangeCalendar.innerHTML = '';
             const base = new Date();
             base.setDate(1);
+            const startMonth = new Date(base.getFullYear(), base.getMonth() + calendarState.monthOffset, 1);
+            const endMonth = new Date(base.getFullYear(), base.getMonth() + calendarState.monthOffset + 1, 1);
 
-            for (let offset = 0; offset < 6; offset++) {
-                const target = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+            if (calendarWindowLabel) {
+                calendarWindowLabel.textContent = `${startMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })} - ${endMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}`;
+            }
+
+            for (let offset = 0; offset < 2; offset++) {
+                const target = new Date(base.getFullYear(), base.getMonth() + calendarState.monthOffset + offset, 1);
                 dateRangeCalendar.appendChild(buildDateMonth(target.getFullYear(), target.getMonth()));
             }
         }
@@ -1100,6 +1138,7 @@
 
             rangeState.start = hiddenCheckIn.value || '';
             rangeState.end = hiddenCheckOut.value || '';
+            calendarState.monthOffset = 0;
             refreshDatePointLabels();
             renderDateRangeCalendar();
             dateRangeModal.classList.add('show');
@@ -1144,6 +1183,11 @@
             refreshDatePointLabels();
             renderDateRangeCalendar();
             refreshDateRangeDisplay();
+        });
+
+        nextCalendarWindow?.addEventListener('click', () => {
+            calendarState.monthOffset += 1;
+            renderDateRangeCalendar();
         });
 
         dateRangeModal?.addEventListener('click', (event) => {

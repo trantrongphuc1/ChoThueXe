@@ -100,55 +100,6 @@
         font-size: 13px;
     }
 
-    .availability-box.neutral {
-        border-color: rgba(148, 163, 184, 0.35);
-        background: rgba(148, 163, 184, 0.1);
-        color: #e2e8f0;
-    }
-
-    .date-adjust-box {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--bg-secondary);
-        padding: 12px;
-        margin-bottom: 16px;
-    }
-
-    .date-adjust-title {
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        font-weight: 600;
-    }
-
-    .date-adjust-form {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(150px, 1fr)) auto;
-        gap: 8px;
-        align-items: end;
-    }
-
-    .date-adjust-field {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .date-adjust-field label {
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-
-    .date-adjust-field input[type="date"] {
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 8px 10px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-    }
-
     .availability-box.available {
         border-color: rgba(34, 197, 94, 0.45);
         background: rgba(34, 197, 94, 0.12);
@@ -373,9 +324,6 @@
             align-items: flex-start;
         }
 
-        .date-adjust-form {
-            grid-template-columns: 1fr;
-        }
     }
 </style>
 
@@ -399,21 +347,6 @@
             {
                 <div class="vehicle-amenities">Tiện nghi: @Model.AmenitiesText</div>
             }
-            <div class="date-adjust-box">
-                <div class="date-adjust-title">Chọn lại khoảng ngày để kiểm tra và tạm tính</div>
-                <form method="get" asp-action="VehicleDetails" asp-controller="Customer" class="date-adjust-form">
-                    <input type="hidden" name="id" value="@Model.VehicleId" />
-                    <div class="date-adjust-field">
-                        <label for="detailCheckIn">Từ ngày</label>
-                        <input id="detailCheckIn" type="date" name="checkIn" value="@Model.SelectedCheckInDate?.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <div class="date-adjust-field">
-                        <label for="detailCheckOut">Đến ngày</label>
-                        <input id="detailCheckOut" type="date" name="checkOut" value="@Model.SelectedCheckOutDate?.ToString("yyyy-MM-dd")" />
-                    </div>
-                    <button type="submit" class="btn btn-secondary">Xem lại lịch và giá</button>
-                </form>
-            </div>
             @if (Model.SelectedCheckInDate.HasValue && Model.SelectedCheckOutDate.HasValue)
             {
                 <div class="availability-box @(Model.IsAvailableForSelectedDates == false ? "busy" : "available")">
@@ -424,10 +357,6 @@
                         <div style="margin-top:4px;">Tạm tính: <strong>@Model.EstimatedRentalCost.Value.ToString("N0") VND</strong> cho @(Model.EstimatedRentalDays ?? 1) ngày.</div>
                     }
                 </div>
-            }
-            else if (!string.IsNullOrWhiteSpace(Model.AvailabilityNote))
-            {
-                <div class="availability-box neutral">@Model.AvailabilityNote</div>
             }
             <div class="action-buttons">
                 <a href="/Customer/Index" class="btn btn-secondary">← Quay lại</a>
