@@ -476,6 +476,37 @@ public class AdminController : Controller
         }
     }
 
+    [HttpGet]
+    public async Task<IActionResult> VehicleSchedule(int vehicleId)
+    {
+        if (vehicleId <= 0)
+        {
+            return BadRequest(new { error = "Xe khong hop le." });
+        }
+
+        try
+        {
+            var rentalDates = await _rentalRepository.GetVehicleRentalDatesAsync(vehicleId);
+            var ranges = rentalDates
+                .Select(d => new
+                {
+                    startDate = d.StartDate.ToString("yyyy-MM-dd"),
+                    endDate = d.EndDate.ToString("yyyy-MM-dd")
+                })
+                .ToList();
+
+            return Json(new
+            {
+                vehicleId,
+                ranges
+            });
+        }
+        catch (OracleException ex)
+        {
+            return StatusCode(500, new { error = BuildOracleErrorMessage("lay lich thue xe", ex) });
+        }
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditVehicle(CreateVehicleInputModel input)

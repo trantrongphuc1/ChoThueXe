@@ -32,6 +32,29 @@
     .amenity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 6px; }
     .amenity-chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; background: var(--bg-primary); }
     .amenity-chip input { width: auto; }
+    .heatmap-modal { position: fixed; inset: 0; z-index: 1100; display: none; }
+    .heatmap-modal.open { display: block; }
+    .heatmap-backdrop { position: absolute; inset: 0; background: rgba(15, 17, 23, 0.75); }
+    .heatmap-dialog { position: relative; margin: 4vh auto; width: min(1100px, calc(100vw - 24px)); max-height: 92vh; overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-secondary); }
+    .heatmap-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .heatmap-header h3 { margin: 0; font-size: 18px; }
+    .heatmap-close { border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+    .heatmap-body { padding: 12px 14px; }
+    .heatmap-empty { color: var(--text-secondary); margin-bottom: 10px; }
+    .heatmap-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+    .legend-item { display: flex; gap: 8px; align-items: center; color: var(--text-secondary); font-size: 13px; }
+    .legend-color { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); }
+    .calendar-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+    .calendar-month { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-primary); overflow: hidden; }
+    .calendar-month-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 10px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-secondary); }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px; }
+    .calendar-cell { min-height: 30px; border-radius: 7px; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .calendar-head { color: var(--text-secondary); min-height: 20px; font-size: 11px; }
+    .day-other { opacity: 0.3; }
+    .day-free { background: rgba(34, 197, 94, 0.16); color: #dcfce7; border-color: rgba(34, 197, 94, 0.32); }
+    .day-rented { background: rgba(239, 68, 68, 0.22); color: #fecaca; border-color: rgba(239, 68, 68, 0.48); }
+    .day-maintenance { background: rgba(234, 179, 8, 0.28); color: #fef3c7; border-color: rgba(234, 179, 8, 0.46); }
+    .day-today { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
 </style>
 
 <div class="admin-wrap">
@@ -220,6 +243,7 @@
                             <td>
                                 <div class="actions">
                                     <a class="btn" asp-action="EditVehicle" asp-route-vehicleId="@v.VehicleId">Sửa</a>
+                                    <button type="button" class="btn" onclick="openVehicleHeatmap(@v.VehicleId, '@v.VehicleName.Replace("'", "\\'")')">Lịch thuê</button>
                                     <form asp-action="DeleteVehicle" method="post" style="display:inline;" onsubmit="return confirm('Xóa xe này? Hành động sẽ ẩn xe khỏi hệ thống thuê.');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="vehicleId" value="@v.VehicleId" />
@@ -237,7 +261,209 @@
     </div>
 </div>
 
+<div id="vehicleHeatmapModal" class="heatmap-modal" aria-hidden="true">
+    <div class="heatmap-backdrop" onclick="closeVehicleHeatmap()"></div>
+    <div class="heatmap-dialog" role="dialog" aria-modal="true" aria-labelledby="heatmapTitle">
+        <div class="heatmap-header">
+            <h3 id="heatmapTitle">Lịch hợp đồng xe</h3>
+            <button type="button" class="heatmap-close" onclick="closeVehicleHeatmap()">Đóng</button>
+        </div>
+        <div class="heatmap-body">
+            <div id="heatmapSummary" class="heatmap-empty">Đang tải dữ liệu...</div>
+            <div class="heatmap-legend">
+                <div class="legend-item"><span class="legend-color" style="background: rgba(239, 68, 68, 0.22);"></span><span>Ngày có hợp đồng</span></div>
+                <div class="legend-item"><span class="legend-color" style="background: rgba(234, 179, 8, 0.28);"></span><span>Ngày bảo dưỡng (+1 sau thuê)</span></div>
+                <div class="legend-item"><span class="legend-color" style="background: rgba(34, 197, 94, 0.16);"></span><span>Ngày trống</span></div>
+            </div>
+            <div id="heatmapCalendar" class="calendar-wrap"></div>
+        </div>
+    </div>
+</div>
+
 <script>
+    const heatmapModal = document.getElementById('vehicleHeatmapModal');
+    const heatmapTitle = document.getElementById('heatmapTitle');
+    const heatmapSummary = document.getElementById('heatmapSummary');
+    const heatmapCalendar = document.getElementById('heatmapCalendar');
+
+    function parseLocalDate(dateStr) {
+        const [y, m, d] = (dateStr || '').split('-').map(Number);
+        if (!y || !m || !d) {
+            return null;
+        }
+
+        const dt = new Date(y, m - 1, d);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    function formatDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function enumerateRangeDays(startDate, endDate) {
+        const days = [];
+        let cursor = new Date(startDate);
+        while (cursor <= endDate) {
+            days.push(new Date(cursor));
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return days;
+    }
+
+    function closeVehicleHeatmap() {
+        if (!heatmapModal) {
+            return;
+        }
+
+        heatmapModal.classList.remove('open');
+        heatmapModal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function openVehicleHeatmap(vehicleId, vehicleName) {
+        if (!heatmapModal || !heatmapTitle || !heatmapSummary || !heatmapCalendar) {
+            return;
+        }
+
+        heatmapModal.classList.add('open');
+        heatmapModal.setAttribute('aria-hidden', 'false');
+        heatmapTitle.textContent = `Lịch hợp đồng xe #${vehicleId} - ${vehicleName}`;
+        heatmapSummary.textContent = 'Đang tải dữ liệu...';
+        heatmapCalendar.innerHTML = '';
+
+        try {
+            const response = await fetch(`/Admin/VehicleSchedule?vehicleId=${vehicleId}`);
+            const payload = await response.json();
+
+            if (!response.ok) {
+                heatmapSummary.textContent = payload?.error || 'Không thể tải lịch thuê xe.';
+                return;
+            }
+
+            const ranges = Array.isArray(payload?.ranges) ? payload.ranges : [];
+            renderVehicleHeatmap(ranges);
+        } catch {
+            heatmapSummary.textContent = 'Không thể tải lịch thuê xe lúc này.';
+        }
+    }
+
+    function renderVehicleHeatmap(ranges) {
+        const rentedKeys = new Set();
+        const maintenanceKeys = new Set();
+        let minDate = null;
+        let maxDate = null;
+
+        ranges.forEach(range => {
+            const start = parseLocalDate(range.startDate);
+            const end = parseLocalDate(range.endDate);
+            if (!start || !end || start > end) {
+                return;
+            }
+
+            enumerateRangeDays(start, end).forEach(day => rentedKeys.add(formatDateKey(day)));
+
+            const maintenanceDay = new Date(end);
+            maintenanceDay.setDate(maintenanceDay.getDate() + 1);
+            maintenanceKeys.add(formatDateKey(maintenanceDay));
+
+            if (!minDate || start < minDate) {
+                minDate = new Date(start);
+            }
+            if (!maxDate || maintenanceDay > maxDate) {
+                maxDate = new Date(maintenanceDay);
+            }
+        });
+
+        if (!minDate || !maxDate) {
+            heatmapSummary.textContent = 'Xe này chưa có hợp đồng nào để hiển thị heatmap.';
+            return;
+        }
+
+        const months = [];
+        const begin = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+        const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
+        for (let cursor = new Date(begin); cursor <= endMonth; cursor.setMonth(cursor.getMonth() + 1)) {
+            months.push({ year: cursor.getFullYear(), month: cursor.getMonth() });
+        }
+
+        const rentedCount = rentedKeys.size;
+        const maintenanceCount = maintenanceKeys.size;
+        heatmapSummary.textContent = `Tổng ${rentedCount} ngày có hợp đồng, ${maintenanceCount} ngày bảo dưỡng (+1).`;
+
+        months.forEach(m => {
+            heatmapCalendar.appendChild(buildMonthCalendar(m.year, m.month, rentedKeys, maintenanceKeys));
+        });
+    }
+
+    function buildMonthCalendar(year, month, rentedKeys, maintenanceKeys) {
+        const monthEl = document.createElement('div');
+        monthEl.className = 'calendar-month';
+
+        const header = document.createElement('div');
+        header.className = 'calendar-month-head';
+        const title = document.createElement('span');
+        title.textContent = new Date(year, month, 1).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+        header.appendChild(title);
+        monthEl.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+        ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].forEach(dayName => {
+            const dayHead = document.createElement('div');
+            dayHead.className = 'calendar-cell calendar-head';
+            dayHead.textContent = dayName;
+            grid.appendChild(dayHead);
+        });
+
+        const firstDay = new Date(year, month, 1);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 42; i++) {
+            const current = new Date(startDate);
+            current.setDate(startDate.getDate() + i);
+            const key = formatDateKey(current);
+
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell';
+            cell.textContent = String(current.getDate());
+
+            if (current.getMonth() !== month) {
+                cell.classList.add('day-other');
+            } else if (maintenanceKeys.has(key)) {
+                cell.classList.add('day-maintenance');
+                cell.title = `${key}: Bảo dưỡng (+1)`;
+            } else if (rentedKeys.has(key)) {
+                cell.classList.add('day-rented');
+                cell.title = `${key}: Đã có hợp đồng`;
+            } else {
+                cell.classList.add('day-free');
+                cell.title = `${key}: Trống`;
+            }
+
+            if (formatDateKey(today) === key && current.getMonth() === month) {
+                cell.classList.add('day-today');
+            }
+
+            grid.appendChild(cell);
+        }
+
+        monthEl.appendChild(grid);
+        return monthEl;
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeVehicleHeatmap();
+        }
+    });
+
     async function uploadVehicleImages() {
         const form = document.getElementById('addVehicleForm');
         const fileInput = document.getElementById('vehicleImageFiles');

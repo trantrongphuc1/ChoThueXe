@@ -2992,7 +2992,7 @@ public class RentalRepository : IRentalRepository
             from contract_details cd
             join contracts c on c.contract_id = cd.contract_id
             where cd.vehicle_id = :p_vehicle_id
-              and c.status in ('ACTIVE', 'COMPLETED')
+                            and upper(c.status) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS', 'COMPLETED')
             order by cd.start_date";
 
         var result = new List<ChoThueXe.Models.Portal.RentalDateRange>();

@@ -130,9 +130,19 @@ public class EmployeeController : Controller
 
     private static string BuildOracleErrorMessage(string operation, OracleException ex)
     {
-        if (ex.Number is 904 or 942 or 6550)
+        if (ex.Number is 904 or 942 or 4043 or 6508 or 6550)
         {
             return $"Khong the {operation} do he thong du lieu chua san sang.";
+        }
+
+        if (ex.Number == 1031)
+        {
+            return $"Khong the {operation} do tai khoan DB chua duoc cap quyen EXECUTE procedure.";
+        }
+
+        if (ex.Number == 6553)
+        {
+            return $"Khong the {operation} do quyen role/procedure tren DB chua duoc cap dung.";
         }
 
         return $"Khong the {operation} luc nay. Vui long thu lai.";
