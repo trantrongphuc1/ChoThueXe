@@ -89,7 +89,201 @@
 
     .vehicle-amenities {
         color: var(--text-secondary);
-        margin-bottom: 20px;
+        margin-bottom: 14px;
+    }
+
+    .date-select-box {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-secondary);
+        padding: 10px 12px;
+        margin-bottom: 14px;
+    }
+
+    .date-select-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .date-select-btn {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        padding: 9px 10px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .picker-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.72);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1200;
+        padding: 16px;
+    }
+
+    .picker-modal.show {
+        display: flex;
+    }
+
+    .picker-modal-card {
+        width: min(860px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+    }
+
+    .picker-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .picker-body {
+        padding: 14px 16px;
+        display: grid;
+        gap: 10px;
+    }
+
+    .picker-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .picker-point {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-primary);
+        padding: 8px 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .picker-point strong {
+        display: block;
+        color: var(--text-primary);
+        font-size: 14px;
+        margin-top: 2px;
+    }
+
+    .picker-hint {
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+
+    .picker-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .picker-nav-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .picker-calendars {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 10px;
+    }
+
+    .picker-month {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .picker-month-head {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .picker-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+        padding: 8px;
+    }
+
+    .picker-cell {
+        min-height: 30px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .picker-head-day {
+        color: var(--text-secondary);
+        min-height: 20px;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .picker-day {
+        cursor: pointer;
+        color: #dcfce7;
+        background: rgba(34, 197, 94, 0.14);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .picker-day:hover {
+        filter: brightness(1.08);
+    }
+
+    .picker-day-other {
+        opacity: 0.25;
+        cursor: default;
+    }
+
+    .picker-day-selected {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: rgba(239, 68, 68, 0.48);
+        color: #fee2e2;
+        font-weight: 700;
+    }
+
+    .picker-day-between {
+        background: rgba(234, 179, 8, 0.2);
+        border-color: rgba(234, 179, 8, 0.42);
+        color: #fef3c7;
+    }
+
+    .picker-day-today {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+    }
+
+    .picker-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid var(--border);
+        padding: 12px 16px;
     }
 
     .availability-box {
@@ -324,6 +518,15 @@
             align-items: flex-start;
         }
 
+        .picker-calendars {
+            grid-template-columns: 1fr;
+        }
+
+        .picker-nav {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
     }
 </style>
 
@@ -347,6 +550,14 @@
             {
                 <div class="vehicle-amenities">Tiện nghi: @Model.AmenitiesText</div>
             }
+            <div class="date-select-box">
+                <div class="date-select-label">Khoảng ngày thuê</div>
+                <button id="openDetailDatePicker" type="button" class="date-select-btn">
+                    @(Model.SelectedCheckInDate.HasValue && Model.SelectedCheckOutDate.HasValue
+                        ? $"{Model.SelectedCheckInDate.Value:dd/MM/yyyy} - {Model.SelectedCheckOutDate.Value:dd/MM/yyyy}"
+                        : "Chọn từ ngày đến ngày")
+                </button>
+            </div>
             @if (Model.SelectedCheckInDate.HasValue && Model.SelectedCheckOutDate.HasValue)
             {
                 <div class="availability-box @(Model.IsAvailableForSelectedDates == false ? "busy" : "available")">
@@ -391,6 +602,34 @@
     </div>
 </div>
 
+<div id="detailDatePickerModal" class="picker-modal" aria-hidden="true">
+    <div class="picker-modal-card" role="dialog" aria-modal="true" aria-labelledby="detailDatePickerTitle">
+        <div class="picker-head">
+            <h3 id="detailDatePickerTitle" style="font-size:16px; margin:0;">Chọn khoảng ngày thuê</h3>
+            <button type="button" class="btn btn-secondary" id="closeDetailDatePicker">Đóng</button>
+        </div>
+        <div class="picker-body">
+            <div class="picker-summary">
+                <div class="picker-point">Từ ngày<strong id="detailSelectedStart">Chưa chọn</strong></div>
+                <div class="picker-point">Đến ngày<strong id="detailSelectedEnd">Chưa chọn</strong></div>
+            </div>
+            <div class="picker-hint">Click lần 1 chọn ngày nhận, lần 2 chọn ngày trả, click tiếp sẽ chọn lại từ ngày mới.</div>
+            <div class="picker-nav">
+                <span id="detailPickerWindowLabel" class="picker-nav-label">Đang xem tháng hiện tại và tháng kế tiếp</span>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" id="detailPickerPrev" class="btn btn-secondary">Back</button>
+                    <button type="button" id="detailPickerNext" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+            <div id="detailPickerCalendars" class="picker-calendars"></div>
+        </div>
+        <div class="picker-actions">
+            <button type="button" class="btn btn-secondary" id="detailPickerClear">Bỏ chọn ngày</button>
+            <button type="button" class="btn btn-primary" id="detailPickerApply">Xong</button>
+        </div>
+    </div>
+</div>
+
 @{
     var rentalDatesJson = Json.Serialize(Model.RentalDates.Select(d => new {
         startDate = d.StartDate.ToString("yyyy-MM-dd"),
@@ -399,6 +638,216 @@
 }
 <script>
     const rentalDates = @Html.Raw(rentalDatesJson);
+
+    const detailDatePicker = {
+        start: '@(Model.SelectedCheckInDate?.ToString("yyyy-MM-dd") ?? string.Empty)',
+        end: '@(Model.SelectedCheckOutDate?.ToString("yyyy-MM-dd") ?? string.Empty)',
+        monthOffset: 0
+    };
+
+    function parseLocalDate(value) {
+        const [year, month, day] = (value || '').split('-').map(Number);
+        if (!year || !month || !day) {
+            return null;
+        }
+
+        const dt = new Date(year, month - 1, day);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    function toDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function toDisplayDate(value) {
+        if (!value) {
+            return 'Chưa chọn';
+        }
+
+        const [y, m, d] = value.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function refreshDetailPickerSummary() {
+        const startEl = document.getElementById('detailSelectedStart');
+        const endEl = document.getElementById('detailSelectedEnd');
+        if (startEl) {
+            startEl.textContent = toDisplayDate(detailDatePicker.start);
+        }
+        if (endEl) {
+            endEl.textContent = toDisplayDate(detailDatePicker.end);
+        }
+    }
+
+    function buildDetailPickerMonth(year, month) {
+        const monthElement = document.createElement('div');
+        monthElement.className = 'picker-month';
+
+        const monthHeader = document.createElement('div');
+        monthHeader.className = 'picker-month-head';
+        monthHeader.textContent = new Date(year, month, 1).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+        monthElement.appendChild(monthHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'picker-grid';
+        ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].forEach(dayName => {
+            const head = document.createElement('div');
+            head.className = 'picker-cell picker-head-day';
+            head.textContent = dayName;
+            grid.appendChild(head);
+        });
+
+        const firstDay = new Date(year, month, 1);
+        const gridStart = new Date(firstDay);
+        gridStart.setDate(gridStart.getDate() - firstDay.getDay());
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = parseLocalDate(detailDatePicker.start);
+        const endDate = parseLocalDate(detailDatePicker.end);
+
+        for (let i = 0; i < 42; i++) {
+            const current = new Date(gridStart);
+            current.setDate(gridStart.getDate() + i);
+
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'picker-cell picker-day';
+            cell.textContent = String(current.getDate());
+
+            const key = toDateKey(current);
+            if (current.getMonth() !== month) {
+                cell.classList.add('picker-day-other');
+            }
+
+            if (startDate && key === toDateKey(startDate)) {
+                cell.classList.add('picker-day-selected');
+            }
+
+            if (endDate && key === toDateKey(endDate)) {
+                cell.classList.add('picker-day-selected');
+            }
+
+            if (startDate && endDate && current > startDate && current < endDate) {
+                cell.classList.add('picker-day-between');
+            }
+
+            if (key === toDateKey(today)) {
+                cell.classList.add('picker-day-today');
+            }
+
+            cell.addEventListener('click', () => {
+                const hasStart = Boolean(detailDatePicker.start);
+                const hasEnd = Boolean(detailDatePicker.end);
+
+                if (!hasStart || (hasStart && hasEnd)) {
+                    detailDatePicker.start = key;
+                    detailDatePicker.end = '';
+                } else {
+                    if (key >= detailDatePicker.start) {
+                        detailDatePicker.end = key;
+                    } else {
+                        detailDatePicker.end = detailDatePicker.start;
+                        detailDatePicker.start = key;
+                    }
+                }
+
+                refreshDetailPickerSummary();
+                renderDetailPickerCalendars();
+            });
+
+            grid.appendChild(cell);
+        }
+
+        monthElement.appendChild(grid);
+        return monthElement;
+    }
+
+    function renderDetailPickerCalendars() {
+        const calendarWrap = document.getElementById('detailPickerCalendars');
+        const label = document.getElementById('detailPickerWindowLabel');
+        const prevButton = document.getElementById('detailPickerPrev');
+        if (!calendarWrap) {
+            return;
+        }
+
+        calendarWrap.innerHTML = '';
+        const base = new Date();
+        base.setDate(1);
+
+        const startMonth = new Date(base.getFullYear(), base.getMonth() + detailDatePicker.monthOffset, 1);
+        const endMonth = new Date(base.getFullYear(), base.getMonth() + detailDatePicker.monthOffset + 1, 1);
+
+        if (label) {
+            label.textContent = `${startMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })} - ${endMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}`;
+        }
+
+        if (prevButton) {
+            prevButton.disabled = detailDatePicker.monthOffset <= 0;
+        }
+
+        for (let offset = 0; offset < 2; offset++) {
+            const target = new Date(base.getFullYear(), base.getMonth() + detailDatePicker.monthOffset + offset, 1);
+            calendarWrap.appendChild(buildDetailPickerMonth(target.getFullYear(), target.getMonth()));
+        }
+    }
+
+    function openDetailDatePicker() {
+        const modal = document.getElementById('detailDatePickerModal');
+        if (!modal) {
+            return;
+        }
+
+        detailDatePicker.monthOffset = 0;
+        refreshDetailPickerSummary();
+        renderDetailPickerCalendars();
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeDetailDatePicker() {
+        const modal = document.getElementById('detailDatePickerModal');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function applyDetailDatePicker(clearDate = false) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('id', '@Model.VehicleId');
+
+        if (clearDate) {
+            currentUrl.searchParams.delete('checkIn');
+            currentUrl.searchParams.delete('checkOut');
+            window.location.href = currentUrl.toString();
+            return;
+        }
+
+        if (detailDatePicker.start && !detailDatePicker.end) {
+            detailDatePicker.end = detailDatePicker.start;
+        }
+
+        if (detailDatePicker.start) {
+            currentUrl.searchParams.set('checkIn', detailDatePicker.start);
+        } else {
+            currentUrl.searchParams.delete('checkIn');
+        }
+
+        if (detailDatePicker.end) {
+            currentUrl.searchParams.set('checkOut', detailDatePicker.end);
+        } else {
+            currentUrl.searchParams.delete('checkOut');
+        }
+
+        window.location.href = currentUrl.toString();
+    }
 
     function isDateRented(date) {
         const dateStr = date.toISOString().split('T')[0];
@@ -505,6 +954,37 @@
         }
     }
 
-    // Initialize calendar when page loads
-    document.addEventListener('DOMContentLoaded', initCalendar);
+    // Initialize UI when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+        initCalendar();
+
+        document.getElementById('openDetailDatePicker')?.addEventListener('click', openDetailDatePicker);
+        document.getElementById('closeDetailDatePicker')?.addEventListener('click', closeDetailDatePicker);
+        document.getElementById('detailPickerApply')?.addEventListener('click', () => applyDetailDatePicker(false));
+        document.getElementById('detailPickerClear')?.addEventListener('click', () => applyDetailDatePicker(true));
+        document.getElementById('detailPickerNext')?.addEventListener('click', () => {
+            detailDatePicker.monthOffset += 1;
+            renderDetailPickerCalendars();
+        });
+        document.getElementById('detailPickerPrev')?.addEventListener('click', () => {
+            if (detailDatePicker.monthOffset <= 0) {
+                return;
+            }
+
+            detailDatePicker.monthOffset -= 1;
+            renderDetailPickerCalendars();
+        });
+
+        document.getElementById('detailDatePickerModal')?.addEventListener('click', (event) => {
+            if (event.target?.id === 'detailDatePickerModal') {
+                closeDetailDatePicker();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeDetailDatePicker();
+            }
+        });
+    });
 </script>

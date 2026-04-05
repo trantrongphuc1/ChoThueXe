@@ -768,7 +768,10 @@
                             <div class="search-hint" style="margin-top:0;">Click lần 1 chọn ngày nhận, lần 2 chọn ngày trả, click tiếp sẽ chọn lại từ ngày mới.</div>
                             <div class="calendar-nav">
                                 <span id="calendarWindowLabel" class="calendar-nav-label">Đang xem tháng hiện tại và tháng kế tiếp</span>
-                                <button type="button" id="nextCalendarWindow" class="btn btn-secondary">Next</button>
+                                <div style="display:flex; gap:8px;">
+                                    <button type="button" id="prevCalendarWindow" class="btn btn-secondary">Back</button>
+                                    <button type="button" id="nextCalendarWindow" class="btn btn-secondary">Next</button>
+                                </div>
                             </div>
                             <div id="dateRangeCalendar" class="calendar-picker-wrap"></div>
                         </div>
@@ -856,14 +859,14 @@
                 @foreach (var vehicle in Model.Vehicles.Take(12))
                 {
                     var detailsUrl = Url.Action(
-                        "VehicleDetails",
-                        "Customer",
+                        "Book",
+                        "Rental",
                         new
                         {
-                            id = vehicle.VehicleId,
+                            vehicleId = vehicle.VehicleId,
                             checkIn = Model.CheckInDate?.ToString("yyyy-MM-dd"),
                             checkOut = Model.CheckOutDate?.ToString("yyyy-MM-dd")
-                        }) ?? $"/Customer/VehicleDetails?id={vehicle.VehicleId}";
+                        }) ?? $"/Rental/Book?vehicleId={vehicle.VehicleId}";
 
                     <a class="vehicle-card" href="@detailsUrl">
                         <div class="vehicle-image">🚗</div>
@@ -910,14 +913,14 @@
                 @foreach (var vehicle in Model.FavoriteVehicles)
                 {
                     var favoriteDetailsUrl = Url.Action(
-                        "VehicleDetails",
-                        "Customer",
+                        "Book",
+                        "Rental",
                         new
                         {
-                            id = vehicle.VehicleId,
+                            vehicleId = vehicle.VehicleId,
                             checkIn = Model.CheckInDate?.ToString("yyyy-MM-dd"),
                             checkOut = Model.CheckOutDate?.ToString("yyyy-MM-dd")
-                        }) ?? $"/Customer/VehicleDetails?id={vehicle.VehicleId}";
+                        }) ?? $"/Rental/Book?vehicleId={vehicle.VehicleId}";
 
                     <a class="vehicle-card" href="@favoriteDetailsUrl">
                         <div class="vehicle-image">❤️</div>
@@ -942,6 +945,7 @@
         const clearDateRangeButton = document.getElementById('clearDateRange');
         const dateRangeCalendar = document.getElementById('dateRangeCalendar');
         const calendarWindowLabel = document.getElementById('calendarWindowLabel');
+        const prevCalendarWindow = document.getElementById('prevCalendarWindow');
         const nextCalendarWindow = document.getElementById('nextCalendarWindow');
         const selectedStartText = document.getElementById('selectedStartText');
         const selectedEndText = document.getElementById('selectedEndText');
@@ -1125,6 +1129,10 @@
                 calendarWindowLabel.textContent = `${startMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })} - ${endMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}`;
             }
 
+            if (prevCalendarWindow) {
+                prevCalendarWindow.disabled = calendarState.monthOffset <= 0;
+            }
+
             for (let offset = 0; offset < 2; offset++) {
                 const target = new Date(base.getFullYear(), base.getMonth() + calendarState.monthOffset + offset, 1);
                 dateRangeCalendar.appendChild(buildDateMonth(target.getFullYear(), target.getMonth()));
@@ -1187,6 +1195,15 @@
 
         nextCalendarWindow?.addEventListener('click', () => {
             calendarState.monthOffset += 1;
+            renderDateRangeCalendar();
+        });
+
+        prevCalendarWindow?.addEventListener('click', () => {
+            if (calendarState.monthOffset <= 0) {
+                return;
+            }
+
+            calendarState.monthOffset -= 1;
             renderDateRangeCalendar();
         });
 

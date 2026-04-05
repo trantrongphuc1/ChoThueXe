@@ -233,6 +233,20 @@
 </style>
 
 <main>
+    @if (TempData["Success"] is string success)
+    {
+        <div style="background-color: rgba(63, 185, 80, 0.12); border: 1px solid rgba(63, 185, 80, 0.35); color: var(--success); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+            @success
+        </div>
+    }
+
+    @if (TempData["Error"] is string tempError)
+    {
+        <div style="background-color: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.3); color: var(--danger); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+            @tempError
+        </div>
+    }
+
     @if (!string.IsNullOrEmpty(ViewData["Error"]?.ToString()))
     {
         <div style="background-color: rgba(248, 81, 73, 0.1); border: 1px solid rgba(248, 81, 73, 0.3); color: var(--danger); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px;">
@@ -300,11 +314,43 @@
                     <span class="info-value" style="color: var(--success); font-size: 16px;">@Model.TotalAmount.ToString("N0") VND</span>
                 </div>
                 <div class="info-item">
+                    <span class="info-label">Đã thanh toán</span>
+                    <span class="info-value">@Model.PaidAmount.ToString("N0") VND</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Còn thiếu</span>
+                    <span class="info-value" style="color: @(Model.DueAmount > 0 ? "var(--warning)" : "var(--success)"); font-size: 16px;">
+                        @Math.Max(0m, Model.DueAmount).ToString("N0") VND
+                    </span>
+                </div>
+                <div class="info-item">
                     <span class="info-label">Số ngày thuê</span>
                     <span class="info-value">@((Model.EndDate - Model.StartDate).Days) ngày</span>
                 </div>
             </div>
         </div>
+
+        @if (Model.DueAmount > 0)
+        {
+            <div class="section">
+                <div class="section-title">Thanh toán mô phỏng</div>
+                <p style="color: var(--text-secondary); margin-bottom: 12px;">Ấn nút bên dưới để mô phỏng khách đã thanh toán đủ hợp đồng này.</p>
+                <form asp-controller="Customer" asp-action="Pay" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ContractId" value="@Model.ContractId" />
+                    <input type="hidden" name="Amount" value="@Model.DueAmount" />
+                    <input type="hidden" name="redirectContractId" value="@Model.ContractId" />
+                    <button type="submit" class="btn btn-primary">Đã thanh toán</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div class="section">
+                <div class="section-title">Thanh toán</div>
+                <p style="color: var(--success);">Hợp đồng đã được thanh toán đủ.</p>
+            </div>
+        }
 
         <!-- Thông tin xe -->
         <div class="section">
@@ -379,7 +425,7 @@
 
         <!-- Nút hành động -->
         <div class="action-buttons">
-            <a href="@Url.Action("Index", "Customer")" class="btn btn-primary">← Quay lại dashboard</a>
+            <a href="@Url.Action("Contracts", "Customer")" class="btn btn-primary">← Quay lại hợp đồng</a>
         </div>
     }
 </main>

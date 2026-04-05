@@ -104,21 +104,42 @@ public class CustomerController : Controller
         try
         {
             var userId = User.GetUserId();
-            var contractsTask = _rentalRepository.GetContractsByCustomerAsync(userId);
-            var pendingContractsTask = _rentalRepository.GetPendingContractsByCustomerAsync(userId);
+            IReadOnlyList<ContractFullViewModel> contracts = [];
+            IReadOnlyList<PendingContractViewModel> pendingContracts = [];
 
-            await Task.WhenAll(contractsTask, pendingContractsTask);
+            try
+            {
+                contracts = await _rentalRepository.GetContractsByCustomerAsync(userId);
+            }
+            catch
+            {
+                // Keep page alive even if this query fails in partially migrated schemas.
+            }
+
+            try
+            {
+                pendingContracts = await _rentalRepository.GetPendingContractsByCustomerAsync(userId);
+            }
+            catch
+            {
+                // Keep page alive even if this query fails in partially migrated schemas.
+            }
 
             return View(new CustomerDashboardViewModel
             {
                 UserId = userId,
-                Contracts = contractsTask.Result,
-                PendingContracts = pendingContractsTask.Result
+                Contracts = contracts,
+                PendingContracts = pendingContracts
             });
         }
         catch (OracleException ex)
         {
             TempData["Error"] = BuildOracleErrorMessage("tai danh sach hop dong", ex);
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception)
+        {
+            TempData["Error"] = "Khong the tai danh sach hop dong luc nay. Vui long thu lai.";
             return RedirectToAction(nameof(Index));
         }
     }
@@ -422,18 +443,23 @@ public class CustomerController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Pay(PaymentInputModel input)
+    public async Task<IActionResult> Pay(PaymentInputModel input, int? redirectContractId)
     {
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Du lieu thanh toan khong hop le.";
+            if (redirectContractId.HasValue && redirectContractId.Value > 0)
+            {
+                return RedirectToAction("Details", "Rental", new { contractId = redirectContractId.Value });
+            }
+
             return RedirectToAction(nameof(Contracts));
         }
 
         try
         {
             await _rentalRepository.MakePaymentAsync(input);
-            TempData["Success"] = "Thanh toan thanh cong.";
+            TempData["Success"] = "Thanh toan thanh cong. Doanh thu xe va tong doanh thu admin da duoc cap nhat.";
         }
         catch (InvalidOperationException ex)
         {
@@ -442,6 +468,11 @@ public class CustomerController : Controller
         catch (OracleException ex)
         {
             TempData["Error"] = BuildOracleErrorMessage("thanh toan", ex);
+        }
+
+        if (redirectContractId.HasValue && redirectContractId.Value > 0)
+        {
+            return RedirectToAction("Details", "Rental", new { contractId = redirectContractId.Value });
         }
 
         return RedirectToAction(nameof(Contracts));
@@ -603,7 +634,7 @@ public class CustomerController : Controller
             {
                 isAvailableForSelectedDates = !rentalDates.Any(range =>
                     range.StartDate.Date <= selectedCheckOut.Value
-                    && range.EndDate.Date >= selectedCheckIn.Value);
+                    && range.EndDate.Date.AddDays(1) >= selectedCheckIn.Value);
 
                 estimatedRentalDays = Math.Max(1, (selectedCheckOut.Value - selectedCheckIn.Value).Days);
                 estimatedRentalCost = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, selectedCheckIn.Value, selectedCheckOut.Value);
@@ -717,6 +748,19 @@ public class CustomerController : Controller
             : null;
 
         var filteredVehicles = TryGetResult(vehiclesTask, []);
+
+        if (checkInDate.HasValue && checkOutDate.HasValue && filteredVehicles.Count == 0)
+        {
+            // Fallback: still show matching vehicles even when availability-filtered sources return empty.
+            var fallbackVehicles = await _rentalRepository.GetVehiclesForCustomerAsync(
+                userId,
+                keyword,
+                selectedAmenityCodes,
+                null,
+                null);
+            filteredVehicles = fallbackVehicles.ToList();
+        }
+
         if (!string.IsNullOrWhiteSpace(selectedBrandName))
         {
             filteredVehicles = filteredVehicles
@@ -736,6 +780,11 @@ public class CustomerController : Controller
             var estimatedDays = Math.Max(1, (checkOutDate.Value.Date - checkInDate.Value.Date).Days);
             foreach (var vehicle in filteredVehicles)
             {
+                var rentalDates = await _rentalRepository.GetVehicleRentalDatesAsync(vehicle.VehicleId);
+                vehicle.IsAvailableForSelectedDates = !rentalDates.Any(range =>
+                    range.StartDate.Date <= checkOutDate.Value.Date
+                    && range.EndDate.Date.AddDays(1) >= checkInDate.Value.Date);
+
                 vehicle.EstimatedRentalDays = estimatedDays;
                 vehicle.EstimatedRentalCost = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, checkInDate.Value, checkOutDate.Value);
                 vehicle.AvailabilityNote = vehicle.IsAvailableForSelectedDates

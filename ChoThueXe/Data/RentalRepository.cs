@@ -251,8 +251,8 @@ public class RentalRepository : IRentalRepository
             sb.AppendLine("          join contracts c on c.contract_id = cd.contract_id");
             sb.AppendLine("          where cd.vehicle_id = v.vehicle_id");
             sb.AppendLine("            and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
-            sb.AppendLine("            and cd.start_date <= :p_end_date");
-            sb.AppendLine("            and cd.end_date >= :p_start_date");
+            sb.AppendLine("            and trunc(cd.start_date) <= trunc(:p_end_date)");
+            sb.AppendLine("            and trunc(cd.end_date) + 1 >= trunc(:p_start_date)");
             sb.AppendLine("      ) then 0 else 1 end as is_available_for_selected_dates");
         }
         else
@@ -305,8 +305,8 @@ public class RentalRepository : IRentalRepository
             sb.AppendLine("          join contracts c on c.contract_id = cd.contract_id");
             sb.AppendLine("          where cd.vehicle_id = v.vehicle_id");
             sb.AppendLine("            and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
-            sb.AppendLine("            and cd.start_date <= :p_end_date");
-            sb.AppendLine("            and cd.end_date >= :p_start_date");
+            sb.AppendLine("            and trunc(cd.start_date) <= trunc(:p_end_date)");
+            sb.AppendLine("            and trunc(cd.end_date) + 1 >= trunc(:p_start_date)");
             sb.AppendLine("      ) then 0 else 1 end as is_available_for_selected_dates");
         }
         else
@@ -614,7 +614,7 @@ public class RentalRepository : IRentalRepository
                 c.status
             from contracts c
             join users u on u.user_id = c.customer_id
-            where c.status = 'PENDING'
+            where upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'ACTIVE', 'IN_PROGRESS')
             order by c.contract_id desc";
 
         var result = new List<PendingContractViewModel>();
@@ -648,7 +648,7 @@ public class RentalRepository : IRentalRepository
                 c.contract_id,
                 c.customer_id,
                 u.full_name,
-                c.total_amount,
+                nvl(c.total_amount, 0) as total_amount,
                 nvl((
                     select sum(p.amount)
                     from payments p
@@ -657,7 +657,7 @@ public class RentalRepository : IRentalRepository
                 c.status
             from contracts c
             join users u on u.user_id = c.customer_id
-            where c.status = 'PENDING'
+                        where upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'ACTIVE', 'IN_PROGRESS')
               and c.customer_id = :p_customer_id
             order by c.contract_id desc";
 
@@ -693,8 +693,8 @@ public class RentalRepository : IRentalRepository
                 c.contract_id,
                 u.full_name,
                 nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                nvl(c.start_date, c.created_at) as start_date,
-                nvl(c.end_date, c.created_at) as end_date,
+                nvl(c.start_date, nvl(c.contract_date, c.created_at)) as start_date,
+                nvl(c.end_date, nvl(c.start_date, nvl(c.contract_date, c.created_at))) as end_date,
                 nvl(c.total_amount, 0) as total_amount,
                 nvl(c.status, 'PENDING') as status
             from contracts c
@@ -708,8 +708,8 @@ public class RentalRepository : IRentalRepository
                 c.contract_id,
                 u.full_name,
                 nvl(v.vehicle_name, 'N/A') as vehicle_name,
-                c.created_at as start_date,
-                c.created_at as end_date,
+                nvl(c.contract_date, c.created_at) as start_date,
+                nvl(c.contract_date, c.created_at) as end_date,
                 nvl(c.total_amount, 0) as total_amount,
                 nvl(c.status, 'PENDING') as status
             from contracts c
@@ -2502,24 +2502,91 @@ public class RentalRepository : IRentalRepository
 
     public async Task MakePaymentAsync(PaymentInputModel input)
     {
+        if (input.ContractId <= 0 || input.Amount <= 0)
+        {
+            throw new InvalidOperationException("Du lieu thanh toan khong hop le.");
+        }
+
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
-        await using var command = new OracleCommand("sp_make_payment", connection)
-        {
-            CommandType = CommandType.StoredProcedure
-        };
-
-        command.Parameters.Add("p_contract_id", OracleDbType.Int32, input.ContractId, ParameterDirection.Input);
-        command.Parameters.Add("p_amount", OracleDbType.Decimal, input.Amount, ParameterDirection.Input);
-
         try
         {
+            await using var command = new OracleCommand("sp_make_payment", connection)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            command.Parameters.Add("p_contract_id", OracleDbType.Int32, input.ContractId, ParameterDirection.Input);
+            command.Parameters.Add("p_amount", OracleDbType.Decimal, input.Amount, ParameterDirection.Input);
             await command.ExecuteNonQueryAsync();
         }
         catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
         {
-            throw new InvalidOperationException("Khong the thanh toan vi stored procedure chua san sang tren DB.");
+            // Fallback for environments where sp_make_payment is not provisioned yet.
+            var paymentId = await GetNextIdNonTransactionalAsync(connection, "payments", "payment_id");
+            const string fallbackInsertSql = @"
+                insert into payments (payment_id, contract_id, amount, payment_method, payment_date, status)
+                values (:p_payment_id, :p_contract_id, :p_amount, 'CASH', sysdate, 'PAID')";
+
+            await using var fallbackInsert = new OracleCommand(fallbackInsertSql, connection);
+            fallbackInsert.Parameters.Add("p_payment_id", OracleDbType.Int32, paymentId, ParameterDirection.Input);
+            fallbackInsert.Parameters.Add("p_contract_id", OracleDbType.Int32, input.ContractId, ParameterDirection.Input);
+            fallbackInsert.Parameters.Add("p_amount", OracleDbType.Decimal, input.Amount, ParameterDirection.Input);
+            await fallbackInsert.ExecuteNonQueryAsync();
+        }
+
+        await FinalizeContractPaymentAsync(connection, input.ContractId);
+    }
+
+    private async Task FinalizeContractPaymentAsync(OracleConnection connection, int contractId)
+    {
+        const string summarySql = @"
+            select
+                nvl(c.total_amount, 0) as total_amount,
+                nvl((select sum(p.amount) from payments p where p.contract_id = c.contract_id), 0) as paid_amount,
+                c.customer_id
+            from contracts c
+            where c.contract_id = :p_contract_id";
+
+        decimal totalAmount;
+        decimal paidAmount;
+        int customerId;
+
+        await using (var summaryCommand = new OracleCommand(summarySql, connection))
+        {
+            summaryCommand.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            await using var reader = await summaryCommand.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+            {
+                throw new InvalidOperationException("Khong tim thay hop dong de cap nhat thanh toan.");
+            }
+
+            totalAmount = reader.IsDBNull(0) ? 0m : reader.GetDecimal(0);
+            paidAmount = reader.IsDBNull(1) ? 0m : reader.GetDecimal(1);
+            customerId = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+        }
+
+        if (totalAmount > 0m && paidAmount >= totalAmount)
+        {
+            const string updateStatusSql = @"
+                update contracts
+                set status = 'PAID'
+                where contract_id = :p_contract_id
+                  and upper(nvl(status, 'PENDING')) not in ('PAID', 'COMPLETED', 'DONE', 'FINISHED')";
+
+            await using var updateCommand = new OracleCommand(updateStatusSql, connection);
+            updateCommand.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            await updateCommand.ExecuteNonQueryAsync();
+
+            if (customerId > 0)
+            {
+                await AddNotificationSafeAsync(
+                    connection,
+                    customerId,
+                    "Thanh toan hop dong",
+                    $"Hop dong #{contractId} da duoc thanh toan day du. Cam on ban.");
+            }
         }
     }
 
@@ -2582,23 +2649,47 @@ public class RentalRepository : IRentalRepository
 
     private async Task AddNotificationSafeAsync(OracleConnection connection, int userId, string title, string message)
     {
-        var insertSql = $@"
-            insert into {NotificationsTable} (
-                notification_id, user_id, title, message, is_read, created_at
-            )
-            values (
-                :p_notification_id, :p_user_id, :p_title, :p_message, 0, sysdate
-            )";
-
         try
         {
+            var availableColumns = await GetTableColumnsAsync(connection, NotificationsTable);
+            if (availableColumns.Count == 0)
+            {
+                return;
+            }
+
             var notificationId = await GetNextIdNonTransactionalAsync(connection, NotificationsTable, "notification_id");
+            var hasTitleColumn = availableColumns.Contains("TITLE");
+            var normalizedMessage = hasTitleColumn
+                ? message
+                : string.IsNullOrWhiteSpace(title)
+                    ? message
+                    : $"[{title}] {message}";
+
+            var insertSql = hasTitleColumn
+                ? $@"
+                    insert into {NotificationsTable} (
+                        notification_id, user_id, title, message, is_read, created_at
+                    )
+                    values (
+                        :p_notification_id, :p_user_id, :p_title, :p_message, 0, sysdate
+                    )"
+                : $@"
+                    insert into {NotificationsTable} (
+                        notification_id, user_id, message, is_read, created_at
+                    )
+                    values (
+                        :p_notification_id, :p_user_id, :p_message, 0, sysdate
+                    )";
 
             await using var command = new OracleCommand(insertSql, connection);
             command.Parameters.Add("p_notification_id", OracleDbType.Int32, notificationId, ParameterDirection.Input);
             command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
-            command.Parameters.Add("p_title", OracleDbType.Varchar2, title, ParameterDirection.Input);
-            command.Parameters.Add("p_message", OracleDbType.Varchar2, message, ParameterDirection.Input);
+            if (hasTitleColumn)
+            {
+                command.Parameters.Add("p_title", OracleDbType.Varchar2, title, ParameterDirection.Input);
+            }
+
+            command.Parameters.Add("p_message", OracleDbType.Varchar2, normalizedMessage, ParameterDirection.Input);
             await command.ExecuteNonQueryAsync();
         }
         catch (OracleException ex) when (IsMissingObjectError(ex))
@@ -2687,6 +2778,30 @@ public class RentalRepository : IRentalRepository
         return Convert.ToInt32(raw);
     }
 
+    private static async Task<HashSet<string>> GetTableColumnsAsync(OracleConnection connection, string tableName)
+    {
+        const string sql = @"
+            select upper(column_name)
+            from user_tab_columns
+            where upper(table_name) = :p_table_name";
+
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using var command = new OracleCommand(sql, connection);
+        command.Parameters.Add("p_table_name", OracleDbType.Varchar2, tableName.ToUpperInvariant(), ParameterDirection.Input);
+        await using var reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var column = Convert.ToString(reader[0]);
+            if (!string.IsNullOrWhiteSpace(column))
+            {
+                columns.Add(column);
+            }
+        }
+
+        return columns;
+    }
+
     public async Task<ContractFullViewModel?> GetContractByIdAsync(int contractId)
     {
         try
@@ -2699,7 +2814,8 @@ public class RentalRepository : IRentalRepository
                        c.start_date, c.end_date, c.total_amount, c.status, c.created_at,
                        u.full_name as customer_name, u.email as customer_email,
                        e.full_name as employee_name, e.email as employee_email,
-                       v.vehicle_name, v.price_per_day, b.brand_name, t.type_name
+                      v.vehicle_name, v.price_per_day, b.brand_name, t.type_name,
+                      nvl((select sum(p.amount) from payments p where p.contract_id = c.contract_id), 0) as paid_amount
                 from contracts c
                 left join users u on c.customer_id = u.user_id
                 left join users e on c.employee_id = e.user_id
@@ -2736,7 +2852,8 @@ public class RentalRepository : IRentalRepository
                 VehicleName = reader.IsDBNull(13) ? string.Empty : reader.GetString(13),
                 PricePerDay = reader.IsDBNull(14) ? 0 : reader.GetDecimal(14),
                 BrandName = reader.IsDBNull(15) ? string.Empty : reader.GetString(15),
-                TypeName = reader.IsDBNull(16) ? string.Empty : reader.GetString(16)
+                TypeName = reader.IsDBNull(16) ? string.Empty : reader.GetString(16),
+                PaidAmount = reader.IsDBNull(17) ? 0 : reader.GetDecimal(17)
             };
         }
         catch (OracleException)
@@ -2964,6 +3081,22 @@ public class RentalRepository : IRentalRepository
         await using var connection = new OracleConnection(_connectionString);
         await connection.OpenAsync();
 
+        int? customerId = null;
+        const string customerSql = @"
+            select customer_id
+            from contracts
+            where contract_id = :p_contract_id";
+
+        await using (var customerCommand = new OracleCommand(customerSql, connection))
+        {
+            customerCommand.Parameters.Add("p_contract_id", OracleDbType.Int32, contractId, ParameterDirection.Input);
+            var rawCustomer = await customerCommand.ExecuteScalarAsync();
+            if (rawCustomer is not null && rawCustomer != DBNull.Value)
+            {
+                customerId = Convert.ToInt32(rawCustomer);
+            }
+        }
+
         await using var command = new OracleCommand("sp_approve_contract", connection)
         {
             CommandType = CommandType.StoredProcedure
@@ -2990,6 +3123,15 @@ public class RentalRepository : IRentalRepository
             {
                 throw new InvalidOperationException("Khong tim thay hop dong de duyet.");
             }
+        }
+
+        if (customerId.HasValue)
+        {
+            await AddNotificationSafeAsync(
+                connection,
+                customerId.Value,
+                "Cap nhat hop dong",
+                $"Hop dong #{contractId} da duoc duyet. Ban co the tiep tuc thanh toan/nhan xe.");
         }
     }
 

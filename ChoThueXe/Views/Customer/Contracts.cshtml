@@ -205,7 +205,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <a href="/Rental/Details/@contract.ContractId" class="btn">Chi tiết</a>
+                                        <a asp-controller="Rental" asp-action="Details" asp-route-contractId="@contract.ContractId" class="btn">Chi tiết</a>
                                     </td>
                                 </tr>
                             }
@@ -249,7 +249,8 @@
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="ContractId" value="@pending.ContractId" />
                                             <input type="hidden" name="Amount" value="@pending.DueAmount" />
-                                            <button type="submit" class="btn btn-primary">Thanh toán đủ</button>
+                                            <input type="hidden" name="redirectContractId" value="@pending.ContractId" />
+                                            <button type="submit" class="btn btn-primary">Đã thanh toán</button>
                                         </form>
                                     </td>
                                 </tr>

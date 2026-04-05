@@ -227,6 +227,22 @@ public class RentalController : Controller
 
         try
         {
+            var blockedRanges = await _rentalRepository.GetVehicleRentalDatesAsync(input.VehicleId);
+            var hasOverlap = blockedRanges.Any(range =>
+                range.StartDate.Date <= input.EndDate.Date
+                && range.EndDate.Date.AddDays(1) >= input.StartDate.Date);
+
+            if (hasOverlap)
+            {
+                TempData["Error"] = "Xe dang ban hoac dang trong ngay bao duong (+1) theo khoang ngay ban chon.";
+                return RedirectToAction("Book", new
+                {
+                    vehicleId = input.VehicleId,
+                    checkIn = input.StartDate.Date.ToString("yyyy-MM-dd"),
+                    checkOut = input.EndDate.Date.ToString("yyyy-MM-dd")
+                });
+            }
+
             var userId = User.GetUserId();
             var isVerified = await _rentalRepository.IsUserVerifiedAsync(userId);
             if (!isVerified)
@@ -250,7 +266,7 @@ public class RentalController : Controller
             }
 
             await _rentalRepository.RentVehicleAsync(input);
-            TempData["Success"] = "Dat thue xe thanh cong.";
+            TempData["Success"] = "Yeu cau thue xe da duoc tao. He thong dang cho nhan vien/Admin duyet.";
             return RedirectToAction("Index", "Customer");
         }
         catch (InvalidOperationException ex)
@@ -311,6 +327,13 @@ public class RentalController : Controller
                 model.StartDate = checkIn.Value.Date;
                 model.EndDate = checkOut.Value.Date;
             }
+
+            var rentalDates = await _rentalRepository.GetVehicleRentalDatesAsync(vehicleId);
+            ViewBag.VehicleName = vehicle.VehicleName;
+            ViewBag.VehicleBrand = vehicle.BrandName;
+            ViewBag.VehicleType = vehicle.TypeName;
+            ViewBag.PricePerDay = vehicle.PricePerDay;
+            ViewBag.RentalDates = rentalDates;
 
             return View(model);
         }

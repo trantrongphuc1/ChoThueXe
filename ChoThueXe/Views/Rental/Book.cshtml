@@ -3,6 +3,10 @@
 
 @{
     ViewData["Title"] = "Đặt xe";
+    var vehicleName = ViewBag.VehicleName as string ?? "Xe đã chọn";
+    var vehicleBrand = ViewBag.VehicleBrand as string ?? string.Empty;
+    var vehicleType = ViewBag.VehicleType as string ?? string.Empty;
+    var pricePerDay = ViewBag.PricePerDay is decimal price ? price : 0m;
 }
 
 <style>
@@ -301,6 +305,193 @@
         color: var(--text-primary);
     }
 
+    .date-picker-trigger {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        padding: 12px 14px;
+        font-size: 14px;
+        text-align: left;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .booking-alert {
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.14);
+        color: #fecaca;
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 13px;
+        margin-top: 10px;
+        display: none;
+    }
+
+    .booking-alert.show {
+        display: block;
+    }
+
+    .picker-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.72);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1200;
+        padding: 16px;
+    }
+
+    .picker-modal.show {
+        display: flex;
+    }
+
+    .picker-modal-card {
+        width: min(900px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+    }
+
+    .picker-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .picker-body {
+        padding: 14px 16px;
+        display: grid;
+        gap: 10px;
+    }
+
+    .picker-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .picker-point {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg-primary);
+        padding: 8px 10px;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .picker-point strong {
+        display: block;
+        color: var(--text-primary);
+        font-size: 14px;
+        margin-top: 2px;
+    }
+
+    .picker-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .picker-nav-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .picker-calendars {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        gap: 10px;
+    }
+
+    .picker-month {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .picker-month-head {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .picker-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px;
+        padding: 8px;
+    }
+
+    .picker-cell {
+        min-height: 30px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+    }
+
+    .picker-head-day {
+        color: var(--text-secondary);
+        min-height: 20px;
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+
+    .picker-day {
+        cursor: pointer;
+        color: #dcfce7;
+        background: rgba(34, 197, 94, 0.14);
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .picker-day.busy {
+        background: rgba(239, 68, 68, 0.22);
+        border-color: rgba(239, 68, 68, 0.48);
+        color: #fecaca;
+    }
+
+    .picker-day.busy.maintenance {
+        background: rgba(234, 179, 8, 0.26);
+        border-color: rgba(234, 179, 8, 0.46);
+        color: #fef3c7;
+    }
+
+    .picker-day-other {
+        opacity: 0.25;
+        cursor: default;
+    }
+
+    .picker-day-selected {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+        font-weight: 700;
+    }
+
+    .picker-day-between {
+        box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.26);
+    }
+
+    .picker-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid var(--border);
+        padding: 12px 16px;
+    }
+
     /* Responsive */
     @@media (max-width: 768px) {
         .booking-grid {
@@ -318,6 +509,15 @@
 
         .booking-header h1 {
             font-size: 24px;
+        }
+
+        .picker-calendars {
+            grid-template-columns: 1fr;
+        }
+
+        .picker-nav {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -344,18 +544,21 @@
                 <!-- Rental Dates -->
                 <div class="form-section">
                     <div class="form-section-title">📅 Ngày thuê</div>
-                    <div class="form-row">
+                    <div class="form-row full">
                         <div class="form-group">
-                            <label for="startDate">Ngày bắt đầu</label>
-                            <input asp-for="StartDate" type="datetime-local" id="startDate" min="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
+                            <label>Khoảng ngày thuê</label>
+                            <button id="openBookingDatePicker" type="button" class="date-picker-trigger">
+                                @(Model.StartDate.Year > 1 && Model.EndDate.Year > 1
+                                    ? $"{Model.StartDate:dd/MM/yyyy} - {Model.EndDate:dd/MM/yyyy}"
+                                    : "Chọn từ ngày đến ngày")
+                            </button>
+                            <input asp-for="StartDate" type="hidden" id="startDate" value="@(Model.StartDate.Year > 1 ? Model.StartDate.ToString("yyyy-MM-dd") : string.Empty)" />
+                            <input asp-for="EndDate" type="hidden" id="endDate" value="@(Model.EndDate.Year > 1 ? Model.EndDate.ToString("yyyy-MM-dd") : string.Empty)" />
                             <span asp-validation-for="StartDate" class="error-message"></span>
-                        </div>
-                        <div class="form-group">
-                            <label for="endDate">Ngày kết thúc</label>
-                            <input asp-for="EndDate" type="datetime-local" id="endDate" min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" required />
                             <span asp-validation-for="EndDate" class="error-message"></span>
                         </div>
                     </div>
+                    <div id="bookingBusyAlert" class="booking-alert">Xe đang bận hoặc đang trong ngày bảo dưỡng (+1) theo lịch thuê hiện có.</div>
                     <div class="info-box">
                         Tối thiểu 24 giờ thuê. Phí hủy phụ thuộc vào thời gian hủy.
                     </div>
@@ -456,8 +659,9 @@
 
                 <div class="vehicle-summary">
                     <div class="vehicle-image">🚗</div>
-                    <div class="vehicle-name">Toyota Camry 2024</div>
-                    <div class="vehicle-price">2.500.000đ/ngày</div>
+                    <div class="vehicle-name">@vehicleName</div>
+                    <div style="font-size:13px; color: var(--text-secondary); margin-bottom:8px;">@vehicleBrand • @vehicleType</div>
+                    <div class="vehicle-price">@pricePerDay.ToString("N0")đ/ngày</div>
                 </div>
 
                 <div class="summary-row">
@@ -467,7 +671,7 @@
 
                 <div class="summary-row">
                     <label>Giá/ngày:</label>
-                    <span>2.500.000đ</span>
+                    <span id="pricePerDayText">@pricePerDay.ToString("N0")đ</span>
                 </div>
 
                 <div class="summary-row">
@@ -487,7 +691,7 @@
 
                 <div class="summary-row total">
                     <label>Tổng cộng:</label>
-                    <span id="totalPrice">2.500.000đ</span>
+                    <span id="totalPrice">@pricePerDay.ToString("N0")đ</span>
                 </div>
 
                 <div class="btn-group">
@@ -507,37 +711,361 @@
     </form>
 </div>
 
+<div id="bookingDatePickerModal" class="picker-modal" aria-hidden="true">
+    <div class="picker-modal-card" role="dialog" aria-modal="true" aria-labelledby="bookingDatePickerTitle">
+        <div class="picker-head">
+            <h3 id="bookingDatePickerTitle" style="font-size:16px; margin:0;">Chọn khoảng ngày thuê</h3>
+            <button type="button" class="btn btn-secondary" id="closeBookingDatePicker">Đóng</button>
+        </div>
+        <div class="picker-body">
+            <div class="picker-summary">
+                <div class="picker-point">Từ ngày<strong id="bookingSelectedStart">Chưa chọn</strong></div>
+                <div class="picker-point">Đến ngày<strong id="bookingSelectedEnd">Chưa chọn</strong></div>
+            </div>
+            <div class="picker-nav">
+                <span id="bookingPickerWindowLabel" class="picker-nav-label">Đang xem tháng hiện tại và tháng kế tiếp</span>
+                <div style="display:flex; gap:8px;">
+                    <button type="button" id="bookingPickerPrev" class="btn btn-secondary">Back</button>
+                    <button type="button" id="bookingPickerNext" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+            <div id="bookingPickerCalendars" class="picker-calendars"></div>
+        </div>
+        <div class="picker-actions">
+            <button type="button" class="btn btn-secondary" id="bookingPickerClear">Bỏ chọn ngày</button>
+            <button type="button" class="btn btn-primary" id="bookingPickerApply">Xong</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Calculate rental days and price
-    function updateCalculation() {
-        const startDate = new Date(document.getElementById('startDate').value);
-        const endDate = new Date(document.getElementById('endDate').value);
+    const pricePerDay = @pricePerDay;
+    const blockedRanges = @Html.Raw(Json.Serialize(((IReadOnlyList<ChoThueXe.Models.Portal.RentalDateRange>?)ViewBag.RentalDates ?? Array.Empty<ChoThueXe.Models.Portal.RentalDateRange>()).Select(x => new {
+        startDate = x.StartDate.ToString("yyyy-MM-dd"),
+        endDate = x.EndDate.ToString("yyyy-MM-dd")
+    })));
 
-        if (startDate && endDate && startDate < endDate) {
-            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const pricePerDay = 2500000;
-            let total = days * pricePerDay;
+    const bookingRangeState = {
+        start: document.getElementById('startDate')?.value || '',
+        end: document.getElementById('endDate')?.value || '',
+        monthOffset: 0
+    };
 
-            // Add services
-            if (document.getElementById('insurance').checked) {
-                total += days * (pricePerDay * 0.05);
-            }
-            if (document.getElementById('gps').checked) {
-                total += days * 50000;
-            }
-            if (document.getElementById('driver').checked) {
-                total += days * 200000;
+    function parseDate(value) {
+        const [year, month, day] = (value || '').split('-').map(Number);
+        if (!year || !month || !day) {
+            return null;
+        }
+
+        const dt = new Date(year, month - 1, day);
+        dt.setHours(0, 0, 0, 0);
+        return dt;
+    }
+
+    function dateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function formatDateDisplay(value) {
+        if (!value) {
+            return 'Chưa chọn';
+        }
+        const [y, m, d] = value.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function isBusyDay(date) {
+        return blockedRanges.some(range => {
+            const start = parseDate(range.startDate);
+            const end = parseDate(range.endDate);
+            if (!start || !end) {
+                return false;
             }
 
-            document.getElementById('daysCount').textContent = days;
-            document.getElementById('basePrice').textContent = (days * pricePerDay).toLocaleString('vi-VN') + 'đ';
-            document.getElementById('totalPrice').textContent = total.toLocaleString('vi-VN') + 'đ';
+            return date >= start && date <= end;
+        });
+    }
+
+    function isMaintenanceDay(date) {
+        return blockedRanges.some(range => {
+            const end = parseDate(range.endDate);
+            if (!end) {
+                return false;
+            }
+
+            const maintenance = new Date(end);
+            maintenance.setDate(maintenance.getDate() + 1);
+            return dateKey(maintenance) === dateKey(date);
+        });
+    }
+
+    function hasOverlapWithBlocked(startDate, endDate) {
+        if (!startDate || !endDate) {
+            return false;
+        }
+
+        return blockedRanges.some(range => {
+            const start = parseDate(range.startDate);
+            const end = parseDate(range.endDate);
+            if (!start || !end) {
+                return false;
+            }
+
+            end.setDate(end.getDate() + 1);
+            return start <= endDate && end >= startDate;
+        });
+    }
+
+    function refreshBookingDisplay() {
+        const trigger = document.getElementById('openBookingDatePicker');
+        const startEl = document.getElementById('bookingSelectedStart');
+        const endEl = document.getElementById('bookingSelectedEnd');
+        if (trigger) {
+            trigger.textContent = bookingRangeState.start && bookingRangeState.end
+                ? `${formatDateDisplay(bookingRangeState.start)} - ${formatDateDisplay(bookingRangeState.end)}`
+                : 'Chọn từ ngày đến ngày';
+        }
+        if (startEl) {
+            startEl.textContent = formatDateDisplay(bookingRangeState.start);
+        }
+        if (endEl) {
+            endEl.textContent = formatDateDisplay(bookingRangeState.end);
+        }
+
+        const hiddenStart = document.getElementById('startDate');
+        const hiddenEnd = document.getElementById('endDate');
+        if (hiddenStart) {
+            hiddenStart.value = bookingRangeState.start;
+        }
+        if (hiddenEnd) {
+            hiddenEnd.value = bookingRangeState.end;
         }
     }
 
-    document.getElementById('startDate').addEventListener('change', updateCalculation);
-    document.getElementById('endDate').addEventListener('change', updateCalculation);
-    document.getElementById('insurance').addEventListener('change', updateCalculation);
-    document.getElementById('gps').addEventListener('change', updateCalculation);
-    document.getElementById('driver').addEventListener('change', updateCalculation);
+    function updateCalculation() {
+        const startDate = parseDate(bookingRangeState.start);
+        const endDate = parseDate(bookingRangeState.end);
+
+        const daysCount = document.getElementById('daysCount');
+        const basePrice = document.getElementById('basePrice');
+        const totalPrice = document.getElementById('totalPrice');
+        const busyAlert = document.getElementById('bookingBusyAlert');
+        const submitButton = document.querySelector('button[type="submit"].btn-primary');
+
+        const days = startDate && endDate && endDate >= startDate
+            ? Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)))
+            : 1;
+
+        let total = days * Number(pricePerDay || 0);
+
+        if (document.getElementById('insurance')?.checked) {
+            total += days * (Number(pricePerDay || 0) * 0.05);
+        }
+        if (document.getElementById('gps')?.checked) {
+            total += days * 50000;
+        }
+        if (document.getElementById('driver')?.checked) {
+            total += days * 200000;
+        }
+
+        if (daysCount) {
+            daysCount.textContent = String(days);
+        }
+        if (basePrice) {
+            basePrice.textContent = (days * Number(pricePerDay || 0)).toLocaleString('vi-VN') + 'đ';
+        }
+        if (totalPrice) {
+            totalPrice.textContent = total.toLocaleString('vi-VN') + 'đ';
+        }
+
+        const isBlocked = startDate && endDate && hasOverlapWithBlocked(startDate, endDate);
+        if (busyAlert) {
+            busyAlert.classList.toggle('show', Boolean(isBlocked));
+        }
+        if (submitButton) {
+            submitButton.disabled = Boolean(isBlocked);
+            submitButton.style.opacity = isBlocked ? '0.6' : '1';
+            submitButton.style.cursor = isBlocked ? 'not-allowed' : 'pointer';
+        }
+    }
+
+    function buildPickerMonth(year, month) {
+        const monthElement = document.createElement('div');
+        monthElement.className = 'picker-month';
+
+        const monthHeader = document.createElement('div');
+        monthHeader.className = 'picker-month-head';
+        monthHeader.textContent = new Date(year, month, 1).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+        monthElement.appendChild(monthHeader);
+
+        const grid = document.createElement('div');
+        grid.className = 'picker-grid';
+        ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].forEach(day => {
+            const head = document.createElement('div');
+            head.className = 'picker-cell picker-head-day';
+            head.textContent = day;
+            grid.appendChild(head);
+        });
+
+        const firstDay = new Date(year, month, 1);
+        const start = new Date(firstDay);
+        start.setDate(start.getDate() - firstDay.getDay());
+
+        const selectedStart = parseDate(bookingRangeState.start);
+        const selectedEnd = parseDate(bookingRangeState.end);
+
+        for (let i = 0; i < 42; i++) {
+            const current = new Date(start);
+            current.setDate(start.getDate() + i);
+            const key = dateKey(current);
+
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'picker-cell picker-day';
+            cell.textContent = String(current.getDate());
+
+            if (current.getMonth() !== month) {
+                cell.classList.add('picker-day-other');
+            }
+
+            if (isBusyDay(current)) {
+                cell.classList.add('busy');
+                cell.title = `${key}: Đã có hợp đồng`;
+            }
+            if (isMaintenanceDay(current)) {
+                cell.classList.add('busy', 'maintenance');
+                cell.title = `${key}: Bảo dưỡng (+1)`;
+            }
+
+            if (selectedStart && key === dateKey(selectedStart)) {
+                cell.classList.add('picker-day-selected');
+            }
+            if (selectedEnd && key === dateKey(selectedEnd)) {
+                cell.classList.add('picker-day-selected');
+            }
+            if (selectedStart && selectedEnd && current > selectedStart && current < selectedEnd) {
+                cell.classList.add('picker-day-between');
+            }
+
+            cell.addEventListener('click', () => {
+                const hasStart = Boolean(bookingRangeState.start);
+                const hasEnd = Boolean(bookingRangeState.end);
+                if (!hasStart || (hasStart && hasEnd)) {
+                    bookingRangeState.start = key;
+                    bookingRangeState.end = '';
+                } else {
+                    if (key >= bookingRangeState.start) {
+                        bookingRangeState.end = key;
+                    } else {
+                        bookingRangeState.end = bookingRangeState.start;
+                        bookingRangeState.start = key;
+                    }
+                }
+
+                refreshBookingDisplay();
+                renderBookingCalendars();
+                updateCalculation();
+            });
+
+            grid.appendChild(cell);
+        }
+
+        monthElement.appendChild(grid);
+        return monthElement;
+    }
+
+    function renderBookingCalendars() {
+        const wrapper = document.getElementById('bookingPickerCalendars');
+        const label = document.getElementById('bookingPickerWindowLabel');
+        const prevButton = document.getElementById('bookingPickerPrev');
+        if (!wrapper) {
+            return;
+        }
+
+        wrapper.innerHTML = '';
+        const base = new Date();
+        base.setDate(1);
+        const startMonth = new Date(base.getFullYear(), base.getMonth() + bookingRangeState.monthOffset, 1);
+        const endMonth = new Date(base.getFullYear(), base.getMonth() + bookingRangeState.monthOffset + 1, 1);
+
+        if (label) {
+            label.textContent = `${startMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })} - ${endMonth.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}`;
+        }
+        if (prevButton) {
+            prevButton.disabled = bookingRangeState.monthOffset <= 0;
+        }
+
+        for (let i = 0; i < 2; i++) {
+            const target = new Date(base.getFullYear(), base.getMonth() + bookingRangeState.monthOffset + i, 1);
+            wrapper.appendChild(buildPickerMonth(target.getFullYear(), target.getMonth()));
+        }
+    }
+
+    function openBookingDatePicker() {
+        const modal = document.getElementById('bookingDatePickerModal');
+        if (!modal) {
+            return;
+        }
+
+        bookingRangeState.monthOffset = 0;
+        refreshBookingDisplay();
+        renderBookingCalendars();
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeBookingDatePicker() {
+        const modal = document.getElementById('bookingDatePickerModal');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.getElementById('openBookingDatePicker')?.addEventListener('click', openBookingDatePicker);
+    document.getElementById('closeBookingDatePicker')?.addEventListener('click', closeBookingDatePicker);
+    document.getElementById('bookingPickerNext')?.addEventListener('click', () => {
+        bookingRangeState.monthOffset += 1;
+        renderBookingCalendars();
+    });
+    document.getElementById('bookingPickerPrev')?.addEventListener('click', () => {
+        if (bookingRangeState.monthOffset <= 0) {
+            return;
+        }
+        bookingRangeState.monthOffset -= 1;
+        renderBookingCalendars();
+    });
+    document.getElementById('bookingPickerClear')?.addEventListener('click', () => {
+        bookingRangeState.start = '';
+        bookingRangeState.end = '';
+        refreshBookingDisplay();
+        renderBookingCalendars();
+        updateCalculation();
+    });
+    document.getElementById('bookingPickerApply')?.addEventListener('click', () => {
+        if (bookingRangeState.start && !bookingRangeState.end) {
+            bookingRangeState.end = bookingRangeState.start;
+        }
+        refreshBookingDisplay();
+        updateCalculation();
+        closeBookingDatePicker();
+    });
+
+    document.getElementById('bookingDatePickerModal')?.addEventListener('click', (event) => {
+        if (event.target?.id === 'bookingDatePickerModal') {
+            closeBookingDatePicker();
+        }
+    });
+
+    document.getElementById('insurance')?.addEventListener('change', updateCalculation);
+    document.getElementById('gps')?.addEventListener('change', updateCalculation);
+    document.getElementById('driver')?.addEventListener('change', updateCalculation);
+
+    refreshBookingDisplay();
+    updateCalculation();
 </script>

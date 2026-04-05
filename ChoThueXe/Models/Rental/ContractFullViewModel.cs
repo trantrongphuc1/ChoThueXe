@@ -19,5 +19,7 @@ public class ContractFullViewModel
     public DateTime EndDate { get; set; }
     public DateTime CreatedAt { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal PaidAmount { get; set; }
+    public decimal DueAmount => TotalAmount - PaidAmount;
     public string Status { get; set; } = string.Empty;
 }
