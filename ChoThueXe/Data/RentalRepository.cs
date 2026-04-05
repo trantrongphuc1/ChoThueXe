@@ -84,7 +84,8 @@ public class RentalRepository : IRentalRepository
                     order by vi.image_id
                     fetch first 1 row only
                 ), '') as primary_image_url,
-                1 as is_favorite
+                1 as is_favorite,
+                1 as is_available_for_selected_dates
             from vw_vehicle_detail v
             join {FavoriteVehiclesTable} fv on fv.vehicle_id = v.vehicle_id
             where fv.user_id = :p_user_id
@@ -242,6 +243,22 @@ public class RentalRepository : IRentalRepository
         sb.AppendLine(hasCustomer
             ? "    case when fv.vehicle_id is not null then 1 else 0 end as is_favorite"
             : "    0 as is_favorite");
+        if (hasDateFilter)
+        {
+            sb.AppendLine(",    case when exists (");
+            sb.AppendLine("          select 1");
+            sb.AppendLine("          from contract_details cd");
+            sb.AppendLine("          join contracts c on c.contract_id = cd.contract_id");
+            sb.AppendLine("          where cd.vehicle_id = v.vehicle_id");
+            sb.AppendLine("            and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
+            sb.AppendLine("            and cd.start_date <= :p_end_date");
+            sb.AppendLine("            and cd.end_date >= :p_start_date");
+            sb.AppendLine("      ) then 0 else 1 end as is_available_for_selected_dates");
+        }
+        else
+        {
+            sb.AppendLine(",    1 as is_available_for_selected_dates");
+        }
         sb.AppendLine("from vw_vehicle_detail v");
 
         if (hasCustomer)
@@ -262,19 +279,6 @@ public class RentalRepository : IRentalRepository
             sb.AppendLine($"  and exists (select 1 from {VehicleAmenitiesTable} va where va.vehicle_id = v.vehicle_id and upper(va.amenity_code) = :p_am_{i})");
         }
 
-        if (hasDateFilter)
-        {
-            sb.AppendLine("  and not exists (");
-            sb.AppendLine("      select 1");
-            sb.AppendLine("      from contract_details cd");
-            sb.AppendLine("      join contracts c on c.contract_id = cd.contract_id");
-            sb.AppendLine("      where cd.vehicle_id = v.vehicle_id");
-            sb.AppendLine("        and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
-            sb.AppendLine("        and cd.start_date <= :p_end_date");
-            sb.AppendLine("        and cd.end_date >= :p_start_date");
-            sb.AppendLine("  )");
-        }
-
         sb.AppendLine("order by v.vehicle_id");
         return sb.ToString();
     }
@@ -293,6 +297,22 @@ public class RentalRepository : IRentalRepository
         sb.AppendLine(hasCustomer
             ? "    case when fv.vehicle_id is not null then 1 else 0 end as is_favorite"
             : "    0 as is_favorite");
+        if (hasDateFilter)
+        {
+            sb.AppendLine(",    case when exists (");
+            sb.AppendLine("          select 1");
+            sb.AppendLine("          from contract_details cd");
+            sb.AppendLine("          join contracts c on c.contract_id = cd.contract_id");
+            sb.AppendLine("          where cd.vehicle_id = v.vehicle_id");
+            sb.AppendLine("            and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
+            sb.AppendLine("            and cd.start_date <= :p_end_date");
+            sb.AppendLine("            and cd.end_date >= :p_start_date");
+            sb.AppendLine("      ) then 0 else 1 end as is_available_for_selected_dates");
+        }
+        else
+        {
+            sb.AppendLine(",    1 as is_available_for_selected_dates");
+        }
         sb.AppendLine("from vehicles v");
         sb.AppendLine("left join brands b on b.brand_id = v.brand_id");
         sb.AppendLine("left join vehicle_types t on t.type_id = v.type_id");
@@ -308,19 +328,6 @@ public class RentalRepository : IRentalRepository
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             sb.AppendLine("  and instr(upper(v.vehicle_name || ' ' || nvl(b.brand_name, '') || ' ' || nvl(t.type_name, '')), :p_keyword) > 0");
-        }
-
-        if (hasDateFilter)
-        {
-            sb.AppendLine("  and not exists (");
-            sb.AppendLine("      select 1");
-            sb.AppendLine("      from contract_details cd");
-            sb.AppendLine("      join contracts c on c.contract_id = cd.contract_id");
-            sb.AppendLine("      where cd.vehicle_id = v.vehicle_id");
-            sb.AppendLine("        and upper(nvl(c.status, 'PENDING')) in ('PENDING', 'APPROVED', 'PAID', 'ACTIVE', 'IN_PROGRESS')");
-            sb.AppendLine("        and cd.start_date <= :p_end_date");
-            sb.AppendLine("        and cd.end_date >= :p_start_date");
-            sb.AppendLine("  )");
         }
 
         sb.AppendLine("order by v.vehicle_id");
@@ -340,7 +347,8 @@ public class RentalRepository : IRentalRepository
                 PricePerDay = Convert.ToDecimal(reader["PRICE_PER_DAY"]),
                 AmenitiesText = Convert.ToString(reader["AMENITIES_TEXT"]) ?? string.Empty,
                 PrimaryImageUrl = Convert.ToString(reader["PRIMARY_IMAGE_URL"]) ?? string.Empty,
-                IsFavorite = Convert.ToInt32(reader["IS_FAVORITE"]) == 1
+                IsFavorite = Convert.ToInt32(reader["IS_FAVORITE"]) == 1,
+                IsAvailableForSelectedDates = Convert.ToInt32(reader["IS_AVAILABLE_FOR_SELECTED_DATES"]) == 1
             });
         }
     }

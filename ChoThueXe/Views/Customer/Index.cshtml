@@ -385,6 +385,108 @@
             gap: 10px;
         }
 
+        .date-range-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .date-point {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-primary);
+            padding: 8px 10px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .date-point strong {
+            display: block;
+            color: var(--text-primary);
+            font-size: 14px;
+            margin-top: 2px;
+        }
+
+        .calendar-picker-wrap {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .calendar-month {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-primary);
+            overflow: hidden;
+        }
+
+        .calendar-month-head {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .calendar-cell {
+            min-height: 30px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .calendar-head {
+            color: var(--text-secondary);
+            min-height: 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            cursor: pointer;
+            color: #dcfce7;
+            background: rgba(34, 197, 94, 0.14);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .calendar-day:hover {
+            filter: brightness(1.08);
+        }
+
+        .calendar-day-other {
+            opacity: 0.25;
+            cursor: default;
+        }
+
+        .calendar-day-selected {
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(239, 68, 68, 0.48);
+            color: #fee2e2;
+            font-weight: 700;
+        }
+
+        .calendar-day-between {
+            background: rgba(234, 179, 8, 0.2);
+            border-color: rgba(234, 179, 8, 0.42);
+            color: #fef3c7;
+        }
+
+        .calendar-day-today {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+
         .date-field {
             display: flex;
             flex-direction: column;
@@ -474,9 +576,10 @@
         border-radius: var(--radius);
         overflow: hidden;
         transition: var(--transition);
-        cursor: pointer;
         display: flex;
         flex-direction: column;
+        text-decoration: none;
+        color: inherit;
     }
 
     .vehicle-card:hover {
@@ -534,6 +637,26 @@
         color: #bfdbfe;
         font-size: 12px;
         line-height: 1.45;
+    }
+
+    .vehicle-availability {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .vehicle-availability.available {
+        border: 1px solid rgba(34, 197, 94, 0.4);
+        background: rgba(34, 197, 94, 0.12);
+        color: #bbf7d0;
+    }
+
+    .vehicle-availability.busy {
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.12);
+        color: #fecaca;
     }
 
     @@media (max-width: 768px) {
@@ -616,16 +739,12 @@
                             <button type="button" class="btn btn-secondary" id="closeDateRangeModal">Đóng</button>
                         </div>
                         <div class="amenity-modal-body">
-                            <div class="date-range-grid">
-                                <div class="date-field">
-                                    <label for="modalCheckIn">Từ ngày</label>
-                                    <input id="modalCheckIn" type="date" value="@(Model.CheckInDate?.ToString("yyyy-MM-dd") ?? string.Empty)" />
-                                </div>
-                                <div class="date-field">
-                                    <label for="modalCheckOut">Đến ngày</label>
-                                    <input id="modalCheckOut" type="date" value="@(Model.CheckOutDate?.ToString("yyyy-MM-dd") ?? string.Empty)" />
-                                </div>
+                            <div class="date-range-summary">
+                                <div class="date-point">Từ ngày<strong id="selectedStartText">Chưa chọn</strong></div>
+                                <div class="date-point">Đến ngày<strong id="selectedEndText">Chưa chọn</strong></div>
                             </div>
+                            <div class="search-hint" style="margin-top:0;">Click lần 1 chọn ngày nhận, lần 2 chọn ngày trả, click tiếp sẽ chọn lại từ ngày mới.</div>
+                            <div id="dateRangeCalendar" class="calendar-picker-wrap"></div>
                         </div>
                         <div class="amenity-modal-actions">
                             <button type="button" class="btn btn-secondary" id="clearDateRange">Bỏ chọn ngày</button>
@@ -710,12 +829,28 @@
             <div class="vehicle-grid">
                 @foreach (var vehicle in Model.Vehicles.Take(12))
                 {
-                    <div class="vehicle-card" onclick="location.href='/Rental/Book?vehicleId=@vehicle.VehicleId'">
+                    var detailsUrl = Url.Action(
+                        "VehicleDetails",
+                        "Customer",
+                        new
+                        {
+                            id = vehicle.VehicleId,
+                            checkIn = Model.CheckInDate?.ToString("yyyy-MM-dd"),
+                            checkOut = Model.CheckOutDate?.ToString("yyyy-MM-dd")
+                        }) ?? $"/Customer/VehicleDetails?id={vehicle.VehicleId}";
+
+                    <a class="vehicle-card" href="@detailsUrl">
                         <div class="vehicle-image">🚗</div>
                         <div class="vehicle-info">
                             <div class="vehicle-name">@vehicle.VehicleName</div>
                             <div class="vehicle-brand">@vehicle.BrandName • @vehicle.TypeName</div>
                             <div class="vehicle-price">@vehicle.PricePerDay.ToString("C0")/ngày</div>
+                            @if (Model.CheckInDate.HasValue && Model.CheckOutDate.HasValue)
+                            {
+                                <div class="vehicle-availability @(vehicle.IsAvailableForSelectedDates ? "available" : "busy")">
+                                    @vehicle.AvailabilityNote
+                                </div>
+                            }
                             @if (vehicle.EstimatedRentalCost.HasValue && Model.CheckInDate.HasValue && Model.CheckOutDate.HasValue)
                             {
                                 <div class="vehicle-estimate">
@@ -724,7 +859,7 @@
                                 </div>
                             }
                         </div>
-                    </div>
+                    </a>
                 }
             </div>
         }
@@ -748,14 +883,24 @@
             <div class="vehicle-grid">
                 @foreach (var vehicle in Model.FavoriteVehicles)
                 {
-                    <div class="vehicle-card" onclick="location.href='/Rental/Book?vehicleId=@vehicle.VehicleId'">
+                    var favoriteDetailsUrl = Url.Action(
+                        "VehicleDetails",
+                        "Customer",
+                        new
+                        {
+                            id = vehicle.VehicleId,
+                            checkIn = Model.CheckInDate?.ToString("yyyy-MM-dd"),
+                            checkOut = Model.CheckOutDate?.ToString("yyyy-MM-dd")
+                        }) ?? $"/Customer/VehicleDetails?id={vehicle.VehicleId}";
+
+                    <a class="vehicle-card" href="@favoriteDetailsUrl">
                         <div class="vehicle-image">❤️</div>
                         <div class="vehicle-info">
                             <div class="vehicle-name">@vehicle.VehicleName</div>
                             <div class="vehicle-brand">@vehicle.BrandName • @vehicle.TypeName</div>
                             <div class="vehicle-price">@vehicle.PricePerDay.ToString("C0")/ngày</div>
                         </div>
-                    </div>
+                    </a>
                 }
             </div>
         </div>
@@ -769,8 +914,9 @@
         const closeDateRangeButton = document.getElementById('closeDateRangeModal');
         const applyDateRangeButton = document.getElementById('applyDateRange');
         const clearDateRangeButton = document.getElementById('clearDateRange');
-        const modalCheckIn = document.getElementById('modalCheckIn');
-        const modalCheckOut = document.getElementById('modalCheckOut');
+        const dateRangeCalendar = document.getElementById('dateRangeCalendar');
+        const selectedStartText = document.getElementById('selectedStartText');
+        const selectedEndText = document.getElementById('selectedEndText');
         const hiddenCheckIn = document.getElementById('checkIn');
         const hiddenCheckOut = document.getElementById('checkOut');
         const dateRangeDisplay = document.getElementById('dateRangeDisplay');
@@ -786,6 +932,48 @@
 
         if (!modal || !openButton || !amenityHint) {
             return;
+        }
+
+        const rangeState = {
+            start: '',
+            end: ''
+        };
+
+        function formatDisplayDate(value) {
+            if (!value) {
+                return 'Chưa chọn';
+            }
+
+            const [y, m, d] = value.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function toDate(value) {
+            const [year, month, day] = (value || '').split('-').map(Number);
+            if (!year || !month || !day) {
+                return null;
+            }
+
+            const dt = new Date(year, month - 1, day);
+            dt.setHours(0, 0, 0, 0);
+            return dt;
+        }
+
+        function toKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function refreshDatePointLabels() {
+            if (selectedStartText) {
+                selectedStartText.textContent = formatDisplayDate(rangeState.start);
+            }
+
+            if (selectedEndText) {
+                selectedEndText.textContent = formatDisplayDate(rangeState.end);
+            }
         }
 
         function refreshDateRangeDisplay() {
@@ -804,14 +992,116 @@
             }
         }
 
-        function openDateRangeModal() {
-            if (!dateRangeModal || !modalCheckIn || !modalCheckOut || !hiddenCheckIn || !hiddenCheckOut) {
+        function buildDateMonth(year, month) {
+            const monthElement = document.createElement('div');
+            monthElement.className = 'calendar-month';
+
+            const monthHeader = document.createElement('div');
+            monthHeader.className = 'calendar-month-head';
+            monthHeader.textContent = new Date(year, month, 1).toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' });
+            monthElement.appendChild(monthHeader);
+
+            const grid = document.createElement('div');
+            grid.className = 'calendar-grid';
+            ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].forEach(dayName => {
+                const head = document.createElement('div');
+                head.className = 'calendar-cell calendar-head';
+                head.textContent = dayName;
+                grid.appendChild(head);
+            });
+
+            const firstDay = new Date(year, month, 1);
+            const gridStart = new Date(firstDay);
+            gridStart.setDate(gridStart.getDate() - firstDay.getDay());
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const startDate = toDate(rangeState.start);
+            const endDate = toDate(rangeState.end);
+
+            for (let i = 0; i < 42; i++) {
+                const current = new Date(gridStart);
+                current.setDate(gridStart.getDate() + i);
+
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = 'calendar-cell calendar-day';
+                cell.textContent = String(current.getDate());
+
+                const key = toKey(current);
+                if (current.getMonth() !== month) {
+                    cell.classList.add('calendar-day-other');
+                }
+
+                if (startDate && key === toKey(startDate)) {
+                    cell.classList.add('calendar-day-selected');
+                }
+
+                if (endDate && key === toKey(endDate)) {
+                    cell.classList.add('calendar-day-selected');
+                }
+
+                if (startDate && endDate && current > startDate && current < endDate) {
+                    cell.classList.add('calendar-day-between');
+                }
+
+                if (key === toKey(today)) {
+                    cell.classList.add('calendar-day-today');
+                }
+
+                cell.addEventListener('click', () => {
+                    const clicked = key;
+                    const hasStart = Boolean(rangeState.start);
+                    const hasEnd = Boolean(rangeState.end);
+
+                    if (!hasStart || (hasStart && hasEnd)) {
+                        rangeState.start = clicked;
+                        rangeState.end = '';
+                    } else {
+                        if (clicked >= rangeState.start) {
+                            rangeState.end = clicked;
+                        } else {
+                            rangeState.end = rangeState.start;
+                            rangeState.start = clicked;
+                        }
+                    }
+
+                    refreshDatePointLabels();
+                    renderDateRangeCalendar();
+                });
+
+                grid.appendChild(cell);
+            }
+
+            monthElement.appendChild(grid);
+            return monthElement;
+        }
+
+        function renderDateRangeCalendar() {
+            if (!dateRangeCalendar) {
                 return;
             }
 
-            modalCheckIn.value = hiddenCheckIn.value;
-            modalCheckOut.value = hiddenCheckOut.value;
-            modalCheckOut.min = modalCheckIn.value || '';
+            dateRangeCalendar.innerHTML = '';
+            const base = new Date();
+            base.setDate(1);
+
+            for (let offset = 0; offset < 6; offset++) {
+                const target = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+                dateRangeCalendar.appendChild(buildDateMonth(target.getFullYear(), target.getMonth()));
+            }
+        }
+
+        function openDateRangeModal() {
+            if (!dateRangeModal || !hiddenCheckIn || !hiddenCheckOut) {
+                return;
+            }
+
+            rangeState.start = hiddenCheckIn.value || '';
+            rangeState.end = hiddenCheckOut.value || '';
+            refreshDatePointLabels();
+            renderDateRangeCalendar();
             dateRangeModal.classList.add('show');
             dateRangeModal.setAttribute('aria-hidden', 'false');
         }
@@ -828,42 +1118,32 @@
         openDateRangeButton?.addEventListener('click', openDateRangeModal);
         closeDateRangeButton?.addEventListener('click', closeDateRangeModal);
         applyDateRangeButton?.addEventListener('click', () => {
-            if (!hiddenCheckIn || !hiddenCheckOut || !modalCheckIn || !modalCheckOut) {
+            if (!hiddenCheckIn || !hiddenCheckOut) {
                 return;
             }
 
-            if (modalCheckIn.value && modalCheckOut.value && modalCheckOut.value < modalCheckIn.value) {
-                modalCheckOut.value = modalCheckIn.value;
+            if (rangeState.start && !rangeState.end) {
+                rangeState.end = rangeState.start;
             }
 
-            hiddenCheckIn.value = modalCheckIn.value || '';
-            hiddenCheckOut.value = modalCheckOut.value || '';
+            hiddenCheckIn.value = rangeState.start || '';
+            hiddenCheckOut.value = rangeState.end || '';
             refreshDateRangeDisplay();
             closeDateRangeModal();
         });
 
         clearDateRangeButton?.addEventListener('click', () => {
-            if (!hiddenCheckIn || !hiddenCheckOut || !modalCheckIn || !modalCheckOut) {
+            if (!hiddenCheckIn || !hiddenCheckOut) {
                 return;
             }
 
             hiddenCheckIn.value = '';
             hiddenCheckOut.value = '';
-            modalCheckIn.value = '';
-            modalCheckOut.value = '';
-            modalCheckOut.min = '';
+            rangeState.start = '';
+            rangeState.end = '';
+            refreshDatePointLabels();
+            renderDateRangeCalendar();
             refreshDateRangeDisplay();
-        });
-
-        modalCheckIn?.addEventListener('change', () => {
-            if (!modalCheckIn || !modalCheckOut) {
-                return;
-            }
-
-            modalCheckOut.min = modalCheckIn.value || '';
-            if (modalCheckOut.value && modalCheckIn.value && modalCheckOut.value < modalCheckIn.value) {
-                modalCheckOut.value = modalCheckIn.value;
-            }
         });
 
         dateRangeModal?.addEventListener('click', (event) => {

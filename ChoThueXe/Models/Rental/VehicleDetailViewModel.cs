@@ -17,4 +17,6 @@ public class VehicleDetailViewModel
     public bool IsFavorite { get; set; }
     public decimal? EstimatedRentalCost { get; set; }
     public int? EstimatedRentalDays { get; set; }
+    public bool IsAvailableForSelectedDates { get; set; } = true;
+    public string AvailabilityNote { get; set; } = string.Empty;
 }

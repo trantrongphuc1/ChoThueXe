@@ -570,7 +570,7 @@ public class CustomerController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> VehicleDetails(int id)
+    public async Task<IActionResult> VehicleDetails(int id, DateTime? checkIn, DateTime? checkOut)
     {
         if (id <= 0)
         {
@@ -591,6 +591,34 @@ public class CustomerController : Controller
             }
 
             var rentalDates = await _rentalRepository.GetVehicleRentalDatesAsync(id);
+            var selectedCheckIn = checkIn?.Date;
+            var selectedCheckOut = checkOut?.Date;
+
+            bool? isAvailableForSelectedDates = null;
+            decimal? estimatedRentalCost = null;
+            int? estimatedRentalDays = null;
+            var availabilityNote = string.Empty;
+
+            if (selectedCheckIn.HasValue && selectedCheckOut.HasValue && selectedCheckOut.Value >= selectedCheckIn.Value)
+            {
+                isAvailableForSelectedDates = !rentalDates.Any(range =>
+                    range.StartDate.Date <= selectedCheckOut.Value
+                    && range.EndDate.Date >= selectedCheckIn.Value);
+
+                estimatedRentalDays = Math.Max(1, (selectedCheckOut.Value - selectedCheckIn.Value).Days);
+                estimatedRentalCost = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, selectedCheckIn.Value, selectedCheckOut.Value);
+                availabilityNote = isAvailableForSelectedDates.Value
+                    ? "Xe dang ranh trong khoang ngay ban chon."
+                    : "Xe khong ranh trong khoang ngay ban chon. Vui long doi ngay khac.";
+            }
+            else if (selectedCheckIn.HasValue ^ selectedCheckOut.HasValue)
+            {
+                availabilityNote = "Vui long chon day du ca ngay nhan va ngay tra de kiem tra lich va tam tinh chi phi.";
+            }
+            else if (selectedCheckIn.HasValue && selectedCheckOut.HasValue && selectedCheckOut.Value < selectedCheckIn.Value)
+            {
+                availabilityNote = "Ngay tra phai lon hon hoac bang ngay nhan.";
+            }
 
             var model = new VehicleDetailsViewModel
             {
@@ -602,7 +630,13 @@ public class CustomerController : Controller
                 AmenitiesText = vehicle.AmenitiesText,
                 PrimaryImageUrl = vehicle.PrimaryImageUrl,
                 IsFavorite = vehicle.IsFavorite,
-                RentalDates = rentalDates
+                RentalDates = rentalDates,
+                SelectedCheckInDate = selectedCheckIn,
+                SelectedCheckOutDate = selectedCheckOut,
+                IsAvailableForSelectedDates = isAvailableForSelectedDates,
+                AvailabilityNote = availabilityNote,
+                EstimatedRentalCost = estimatedRentalCost,
+                EstimatedRentalDays = estimatedRentalDays
             };
 
             return View(model);
@@ -704,6 +738,9 @@ public class CustomerController : Controller
             {
                 vehicle.EstimatedRentalDays = estimatedDays;
                 vehicle.EstimatedRentalCost = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, checkInDate.Value, checkOutDate.Value);
+                vehicle.AvailabilityNote = vehicle.IsAvailableForSelectedDates
+                    ? "Xe dang ranh trong khoang ngay da chon."
+                    : "Xe khong ranh trong khoang ngay da chon.";
             }
         }
 

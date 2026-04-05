@@ -41,6 +41,9 @@
     .heatmap-close { border: 1px solid var(--border); background: var(--bg-tertiary); color: var(--text-primary); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
     .heatmap-body { padding: 12px 14px; }
     .heatmap-empty { color: var(--text-secondary); margin-bottom: 10px; }
+    .heatmap-filter { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .heatmap-filter label { color: var(--text-secondary); font-size: 13px; }
+    .heatmap-filter select { min-width: 140px; }
     .heatmap-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
     .legend-item { display: flex; gap: 8px; align-items: center; color: var(--text-secondary); font-size: 13px; }
     .legend-color { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); }
@@ -270,6 +273,12 @@
         </div>
         <div class="heatmap-body">
             <div id="heatmapSummary" class="heatmap-empty">Đang tải dữ liệu...</div>
+            <div class="heatmap-filter">
+                <label for="heatmapYearSelect">Lọc theo năm</label>
+                <select id="heatmapYearSelect" class="form-control">
+                    <option value="2026">2026</option>
+                </select>
+            </div>
             <div class="heatmap-legend">
                 <div class="legend-item"><span class="legend-color" style="background: rgba(239, 68, 68, 0.22);"></span><span>Ngày có hợp đồng</span></div>
                 <div class="legend-item"><span class="legend-color" style="background: rgba(234, 179, 8, 0.28);"></span><span>Ngày bảo dưỡng (+1 sau thuê)</span></div>
@@ -284,7 +293,14 @@
     const heatmapModal = document.getElementById('vehicleHeatmapModal');
     const heatmapTitle = document.getElementById('heatmapTitle');
     const heatmapSummary = document.getElementById('heatmapSummary');
+    const heatmapYearSelect = document.getElementById('heatmapYearSelect');
     const heatmapCalendar = document.getElementById('heatmapCalendar');
+    const defaultHeatmapYear = 2026;
+    let heatmapState = {
+        rentedKeys: new Set(),
+        maintenanceKeys: new Set(),
+        years: [defaultHeatmapYear]
+    };
 
     function parseLocalDate(dateStr) {
         const [y, m, d] = (dateStr || '').split('-').map(Number);
@@ -324,7 +340,7 @@
     }
 
     async function openVehicleHeatmap(vehicleId, vehicleName) {
-        if (!heatmapModal || !heatmapTitle || !heatmapSummary || !heatmapCalendar) {
+        if (!heatmapModal || !heatmapTitle || !heatmapSummary || !heatmapCalendar || !heatmapYearSelect) {
             return;
         }
 
@@ -333,6 +349,8 @@
         heatmapTitle.textContent = `Lịch hợp đồng xe #${vehicleId} - ${vehicleName}`;
         heatmapSummary.textContent = 'Đang tải dữ liệu...';
         heatmapCalendar.innerHTML = '';
+        heatmapYearSelect.innerHTML = `<option value="${defaultHeatmapYear}">${defaultHeatmapYear}</option>`;
+        heatmapYearSelect.value = String(defaultHeatmapYear);
 
         try {
             const response = await fetch(`/Admin/VehicleSchedule?vehicleId=${vehicleId}`);
@@ -344,17 +362,16 @@
             }
 
             const ranges = Array.isArray(payload?.ranges) ? payload.ranges : [];
-            renderVehicleHeatmap(ranges);
+            renderVehicleHeatmap(ranges, defaultHeatmapYear);
         } catch {
             heatmapSummary.textContent = 'Không thể tải lịch thuê xe lúc này.';
         }
     }
 
-    function renderVehicleHeatmap(ranges) {
+    function renderVehicleHeatmap(ranges, initialYear) {
         const rentedKeys = new Set();
         const maintenanceKeys = new Set();
-        let minDate = null;
-        let maxDate = null;
+        const years = new Set([defaultHeatmapYear]);
 
         ranges.forEach(range => {
             const start = parseLocalDate(range.startDate);
@@ -364,38 +381,68 @@
             }
 
             enumerateRangeDays(start, end).forEach(day => rentedKeys.add(formatDateKey(day)));
+            enumerateRangeDays(start, end).forEach(day => years.add(day.getFullYear()));
 
             const maintenanceDay = new Date(end);
             maintenanceDay.setDate(maintenanceDay.getDate() + 1);
             maintenanceKeys.add(formatDateKey(maintenanceDay));
-
-            if (!minDate || start < minDate) {
-                minDate = new Date(start);
-            }
-            if (!maxDate || maintenanceDay > maxDate) {
-                maxDate = new Date(maintenanceDay);
-            }
+            years.add(maintenanceDay.getFullYear());
         });
 
-        if (!minDate || !maxDate) {
-            heatmapSummary.textContent = 'Xe này chưa có hợp đồng nào để hiển thị heatmap.';
+        heatmapState = {
+            rentedKeys,
+            maintenanceKeys,
+            years: Array.from(years).sort((a, b) => a - b)
+        };
+
+        populateHeatmapYearFilter(initialYear);
+        renderVehicleHeatmapByYear(Number(heatmapYearSelect?.value || defaultHeatmapYear));
+    }
+
+    function populateHeatmapYearFilter(selectedYear) {
+        if (!heatmapYearSelect) {
             return;
         }
 
-        const months = [];
-        const begin = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
-        const endMonth = new Date(maxDate.getFullYear(), maxDate.getMonth(), 1);
-        for (let cursor = new Date(begin); cursor <= endMonth; cursor.setMonth(cursor.getMonth() + 1)) {
-            months.push({ year: cursor.getFullYear(), month: cursor.getMonth() });
+        const years = heatmapState.years.length > 0 ? heatmapState.years : [defaultHeatmapYear];
+        heatmapYearSelect.innerHTML = years
+            .map(year => `<option value="${year}">${year}</option>`)
+            .join('');
+
+        const targetYear = years.includes(selectedYear) ? selectedYear : (years.includes(defaultHeatmapYear) ? defaultHeatmapYear : years[0]);
+        heatmapYearSelect.value = String(targetYear);
+    }
+
+    function countDaysForYear(dayKeys, year) {
+        const prefix = `${year}-`;
+        let count = 0;
+        for (const key of dayKeys) {
+            if (key.startsWith(prefix)) {
+                count += 1;
+            }
         }
 
-        const rentedCount = rentedKeys.size;
-        const maintenanceCount = maintenanceKeys.size;
-        heatmapSummary.textContent = `Tổng ${rentedCount} ngày có hợp đồng, ${maintenanceCount} ngày bảo dưỡng (+1).`;
+        return count;
+    }
 
-        months.forEach(m => {
-            heatmapCalendar.appendChild(buildMonthCalendar(m.year, m.month, rentedKeys, maintenanceKeys));
-        });
+    function renderVehicleHeatmapByYear(year) {
+        if (!heatmapCalendar || !heatmapSummary) {
+            return;
+        }
+
+        heatmapCalendar.innerHTML = '';
+
+        const rentedCount = countDaysForYear(heatmapState.rentedKeys, year);
+        const maintenanceCount = countDaysForYear(heatmapState.maintenanceKeys, year);
+        if (rentedCount === 0 && maintenanceCount === 0) {
+            heatmapSummary.textContent = `Năm ${year}: chưa có hợp đồng. Đang hiển thị lịch trống mặc định.`;
+        } else {
+            heatmapSummary.textContent = `Năm ${year}: ${rentedCount} ngày có hợp đồng, ${maintenanceCount} ngày bảo dưỡng (+1).`;
+        }
+
+        for (let month = 0; month < 12; month += 1) {
+            heatmapCalendar.appendChild(buildMonthCalendar(year, month, heatmapState.rentedKeys, heatmapState.maintenanceKeys));
+        }
     }
 
     function buildMonthCalendar(year, month, rentedKeys, maintenanceKeys) {
@@ -462,6 +509,11 @@
         if (event.key === 'Escape') {
             closeVehicleHeatmap();
         }
+    });
+
+    heatmapYearSelect?.addEventListener('change', function (event) {
+        const selectedYear = Number(event.target?.value || defaultHeatmapYear);
+        renderVehicleHeatmapByYear(selectedYear);
     });
 
     async function uploadVehicleImages() {

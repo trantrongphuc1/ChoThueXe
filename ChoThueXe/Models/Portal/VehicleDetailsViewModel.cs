@@ -13,6 +13,12 @@ public class VehicleDetailsViewModel
     public string PrimaryImageUrl { get; set; } = string.Empty;
     public bool IsFavorite { get; set; }
     public IReadOnlyList<RentalDateRange> RentalDates { get; set; } = [];
+    public DateTime? SelectedCheckInDate { get; set; }
+    public DateTime? SelectedCheckOutDate { get; set; }
+    public bool? IsAvailableForSelectedDates { get; set; }
+    public string AvailabilityNote { get; set; } = string.Empty;
+    public decimal? EstimatedRentalCost { get; set; }
+    public int? EstimatedRentalDays { get; set; }
 }
 
 public class RentalDateRange

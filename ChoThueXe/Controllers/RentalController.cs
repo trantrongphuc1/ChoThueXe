@@ -286,7 +286,7 @@ public class RentalController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Book(int vehicleId)
+    public async Task<IActionResult> Book(int vehicleId, DateTime? checkIn, DateTime? checkOut)
     {
         if (vehicleId <= 0)
         {
@@ -305,6 +305,13 @@ public class RentalController : Controller
             }
 
             var model = new RentVehicleInputModel { VehicleId = vehicleId };
+
+            if (checkIn.HasValue && checkOut.HasValue && checkOut.Value.Date >= checkIn.Value.Date)
+            {
+                model.StartDate = checkIn.Value.Date;
+                model.EndDate = checkOut.Value.Date;
+            }
+
             return View(model);
         }
         catch (OracleException ex)
