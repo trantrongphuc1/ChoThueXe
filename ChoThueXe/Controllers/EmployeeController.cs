@@ -35,7 +35,7 @@ public class EmployeeController : Controller
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the tai dashboard nhan vien luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể tải dashboard nhân viên lúc này. Vui lòng thử lại.";
             return RedirectToAction("Login", "Auth");
         }
     }
@@ -47,7 +47,7 @@ public class EmployeeController : Controller
 
         if (resolvedContractId <= 0)
         {
-            TempData["Error"] = "Hop dong khong hop le.";
+            TempData["Error"] = "Hợp đồng không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -56,7 +56,7 @@ public class EmployeeController : Controller
             var contract = await _rentalRepository.GetContractByIdAsync(resolvedContractId);
             if (contract is null)
             {
-                TempData["Error"] = "Khong tim thay hop dong.";
+                TempData["Error"] = "Không tìm thấy hợp đồng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -64,7 +64,7 @@ public class EmployeeController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("lay chi tiet hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("lấy chi tiết hợp đồng", ex);
             return RedirectToAction(nameof(Index));
         }
     }
@@ -75,7 +75,7 @@ public class EmployeeController : Controller
     {
         if (customerId <= 0)
         {
-            TempData["Error"] = "Thong tin tao hop dong khong hop le.";
+            TempData["Error"] = "Thông tin tạo hợp đồng không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -83,7 +83,7 @@ public class EmployeeController : Controller
         {
             var employeeId = User.GetUserId();
             await _rentalRepository.CreateContractDraftAsync(customerId, employeeId);
-            TempData["Success"] = "Nhan vien da tao hop dong draft thanh cong.";
+            TempData["Success"] = "Nhân viên đã tạo hợp đồng draft thành công.";
         }
         catch (InvalidOperationException ex)
         {
@@ -91,7 +91,7 @@ public class EmployeeController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo hợp đồng", ex);
         }
 
         return RedirectToAction(nameof(Index));
@@ -103,26 +103,26 @@ public class EmployeeController : Controller
     {
         if (contractId <= 0)
         {
-            TempData["Error"] = "Hop dong khong hop le.";
+            TempData["Error"] = "Hợp đồng không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
         try
         {
             await _rentalRepository.ApproveContractAsync(contractId);
-            TempData["Success"] = "Da duyet hop dong thanh cong. Khach hang co the thanh toan.";
+            TempData["Success"] = "Đã duyệt hợp đồng thành công. Khách hàng có thể thanh toán.";
         }
         catch (Oracle.ManagedDataAccess.Client.OracleException ex) when (ex.Message.Contains("User chua xac minh"))
         {
-            TempData["Error"] = "Khach hang chua xac minh giay to. Vui long yeu cau khach hang submit CCCD/Bang lai trc.";
+            TempData["Error"] = "Khách hàng chưa xác minh giấy tờ. Vui lòng yêu cầu khách hàng submit CCCD/Bằng lái trước.";
         }
         catch (Oracle.ManagedDataAccess.Client.OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("duyet hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("duyệt hợp đồng", ex);
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the duyet hop dong luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể duyệt hợp đồng lúc này. Vui lòng thử lại.";
         }
 
         return RedirectToAction(nameof(Index));
@@ -132,27 +132,27 @@ public class EmployeeController : Controller
     {
         if (ex.Number is 904 or 942 or 4043 or 6508 or 6550)
         {
-            return $"Khong the {operation} do he thong du lieu chua san sang.";
+            return $"Không thể {operation} do hệ thống dữ liệu chưa sẵn sàng.";
         }
 
         if (ex.Number == 1031)
         {
-            return $"Khong the {operation} do tai khoan DB chua duoc cap quyen EXECUTE procedure.";
+            return $"Không thể {operation} do tài khoản DB chưa được cấp quyền EXECUTE procedure.";
         }
 
         if (ex.Number == 6553)
         {
-            return $"Khong the {operation} do quyen role/procedure tren DB chua duoc cap dung.";
+            return $"Không thể {operation} do quyền role/procedure trên DB chưa được cấp đúng.";
         }
 
-        return $"Khong the {operation} luc nay. Vui long thu lai.";
+        return $"Không thể {operation} lúc này. Vui lòng thử lại.";
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateVehicle(CreateVehicleInputModel input)
+    public IActionResult CreateVehicle(CreateVehicleInputModel input)
     {
-        TempData["Error"] = "Nhan vien khong co quyen tao xe. Vui long lien he Admin.";
+        TempData["Error"] = "Nhân viên không có quyền tạo xe. Vui lòng liên hệ Admin.";
         return RedirectToAction(nameof(Index));
     }
 
@@ -183,21 +183,21 @@ public class EmployeeController : Controller
     [HttpGet]
     public IActionResult Revenue()
     {
-        TempData["Error"] = "Bao cao doanh thu cho nhan vien dang duoc cap nhat. Vui long quay lai sau.";
+        TempData["Error"] = "Báo cáo doanh thu cho nhân viên đang được cập nhật. Vui lòng quay lại sau.";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
     public IActionResult Reviews()
     {
-        TempData["Error"] = "Chuc nang quan ly danh gia dang duoc cap nhat.";
+        TempData["Error"] = "Chức năng quản lý đánh giá đang được cập nhật.";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpGet]
     public IActionResult Support()
     {
-        TempData["Error"] = "Chuc nang ho tro cho nhan vien dang duoc cap nhat.";
+        TempData["Error"] = "Chức năng hỗ trợ cho nhân viên đang được cập nhật.";
         return RedirectToAction(nameof(Index));
     }
 }

@@ -57,7 +57,7 @@ public class AdminController : Controller
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the tai tab quan ly xe luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể tải tab quản lý xe lúc này. Vui lòng thử lại.";
             return RedirectToAction("Login", "Auth");
         }
     }
@@ -88,7 +88,7 @@ public class AdminController : Controller
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the tai tab quan ly khach hang luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể tải tab quản lý khách hàng lúc này. Vui lòng thử lại.";
             return RedirectToAction("Login", "Auth");
         }
     }
@@ -100,14 +100,14 @@ public class AdminController : Controller
         input.UserId = 0;
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin tao tai khoan khong hop le.";
+            TempData["Error"] = "Thông tin tạo tài khoản không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         try
         {
             await _rentalRepository.CreateAdminAccountAsync(input);
-            TempData["Success"] = "Da tao tai khoan moi thanh cong.";
+            TempData["Success"] = "Đã tạo tài khoản mới thành công.";
         }
         catch (InvalidOperationException ex)
         {
@@ -115,7 +115,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao tai khoan", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo tài khoản", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -127,14 +127,14 @@ public class AdminController : Controller
     {
         if (input.UserId <= 0 || !ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin cap nhat tai khoan khong hop le.";
+            TempData["Error"] = "Thông tin cập nhật tài khoản không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         try
         {
             await _rentalRepository.UpdateAdminAccountAsync(input);
-            TempData["Success"] = "Da cap nhat tai khoan thanh cong.";
+            TempData["Success"] = "Đã cập nhật tài khoản thành công.";
         }
         catch (InvalidOperationException ex)
         {
@@ -142,7 +142,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("cap nhat tai khoan", ex);
+            TempData["Error"] = BuildOracleErrorMessage("cập nhật tài khoản", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -154,20 +154,20 @@ public class AdminController : Controller
     {
         if (userId <= 0)
         {
-            TempData["Error"] = "Tai khoan khong hop le.";
+            TempData["Error"] = "Tài khoản không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         if (userId == User.GetUserId())
         {
-            TempData["Error"] = "Khong the xoa chinh tai khoan dang dang nhap.";
+            TempData["Error"] = "Không thể xóa chính tài khoản đang đăng nhập.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         try
         {
             await _rentalRepository.DeleteAdminAccountAsync(userId);
-            TempData["Success"] = "Da xoa tai khoan thanh cong.";
+            TempData["Success"] = "Đã xóa tài khoản thành công.";
         }
         catch (InvalidOperationException ex)
         {
@@ -175,7 +175,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("xoa tai khoan", ex);
+            TempData["Error"] = BuildOracleErrorMessage("xóa tài khoản", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -199,7 +199,7 @@ public class AdminController : Controller
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the tai tab quan ly don thue luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể tải tab quản lý đơn thuê lúc này. Vui lòng thử lại.";
             return RedirectToAction("Login", "Auth");
         }
     }
@@ -209,7 +209,7 @@ public class AdminController : Controller
     {
         if (contractId <= 0)
         {
-            TempData["Error"] = "Hop dong khong hop le.";
+            TempData["Error"] = "Hợp đồng không hợp lệ.";
             return RedirectToAction(nameof(RentalManagement));
         }
 
@@ -218,7 +218,7 @@ public class AdminController : Controller
             var contract = await _rentalRepository.GetContractByIdAsync(contractId);
             if (contract is null)
             {
-                TempData["Error"] = "Khong tim thay hop dong.";
+                TempData["Error"] = "Không tìm thấy hợp đồng.";
                 return RedirectToAction(nameof(RentalManagement));
             }
 
@@ -226,7 +226,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("lay chi tiet hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("lấy chi tiết hợp đồng", ex);
             return RedirectToAction(nameof(RentalManagement));
         }
     }
@@ -307,7 +307,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tai bao cao doanh thu", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tải báo cáo doanh thu", ex);
             return RedirectToAction(nameof(RentalManagement));
         }
     }
@@ -318,18 +318,18 @@ public class AdminController : Controller
     {
         if (documentId <= 0)
         {
-            TempData["Error"] = "Document id khong hop le.";
+            TempData["Error"] = "Document id không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         try
         {
             await _rentalRepository.ApproveDocumentAsync(documentId, User.GetUserId());
-            TempData["Success"] = "Da duyet giay to thanh cong.";
+            TempData["Success"] = "Đã duyệt giấy tờ thành công.";
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("duyet giay to", ex);
+            TempData["Error"] = BuildOracleErrorMessage("duyệt giấy tờ", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -347,18 +347,18 @@ public class AdminController : Controller
 
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin xe khong hop le.";
+            TempData["Error"] = "Thông tin xe không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
         try
         {
             await _rentalRepository.AddVehicleAsync(input);
-            TempData["Success"] = "Admin da them xe thanh cong va gui thong bao den khach hang.";
+            TempData["Success"] = "Admin đã thêm xe thành công và gửi thông báo đến khách hàng.";
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = $"{BuildOracleErrorMessage("them xe", ex)} (Ma loi ORA: {ex.Number})";
+            TempData["Error"] = $"{BuildOracleErrorMessage("thêm xe", ex)} (Mã lỗi ORA: {ex.Number})";
         }
 
         return RedirectToAction(nameof(VehicleManagement));
@@ -370,14 +370,14 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(brandName))
         {
-            TempData["Error"] = "Ten hang xe khong hop le.";
+            TempData["Error"] = "Tên hãng xe không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
         try
         {
             await _rentalRepository.CreateBrandAsync(brandName);
-            TempData["Success"] = "Da tao hang xe moi.";
+            TempData["Success"] = "Đã tạo hãng xe mới.";
         }
         catch (InvalidOperationException ex)
         {
@@ -385,7 +385,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao hang xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo hãng xe", ex);
         }
 
         return RedirectToAction(nameof(VehicleManagement));
@@ -397,14 +397,14 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(typeName))
         {
-            TempData["Error"] = "Ten loai xe khong hop le.";
+            TempData["Error"] = "Tên loại xe không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
         try
         {
             await _rentalRepository.CreateVehicleTypeAsync(typeName);
-            TempData["Success"] = "Da tao loai xe moi.";
+            TempData["Success"] = "Đã tạo loại xe mới.";
         }
         catch (InvalidOperationException ex)
         {
@@ -412,7 +412,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao loai xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo loại xe", ex);
         }
 
         return RedirectToAction(nameof(VehicleManagement));
@@ -424,14 +424,14 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(amenityName))
         {
-            TempData["Error"] = "Ten tien nghi khong hop le.";
+            TempData["Error"] = "Tên tiện nghi không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
         try
         {
             await _rentalRepository.CreateAmenityAsync(amenityName);
-            TempData["Success"] = "Da tao tien nghi moi.";
+            TempData["Success"] = "Đã tạo tiện nghi mới.";
         }
         catch (InvalidOperationException ex)
         {
@@ -439,7 +439,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao tien nghi", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo tiện nghi", ex);
         }
 
         return RedirectToAction(nameof(VehicleManagement));
@@ -451,14 +451,14 @@ public class AdminController : Controller
     {
         if (vehicleId <= 0)
         {
-            TempData["Error"] = "Xe khong hop le.";
+            TempData["Error"] = "Xe không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
         try
         {
             await _rentalRepository.DeleteVehicleAsync(vehicleId, User.GetUserId());
-            TempData["Success"] = "Da xoa xe thanh cong.";
+            TempData["Success"] = "Đã xóa xe thành công.";
         }
         catch (InvalidOperationException ex)
         {
@@ -466,7 +466,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("xoa xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("xóa xe", ex);
         }
 
         return RedirectToAction(nameof(VehicleManagement));
@@ -477,7 +477,7 @@ public class AdminController : Controller
     {
         if (vehicleId <= 0)
         {
-            TempData["Error"] = "Xe khong hop le.";
+            TempData["Error"] = "Xe không hợp lệ.";
             return RedirectToAction(nameof(VehicleManagement));
         }
 
@@ -486,7 +486,7 @@ public class AdminController : Controller
             var viewModel = await _rentalRepository.GetVehicleForEditAsync(vehicleId);
             if (viewModel is null)
             {
-                TempData["Error"] = "Khong tim thay xe.";
+                TempData["Error"] = "Không tìm thấy xe.";
                 return RedirectToAction(nameof(VehicleManagement));
             }
 
@@ -498,7 +498,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("lay thong tin xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("lấy thông tin xe", ex);
             return RedirectToAction(nameof(VehicleManagement));
         }
     }
@@ -508,7 +508,7 @@ public class AdminController : Controller
     {
         if (vehicleId <= 0)
         {
-            return BadRequest(new { error = "Xe khong hop le." });
+            return BadRequest(new { error = "Xe không hợp lệ." });
         }
 
         try
@@ -530,7 +530,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            return StatusCode(500, new { error = BuildOracleErrorMessage("lay lich thue xe", ex) });
+            return StatusCode(500, new { error = BuildOracleErrorMessage("lấy lịch thuê xe", ex) });
         }
     }
 
@@ -540,7 +540,7 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin xe khong hop le.";
+            TempData["Error"] = "Thông tin xe không hợp lệ.";
             return RedirectToAction(nameof(EditVehicle), new { vehicleId = input.VehicleId });
         }
 
@@ -553,11 +553,11 @@ public class AdminController : Controller
             }
 
             await _rentalRepository.UpdateVehicleAsync(input);
-            TempData["Success"] = "Cap nhat thong tin xe thanh cong.";
+            TempData["Success"] = "Cập nhật thông tin xe thành công.";
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("cap nhat xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("cập nhật xe", ex);
             return RedirectToAction(nameof(EditVehicle), new { vehicleId = input.VehicleId });
         }
 
@@ -570,18 +570,18 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Noi dung phan hoi khong hop le.";
+            TempData["Error"] = "Nội dung phản hồi không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
         try
         {
             await _rentalRepository.ReplyMessageAsync(input.MessageId, User.GetUserId(), input.ReplyContent);
-            TempData["Success"] = "Da gui phan hoi cho khach hang.";
+            TempData["Success"] = "Đã gửi phản hồi cho khách hàng.";
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("phan hoi tin nhan", ex);
+            TempData["Error"] = BuildOracleErrorMessage("phản hồi tin nhắn", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -593,7 +593,7 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Du lieu duyet giay to khong hop le.";
+            TempData["Error"] = "Dữ liệu duyệt giấy tờ không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
@@ -601,12 +601,12 @@ public class AdminController : Controller
         {
             await _rentalRepository.ReviewUserDocumentsAsync(input.UserId, User.GetUserId(), input.IsMatched);
             TempData["Success"] = input.IsMatched
-                ? "Da duyet CCCD va bang lai, thong tin khop."
-                : "Da tu choi bo giay to do khong khop.";
+                ? "Đã duyệt CCCD và bằng lái, thông tin khớp."
+                : "Đã từ chối bộ giấy tờ do không khớp.";
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("duyet bo giay to", ex);
+            TempData["Error"] = BuildOracleErrorMessage("duyệt bộ giấy tờ", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -618,7 +618,7 @@ public class AdminController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Du lieu duyet cap nhat thong tin khong hop le.";
+            TempData["Error"] = "Dữ liệu duyệt cập nhật thông tin không hợp lệ.";
             return RedirectToAction(nameof(CustomerManagement));
         }
 
@@ -626,8 +626,8 @@ public class AdminController : Controller
         {
             await _rentalRepository.ReviewProfileUpdateRequestAsync(input.RequestId, User.GetUserId(), input.IsApproved);
             TempData["Success"] = input.IsApproved
-                ? "Da duyet yeu cau cap nhat thong tin ca nhan."
-                : "Da tu choi yeu cau cap nhat thong tin ca nhan.";
+                ? "Đã duyệt yêu cầu cập nhật thông tin cá nhân."
+                : "Đã từ chối yêu cầu cập nhật thông tin cá nhân.";
         }
         catch (InvalidOperationException ex)
         {
@@ -635,7 +635,7 @@ public class AdminController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("duyet cap nhat thong tin", ex);
+            TempData["Error"] = BuildOracleErrorMessage("duyệt cập nhật thông tin", ex);
         }
 
         return RedirectToAction(nameof(CustomerManagement));
@@ -647,7 +647,7 @@ public class AdminController : Controller
     {
         if (files is null || files.Count == 0)
         {
-            return BadRequest(new { error = "Vui long chon it nhat 1 anh." });
+            return BadRequest(new { error = "Vui lòng chọn ít nhất 1 ảnh." });
         }
 
         var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -660,7 +660,7 @@ public class AdminController : Controller
         var webRootPath = _webHostEnvironment.WebRootPath;
         if (string.IsNullOrWhiteSpace(webRootPath))
         {
-            return StatusCode(500, new { error = "Khong tim thay thu muc luu anh tren he thong." });
+            return StatusCode(500, new { error = "Không tìm thấy thư mục lưu ảnh trên hệ thống." });
         }
 
         var uploadFolder = Path.Combine(webRootPath, "uploads", "vehicles");
@@ -678,12 +678,12 @@ public class AdminController : Controller
             var extension = Path.GetExtension(file.FileName);
             if (string.IsNullOrWhiteSpace(extension) || !allowedExtensions.Contains(extension))
             {
-                return BadRequest(new { error = $"File '{file.FileName}' khong hop le. Chi ho tro JPG, PNG, WEBP." });
+                return BadRequest(new { error = $"File '{file.FileName}' không hợp lệ. Chỉ hỗ trợ JPG, PNG, WEBP." });
             }
 
             if (file.Length > maxSizeInBytes)
             {
-                return BadRequest(new { error = $"File '{file.FileName}' vuot qua 8MB." });
+                return BadRequest(new { error = $"File '{file.FileName}' vượt quá 8MB." });
             }
 
             var safeFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
@@ -699,7 +699,7 @@ public class AdminController : Controller
 
         if (urls.Count == 0)
         {
-            return BadRequest(new { error = "Khong co file hop le de tai len." });
+            return BadRequest(new { error = "Không có file hợp lệ để tải lên." });
         }
 
         return Json(new { urls });
@@ -709,10 +709,10 @@ public class AdminController : Controller
     {
         if (ex.Number is 904 or 942 or 6550)
         {
-            return $"Khong the {operation} do he thong du lieu chua san sang.";
+            return $"Không thể {operation} do hệ thống dữ liệu chưa sẵn sàng.";
         }
 
-        return $"Khong the {operation} luc nay. Vui long thu lai.";
+        return $"Không thể {operation} lúc này. Vui lòng thử lại.";
     }
 
     private static bool IsCompletedContractStatus(Models.Rental.ContractFullViewModel contract)

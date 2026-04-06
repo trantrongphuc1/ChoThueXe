@@ -255,6 +255,7 @@ PROMPT;
 PROMPT '════ BƯỚC 7: INSERT CONTRACT_DETAILS (40 records) ════';
 
 DECLARE
+  c_success_inserted_prefix CONSTANT VARCHAR2(40) := '[SUCCESS] Inserted ';
   v_detail_id NUMBER;
   v_contract_id NUMBER;
   v_vehicle_id NUMBER;
@@ -277,7 +278,7 @@ BEGIN
     );
   END LOOP;
   
-  DBMS_OUTPUT.PUT_LINE('[SUCCESS] Inserted ' || v_cnt || ' contract_details');
+  DBMS_OUTPUT.PUT_LINE(c_success_inserted_prefix || v_cnt || ' contract_details');
 END;
 /
 
@@ -298,6 +299,7 @@ PROMPT;
 PROMPT '════ BƯỚC 8: INSERT PAYMENTS (40 records) ════';
 
 DECLARE
+  c_success_inserted_prefix CONSTANT VARCHAR2(40) := '[SUCCESS] Inserted ';
   v_payment_id NUMBER;
   v_contract_id NUMBER;
   v_cnt NUMBER := 0;
@@ -316,7 +318,7 @@ BEGIN
     );
   END LOOP;
   
-  DBMS_OUTPUT.PUT_LINE('[SUCCESS] Inserted ' || v_cnt || ' payments');
+  DBMS_OUTPUT.PUT_LINE(c_success_inserted_prefix || v_cnt || ' payments');
 END;
 /
 
@@ -391,6 +393,7 @@ PROMPT;
 PROMPT '════ BƯỚC 10: INSERT REVIEWS (~20 records) ════';
 
 DECLARE
+  c_success_inserted_prefix CONSTANT VARCHAR2(40) := '[SUCCESS] Inserted ';
   v_review_id NUMBER;
   v_cnt NUMBER := 0;
   
@@ -415,7 +418,7 @@ BEGIN
     );
   END LOOP;
   
-  DBMS_OUTPUT.PUT_LINE('[SUCCESS] Inserted ' || v_cnt || ' reviews');
+  DBMS_OUTPUT.PUT_LINE(c_success_inserted_prefix || v_cnt || ' reviews');
 END;
 /
 

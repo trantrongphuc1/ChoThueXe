@@ -53,11 +53,11 @@ namespace ChoThueXe.Controllers
             // Or handle basic validation here
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(content))
             {
-                TempData["Error"] = "Vui long nhap email va noi dung tin nhan.";
+                TempData["Error"] = "Vui lòng nhập email và nội dung tin nhắn.";
                 return RedirectToAction("Contact");
             }
 
-            TempData["Info"] = "Tin nhan cua ban se duoc chuyen den admin.";
+            TempData["Info"] = "Tin nhắn của bạn sẽ được chuyển đến admin.";
             return RedirectToAction("Contact");
         }
     }

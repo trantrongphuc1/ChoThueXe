@@ -91,14 +91,14 @@ public class AuthController : Controller
 
         if (await _authRepository.EmailExistsAsync(input.Email))
         {
-            ViewData["Error"] = "Email da ton tai.";
+            ViewData["Error"] = "Email đã tồn tại.";
             return View(input);
         }
 
         try
         {
             await _authRepository.RegisterCustomerAsync(input);
-            TempData["Success"] = "Dang ky thanh cong, vui long dang nhap.";
+            TempData["Success"] = "Đăng ký thành công, vui lòng đăng nhập.";
             return RedirectToAction(nameof(Login));
         }
         catch (InvalidOperationException ex)
@@ -108,7 +108,7 @@ public class AuthController : Controller
         }
         catch (OracleException)
         {
-            ViewData["Error"] = "Dang ky that bai do loi he thong. Vui long thu lai.";
+            ViewData["Error"] = "Đăng ký thất bại do lỗi hệ thống. Vui lòng thử lại.";
             return View(input);
         }
     }
@@ -125,7 +125,7 @@ public class AuthController : Controller
     {
         if (string.IsNullOrWhiteSpace(email))
         {
-            ViewData["Error"] = "Email khong duoc de trong.";
+            ViewData["Error"] = "Email không được để trống.";
             return View();
         }
 
@@ -133,7 +133,7 @@ public class AuthController : Controller
         {
             var otpCode = await _authRepository.GenerateOtpAsync(email);
             await _emailService.SendOtpEmailAsync(email, otpCode);
-            TempData["Success"] = $"OTP da duoc gui den email {email}.";
+            TempData["Success"] = $"OTP đã được gửi đến email {email}.";
             return RedirectToAction(nameof(ResetPassword));
         }
         catch (InvalidOperationException ex)
@@ -143,12 +143,12 @@ public class AuthController : Controller
         }
         catch (OracleException)
         {
-            ViewData["Error"] = "Khong the gui OTP luc nay do loi he thong du lieu.";
+            ViewData["Error"] = "Không thể gửi OTP lúc này do lỗi hệ thống dữ liệu.";
             return View();
         }
         catch (Exception)
         {
-            ViewData["Error"] = "Khong the gui OTP luc nay. Vui long thu lai.";
+            ViewData["Error"] = "Không thể gửi OTP lúc này. Vui lòng thử lại.";
             return View();
         }
     }
@@ -165,20 +165,20 @@ public class AuthController : Controller
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otpCode) || string.IsNullOrWhiteSpace(newPassword))
         {
-            ViewData["Error"] = "Vui long nhap email, otp va mat khau moi.";
+            ViewData["Error"] = "Vui lòng nhập email, OTP và mật khẩu mới.";
             return View();
         }
 
         if (!await _authRepository.ValidateOtpAsync(email, otpCode))
         {
-            ViewData["Error"] = "OTP khong hop le hoac da het han.";
+            ViewData["Error"] = "OTP không hợp lệ hoặc đã hết hạn.";
             return View();
         }
 
         try
         {
             await _authRepository.ResetPasswordAsync(email, newPassword);
-            TempData["Success"] = "Mat khau da duoc thay doi. Vui long dang nhap lai.";
+            TempData["Success"] = "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.";
             return RedirectToAction(nameof(Login));
         }
         catch (InvalidOperationException ex)
@@ -188,12 +188,12 @@ public class AuthController : Controller
         }
         catch (OracleException)
         {
-            ViewData["Error"] = "Khong the dat lai mat khau luc nay do loi he thong du lieu.";
+            ViewData["Error"] = "Không thể đặt lại mật khẩu lúc này do lỗi hệ thống dữ liệu.";
             return View();
         }
         catch (Exception)
         {
-            ViewData["Error"] = "Khong the dat lai mat khau luc nay. Vui long thu lai.";
+            ViewData["Error"] = "Không thể đặt lại mật khẩu lúc này. Vui lòng thử lại.";
             return View();
         }
     }

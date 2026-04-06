@@ -29,7 +29,7 @@ public class RentalController : Controller
     {
         if (contractId <= 0)
         {
-            TempData["Error"] = "Hop dong khong hop le.";
+            TempData["Error"] = "Hợp đồng không hợp lệ.";
             return RedirectToAction("Contracts", "Customer");
         }
 
@@ -38,14 +38,14 @@ public class RentalController : Controller
             var contract = await _rentalRepository.GetContractByIdAsync(contractId);
             if (contract is null)
             {
-                TempData["Error"] = "Khong tim thay hop dong.";
+                TempData["Error"] = "Không tìm thấy hợp đồng.";
                 return RedirectToAction("Contracts", "Customer");
             }
 
             var userId = User.GetUserId();
             if (contract.CustomerId != userId)
             {
-                TempData["Error"] = "Ban khong co quyen xem hop dong nay.";
+                TempData["Error"] = "Bạn không có quyền xem hợp đồng này.";
                 return RedirectToAction("Contracts", "Customer");
             }
 
@@ -53,7 +53,7 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("lay chi tiet hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("lấy chi tiết hợp đồng", ex);
             return RedirectToAction("Contracts", "Customer");
         }
     }
@@ -64,13 +64,13 @@ public class RentalController : Controller
     {
         if (input.StartDate == default || input.EndDate == default)
         {
-            TempData["Error"] = "Vui long chon ngay bat dau va ngay ket thuc.";
+            TempData["Error"] = "Vui lòng chọn ngày bắt đầu và ngày kết thúc.";
             return RedirectToAction(nameof(Index));
         }
 
         if (input.StartDate > input.EndDate)
         {
-            TempData["Error"] = "Ngay bat dau phai <= ngay ket thuc.";
+            TempData["Error"] = "Ngày bắt đầu phải <= ngày kết thúc.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -80,22 +80,22 @@ public class RentalController : Controller
             var vehicle = vehicles.FirstOrDefault(v => v.VehicleId == input.VehicleId);
             if (vehicle is null)
             {
-                TempData["Error"] = "Khong tim thay xe da chon.";
+                TempData["Error"] = "Không tìm thấy xe đã chọn.";
                 return RedirectToAction(nameof(Index));
             }
 
             var estimate = await _rentalRepository.CalculateRentalCostAsync(vehicle.PricePerDay, input.StartDate, input.EndDate);
-            TempData["Info"] = $"Chi phi du kien cho xe {vehicle.VehicleName}: {estimate:N0} VND";
+            TempData["Info"] = $"Chi phí dự kiến cho xe {vehicle.VehicleName}: {estimate:N0} VND";
             return RedirectToAction(nameof(Index));
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("preview chi phi", ex);
+            TempData["Error"] = BuildOracleErrorMessage("preview chi phí", ex);
             return RedirectToAction(nameof(Index));
         }
         catch (Exception)
         {
-            TempData["Error"] = "Khong the preview chi phi luc nay. Vui long thu lai.";
+            TempData["Error"] = "Không thể preview chi phí lúc này. Vui lòng thử lại.";
             return RedirectToAction(nameof(Index));
         }
     }
@@ -106,19 +106,19 @@ public class RentalController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin tao hop dong nhap khong hop le.";
+            TempData["Error"] = "Thông tin tạo hợp đồng nhập không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
         try
         {
             await _rentalRepository.CreateContractDraftAsync(input.CustomerId, input.EmployeeId);
-            TempData["Success"] = "Da tao hop dong nhap (PENDING) bang sp_create_contract.";
+            TempData["Success"] = "Đã tạo hợp đồng nhập (PENDING) bằng sp_create_contract.";
             return RedirectToAction(nameof(Index));
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tao hop dong", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tạo hợp đồng", ex);
             return RedirectToAction(nameof(Index));
         }
     }
@@ -129,13 +129,13 @@ public class RentalController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin thue xe nhap khong hop le.";
+            TempData["Error"] = "Thông tin thuê xe nhập không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
         if (input.StartDate == default || input.EndDate == default)
         {
-            TempData["Error"] = "Vui long chon ngay bat dau va ngay ket thuc.";
+            TempData["Error"] = "Vui lòng chọn ngày bắt đầu và ngày kết thúc.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -145,12 +145,12 @@ public class RentalController : Controller
             var verificationView = await _rentalRepository.GetUserVerificationFromViewAsync(input.CustomerId);
             if (!isVerified || !verificationView.IsVerified)
             {
-                TempData["Error"] = "Khach hang chua duoc xac minh day du CCCD va bang lai xe. Vui long cho khach hang upload CCCD/Bang lai va cho Admin duyet.";
+                TempData["Error"] = "Khách hàng chưa được xác minh đầy đủ CCCD và bằng lái xe. Vui lòng cho khách hàng upload CCCD/Bằng lái và chờ Admin duyệt.";
                 return RedirectToAction(nameof(Index));
             }
 
             await _rentalRepository.RentVehicleAsync(input);
-            TempData["Success"] = "Thue xe thanh cong bang sp_rent_vehicle. Trigger da tu dong tinh tong tien va kiem tra lich.";
+            TempData["Success"] = "Thuê xe thành công bằng sp_rent_vehicle. Trigger đã tự động tính tổng tiền và kiểm tra lịch.";
             return RedirectToAction(nameof(Index));
         }
         catch (InvalidOperationException ex)
@@ -160,7 +160,7 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("thue xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("thuê xe", ex);
             return RedirectToAction(nameof(Index));
         }
     }
@@ -171,14 +171,14 @@ public class RentalController : Controller
     {
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin thanh toan khong hop le.";
+            TempData["Error"] = "Thông tin thanh toán không hợp lệ.";
             return RedirectToAction(nameof(Index));
         }
 
         try
         {
             await _rentalRepository.MakePaymentAsync(input);
-            TempData["Success"] = "Thanh toan thanh cong bang sp_make_payment. Trigger da cap nhat trang thai hop dong neu du tien.";
+            TempData["Success"] = "Thanh toán thành công bằng sp_make_payment. Trigger đã cập nhật trạng thái hợp đồng nếu đủ tiền.";
             return RedirectToAction(nameof(Index));
         }
         catch (InvalidOperationException ex)
@@ -188,7 +188,7 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("thanh toan", ex);
+            TempData["Error"] = BuildOracleErrorMessage("thanh toán", ex);
             return RedirectToAction(nameof(Index));
         }
     }
@@ -199,7 +199,7 @@ public class RentalController : Controller
     {
         if (input.VehicleId <= 0)
         {
-            TempData["Error"] = "ID xe khong hop le.";
+            TempData["Error"] = "ID xe không hợp lệ.";
             return RedirectToAction("Index", "Customer");
         }
 
@@ -208,13 +208,13 @@ public class RentalController : Controller
 
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Thong tin thue xe khong hop le.";
+            TempData["Error"] = "Thông tin thuê xe không hợp lệ.";
             return RedirectToAction("Book", new { vehicleId = input.VehicleId });
         }
 
         if (input.StartDate == default || input.EndDate == default)
         {
-            TempData["Error"] = "Vui long chon ngay bat dau va ngay ket thuc.";
+            TempData["Error"] = "Vui lòng chọn ngày bắt đầu và ngày kết thúc.";
             return RedirectToAction("Book", new { vehicleId = input.VehicleId });
         }
 
@@ -227,7 +227,7 @@ public class RentalController : Controller
 
             if (hasOverlap)
             {
-                TempData["Error"] = "Xe dang ban hoac dang trong ngay bao duong (+1) theo khoang ngay ban chon.";
+                TempData["Error"] = "Xe đang bận hoặc đang trong ngày bảo dưỡng (+1) theo khoảng ngày bạn chọn.";
                 return RedirectToAction("Book", new
                 {
                     vehicleId = input.VehicleId,
@@ -241,7 +241,7 @@ public class RentalController : Controller
             var verificationView = await _rentalRepository.GetUserVerificationFromViewAsync(userId);
             if (!isVerified || !verificationView.IsVerified)
             {
-                TempData["Error"] = "Ban chua duoc xac minh day du CCCD va bang lai xe. Vui long upload CCCD/Bang lai va doi cho Admin duyet truoc khi xac nhan thue xe.";
+                TempData["Error"] = "Bạn chưa được xác minh đầy đủ CCCD và bằng lái xe. Vui lòng upload CCCD/Bằng lái và đợi cho Admin duyệt trước khi xác nhận thuê xe.";
                 return RedirectToAction("Book", new { vehicleId = input.VehicleId });
             }
 
@@ -252,7 +252,7 @@ public class RentalController : Controller
                 var assignedEmployee = employees.FirstOrDefault();
                 if (assignedEmployee is null)
                 {
-                    TempData["Error"] = "Hien khong co nhan vien nao de tiep nhan yeu cau thue xe.";
+                    TempData["Error"] = "Hiện không có nhân viên nào để tiếp nhận yêu cầu thuê xe.";
                     return RedirectToAction("Book", new { vehicleId = input.VehicleId });
                 }
 
@@ -260,7 +260,7 @@ public class RentalController : Controller
             }
 
             await _rentalRepository.RentVehicleAsync(input);
-            TempData["Success"] = "Yeu cau thue xe da duoc tao. He thong dang cho nhan vien/Admin duyet.";
+            TempData["Success"] = "Yêu cầu thuê xe đã được tạo. Hệ thống đang chờ nhân viên/Admin duyệt.";
             return RedirectToAction("Index", "Customer");
         }
         catch (InvalidOperationException ex)
@@ -270,13 +270,13 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("thue xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("thuê xe", ex);
             return RedirectToAction("Book", new { vehicleId = input.VehicleId });
         }
     }
 
     [HttpGet]
-    public async Task<IActionResult> Search(string? q, string[]? amenities)
+    public IActionResult Search(string? q, string[]? amenities)
     {
         try
         {
@@ -290,7 +290,7 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("tim kiem xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("tìm kiếm xe", ex);
             return RedirectToAction("Index", "Customer");
         }
     }
@@ -300,7 +300,7 @@ public class RentalController : Controller
     {
         if (vehicleId <= 0)
         {
-            TempData["Error"] = "ID xe khong hop le.";
+            TempData["Error"] = "ID xe không hợp lệ.";
             return RedirectToAction("Index", "Customer");
         }
 
@@ -310,7 +310,7 @@ public class RentalController : Controller
             var vehicle = vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
             if (vehicle is null)
             {
-                TempData["Error"] = "Khong tim thay xe da chon.";
+                TempData["Error"] = "Không tìm thấy xe đã chọn.";
                 return RedirectToAction("Index", "Customer");
             }
 
@@ -333,7 +333,7 @@ public class RentalController : Controller
         }
         catch (OracleException ex)
         {
-            TempData["Error"] = BuildOracleErrorMessage("lay thong tin xe", ex);
+            TempData["Error"] = BuildOracleErrorMessage("lấy thông tin xe", ex);
             return RedirectToAction("Index", "Customer");
         }
     }
@@ -342,9 +342,9 @@ public class RentalController : Controller
     {
         if (ex.Number is 904 or 942 or 6550)
         {
-            return $"Khong the {operation} do he thong du lieu chua san sang.";
+            return $"Không thể {operation} do hệ thống dữ liệu chưa sẵn sàng.";
         }
 
-        return $"Khong the {operation} luc nay. Vui long thu lai.";
+        return $"Không thể {operation} lúc này. Vui lòng thử lại.";
     }
 }

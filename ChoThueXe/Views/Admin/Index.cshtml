@@ -210,23 +210,23 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Duyet yeu cau sua thong tin ca nhan</div>
+    <div class="card-header fw-semibold">Duyệt yêu cầu sửa thông tin cá nhân</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
             <tr>
                 <th>User</th>
-                <th>Thong tin hien tai</th>
-                <th>Thong tin yeu cau</th>
-                <th>Thoi gian</th>
-                <th>Xu ly</th>
+                <th>Thông tin hiện tại</th>
+                <th>Thông tin yêu cầu</th>
+                <th>Thời gian</th>
+                <th>Xử lý</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.PendingProfileUpdates.Count == 0)
             {
                 <tr>
-                    <td colspan="5" class="text-muted">Chua co yeu cau nao.</td>
+                    <td colspan="5" class="text-muted">Chưa có yêu cầu nào.</td>
                 </tr>
             }
             else
@@ -244,13 +244,13 @@
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="RequestId" value="@p.RequestId" />
                                     <input type="hidden" name="IsApproved" value="true" />
-                                    <button type="submit" class="btn btn-sm btn-success">Duyet</button>
+                                    <button type="submit" class="btn btn-sm btn-success">Duyệt</button>
                                 </form>
                                 <form asp-action="ReviewProfileUpdate" method="post">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="RequestId" value="@p.RequestId" />
                                     <input type="hidden" name="IsApproved" value="false" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Tu choi</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Từ chối</button>
                                 </form>
                             </div>
                         </td>
@@ -263,22 +263,22 @@
 </div>
 
 <div class="card shadow-sm mb-4">
-    <div class="card-header fw-semibold">Hop thu tin nhan khach hang</div>
+    <div class="card-header fw-semibold">Hộp thư tin nhắn khách hàng</div>
     <div class="table-responsive">
         <table class="table table-striped mb-0">
             <thead>
             <tr>
-                <th>Khach hang</th>
-                <th>Noi dung</th>
-                <th>Trang thai</th>
-                <th>Tra loi</th>
+                <th>Khách hàng</th>
+                <th>Nội dung</th>
+                <th>Trạng thái</th>
+                <th>Trả lời</th>
             </tr>
             </thead>
             <tbody>
             @if (Model.Messages.Count == 0)
             {
                 <tr>
-                    <td colspan="4" class="text-muted">Chua co tin nhan nao.</td>
+                    <td colspan="4" class="text-muted">Chưa có tin nhắn nào.</td>
                 </tr>
             }
             else
@@ -298,8 +298,8 @@
                                 <form asp-action="ReplyMessage" method="post" class="d-flex gap-2">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="MessageId" value="@m.MessageId" />
-                                    <input class="form-control form-control-sm" name="ReplyContent" placeholder="Nhap phan hoi..." required />
-                                    <button type="submit" class="btn btn-sm btn-success">Gui</button>
+                                    <input class="form-control form-control-sm" name="ReplyContent" placeholder="Nhập phản hồi..." required />
+                                    <button type="submit" class="btn btn-sm btn-success">Gửi</button>
                                 </form>
                             }
                             else
@@ -317,17 +317,17 @@
 </div>
 
 <div class="card shadow-sm">
-    <div class="card-header fw-semibold">Danh sach xe hien tai</div>
+    <div class="card-header fw-semibold">Danh sách xe hiện tại</div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
             <tr>
                 <th>ID</th>
-                <th>Ten xe</th>
-                <th>Hang</th>
-                <th>Loai</th>
-                <th>Tien nghi</th>
-                <th>Gia/ngay</th>
+                <th>Tên xe</th>
+                <th>Hãng</th>
+                <th>Loại</th>
+                <th>Tiện nghi</th>
+                <th>Giá/ngày</th>
             </tr>
             </thead>
             <tbody>
@@ -350,16 +350,16 @@
 <div class="row g-4 mt-1">
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">Quan ly tai khoan</div>
+            <div class="card-header fw-semibold">Quản lý tài khoản</div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Ho ten</th>
+                        <th>Họ tên</th>
                         <th>Role</th>
-                        <th>So HD</th>
-                        <th>Da thanh toan</th>
+                        <th>Số HD</th>
+                        <th>Đã thanh toán</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -381,16 +381,16 @@
 
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">Quan ly hop dong</div>
+            <div class="card-header fw-semibold">Quản lý hợp đồng</div>
             <div class="table-responsive">
                 <table class="table table-sm table-hover mb-0">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Khach</th>
+                        <th>Khách</th>
                         <th>Xe</th>
-                        <th>Tong</th>
-                        <th>Trang thai</th>
+                        <th>Tổng</th>
+                        <th>Trạng thái</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -414,7 +414,7 @@
 <div class="row g-4 mt-1">
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">Quan ly xe dang thue / xe trong</div>
+            <div class="card-header fw-semibold">Quản lý xe đang thuê / xe trống</div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
                     <thead>
@@ -422,7 +422,7 @@
                         <th>ID</th>
                         <th>Xe</th>
                         <th>Status</th>
-                        <th>Tinh trang</th>
+                        <th>Tình trạng</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -445,14 +445,14 @@
 
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">Top xe duoc thue</div>
+            <div class="card-header fw-semibold">Top xe được thuê</div>
             <div class="table-responsive">
                 <table class="table table-sm table-striped mb-0">
                     <thead>
                     <tr>
                         <th>#</th>
                         <th>Xe</th>
-                        <th>Luot thue</th>
+                        <th>Lượt thuê</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -505,7 +505,7 @@
                     <thead>
                     <tr>
                         <th>User</th>
-                        <th>Tong doanh thu</th>
+                        <th>Tổng doanh thu</th>
                     </tr>
                     </thead>
                     <tbody>
