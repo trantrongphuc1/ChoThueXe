@@ -430,9 +430,10 @@ public class CustomerController : Controller
         {
             var userId = User.GetUserId();
             var isVerified = await _rentalRepository.IsUserVerifiedAsync(userId);
-            if (!isVerified)
+            var verificationView = await _rentalRepository.GetUserVerificationFromViewAsync(userId);
+            if (!isVerified || !verificationView.IsVerified)
             {
-                TempData["Error"] = "Tai khoan chua xac minh giay to. Vui long cap nhat trong trang ho so truoc khi thue xe.";
+                TempData["Error"] = "Tai khoan chua duoc xac minh day du CCCD va bang lai xe. Vui long cap nhat trong trang ho so va cho Admin duyet truoc khi thue xe.";
                 return RedirectToAction(nameof(Profile));
             }
 

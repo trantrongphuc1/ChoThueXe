@@ -528,6 +528,19 @@
         <p>Điền thông tin để hoàn tất đặt xe của bạn</p>
     </div>
 
+    @if (TempData["Success"] is string successMessage && !string.IsNullOrWhiteSpace(successMessage))
+    {
+        <div style="margin-bottom:24px; padding:16px; border-radius:12px; background:#163b1f; color:#b7f0c2; border:1px solid #3fb950;">
+            @successMessage
+        </div>
+    }
+    @if (TempData["Error"] is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div style="margin-bottom:24px; padding:16px; border-radius:12px; background:#4f1d1d; color:#ffb4ad; border:1px solid #f85149;">
+            @errorMessage
+        </div>
+    }
+
     <form asp-action="Create" asp-controller="Rental" method="post" class="booking-form-wrapper">
         <input asp-for="VehicleId" type="hidden" />
         <div class="booking-grid">

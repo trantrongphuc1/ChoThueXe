@@ -47,6 +47,7 @@ public interface IRentalRepository
     Task<IReadOnlyList<TopRentedVehicleViewModel>> GetTopRentedVehiclesAsync();
 
     Task<bool> IsUserVerifiedAsync(int userId);
+    Task<UserVerificationViewModel> GetUserVerificationFromViewAsync(int userId);
     Task<CustomerVerificationStatusViewModel> GetCustomerVerificationStatusAsync(int userId);
     Task<decimal> CalculateRentalCostAsync(decimal pricePerDay, DateTime startDate, DateTime endDate);
 

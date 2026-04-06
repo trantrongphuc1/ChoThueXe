@@ -1,5 +1,6 @@
 using ChoThueXe.Data;
 using ChoThueXe.Infrastructure;
+using ChoThueXe.Models.Portal;
 using ChoThueXe.Models.Rental;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -141,18 +142,10 @@ public class RentalController : Controller
         try
         {
             var isVerified = await _rentalRepository.IsUserVerifiedAsync(input.CustomerId);
-            if (!isVerified)
+            var verificationView = await _rentalRepository.GetUserVerificationFromViewAsync(input.CustomerId);
+            if (!isVerified || !verificationView.IsVerified)
             {
-                TempData["Error"] = "Khach hang chua duoc xac minh giay to (fn_is_user_verified = 0).";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var verification = await _rentalRepository.GetCustomerVerificationStatusAsync(input.CustomerId);
-            var hasApprovedCccd = verification.HasCccd && string.Equals(verification.CccdStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
-            var hasApprovedDriverLicense = verification.HasDriverLicense && string.Equals(verification.DriverLicenseStatus, "APPROVED", StringComparison.OrdinalIgnoreCase);
-            if (!hasApprovedCccd || !hasApprovedDriverLicense)
-            {
-                TempData["Error"] = "Khach hang can duoc duyet day du CCCD va bang lai xe truoc khi thue xe.";
+                TempData["Error"] = "Khach hang chua duoc xac minh day du CCCD va bang lai xe. Vui long cho khach hang upload CCCD/Bang lai va cho Admin duyet.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -245,9 +238,10 @@ public class RentalController : Controller
 
             var userId = User.GetUserId();
             var isVerified = await _rentalRepository.IsUserVerifiedAsync(userId);
-            if (!isVerified)
+            var verificationView = await _rentalRepository.GetUserVerificationFromViewAsync(userId);
+            if (!isVerified || !verificationView.IsVerified)
             {
-                TempData["Error"] = "Ban chua duoc xac minh giay to. Hay upload CCCD/Bang lai xe.";
+                TempData["Error"] = "Ban chua duoc xac minh day du CCCD va bang lai xe. Vui long upload CCCD/Bang lai va doi cho Admin duyet truoc khi xac nhan thue xe.";
                 return RedirectToAction("Book", new { vehicleId = input.VehicleId });
             }
 

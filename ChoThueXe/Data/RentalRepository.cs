@@ -1738,6 +1738,41 @@ public class RentalRepository : IRentalRepository
         return Convert.ToInt32(raw) == 1;
     }
 
+    public async Task<UserVerificationViewModel> GetUserVerificationFromViewAsync(int userId)
+    {
+        const string sql = @"
+            select
+                nvl(cccd_verified, 0) as cccd_verified,
+                nvl(license_verified, 0) as license_verified
+            from vw_user_verification
+            where user_id = :p_user_id";
+
+        await using var connection = new OracleConnection(_connectionString);
+        await connection.OpenAsync();
+
+        try
+        {
+            await using var command = new OracleCommand(sql, connection);
+            command.Parameters.Add("p_user_id", OracleDbType.Int32, userId, ParameterDirection.Input);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new UserVerificationViewModel
+                {
+                    CccdVerified = Convert.ToInt32(reader["CCCD_VERIFIED"]) == 1,
+                    LicenseVerified = Convert.ToInt32(reader["LICENSE_VERIFIED"]) == 1
+                };
+            }
+        }
+        catch (OracleException ex) when (IsMissingObjectError(ex) || ex.Number == 6550)
+        {
+            return new UserVerificationViewModel();
+        }
+
+        return new UserVerificationViewModel();
+    }
+
     public async Task<CustomerVerificationStatusViewModel> GetCustomerVerificationStatusAsync(int userId)
     {
         const string sql = @"
