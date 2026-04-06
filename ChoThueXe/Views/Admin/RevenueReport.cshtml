@@ -219,7 +219,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/lib/chart.js/chart.umd.min.js" asp-append-version="true"></script>
     <script>
         const chartData = @Html.Raw(JsonSerializer.Serialize(chartPayload));
 
